@@ -1,184 +1,116 @@
-import { motion } from "framer-motion";
-import { ArrowRight, Zap, Shield, Sparkles, ChevronDown } from "lucide-react";
+import { Zap, Shield, Rocket } from "lucide-react";
 import { ContactForm } from "@/components/ContactForm";
 
 const features = [
   {
-    icon: <Zap className="w-6 h-6 text-primary" />,
+    icon: Zap,
     title: "Lightning Fast",
-    description: "Built on cutting-edge edge infrastructure to deliver responses in milliseconds, not seconds."
+    description: "Built with modern technologies for blazing performance and instant load times.",
   },
   {
-    icon: <Shield className="w-6 h-6 text-accent" />,
-    title: "Enterprise Grade",
-    description: "Bank-level security and compliance built-in from day one. Your data is always protected."
+    icon: Shield,
+    title: "Secure by Default",
+    description: "Enterprise-grade security with encrypted data and best practices built in.",
   },
   {
-    icon: <Sparkles className="w-6 h-6 text-primary" />,
-    title: "Intelligent Design",
-    description: "Intuitive interfaces and workflows that adapt to your team's unique way of working."
-  }
+    icon: Rocket,
+    title: "Easy to Scale",
+    description: "Grow from prototype to production seamlessly with our flexible architecture.",
+  },
 ];
 
 export default function Home() {
-  const scrollToContact = () => {
-    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
-      {/* Abstract Background Orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px]" />
-        <div className="absolute top-[20%] -right-[10%] w-[40%] h-[60%] rounded-full bg-accent/15 blur-[120px]" />
-        <div className="absolute -bottom-[20%] left-[20%] w-[60%] h-[50%] rounded-full bg-primary/10 blur-[120px]" />
-      </div>
-
-      {/* Navigation */}
-      <nav className="fixed top-0 inset-x-0 z-50 glass-panel border-x-0 border-t-0 py-4 px-6 md:px-12 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-accent flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
+              <Zap className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <span className="font-bold text-lg" data-testid="text-brand">AppName</span>
           </div>
-          <span className="font-display font-bold text-xl tracking-tight">Nexus</span>
+          <nav className="flex items-center gap-6">
+            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="link-features">Features</a>
+            <a href="#contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="link-contact">Contact</a>
+          </nav>
         </div>
-        <button 
-          onClick={scrollToContact}
-          className="text-sm font-semibold px-5 py-2 rounded-full bg-foreground text-background hover:bg-foreground/90 transition-colors"
-        >
-          Get Early Access
-        </button>
-      </nav>
+      </header>
 
-      <main className="flex-1 pt-32 pb-20 px-6 md:px-12">
-        {/* Hero Section */}
-        <section className="max-w-5xl mx-auto pt-16 md:pt-24 pb-32 text-center flex flex-col items-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel text-sm font-medium mb-8"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            Nexus Platform 2.0 is now live
-          </motion.div>
-          
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-foreground leading-[1.1] mb-6"
-          >
-            Build the future, <br className="hidden md:block" />
-            <span className="text-gradient">faster than ever.</span>
-          </motion.h1>
-          
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
-          >
-            The ultimate platform for modern teams to collaborate, design, and ship incredible products. Say goodbye to friction and hello to flow.
-          </motion.p>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-col sm:flex-row items-center gap-4"
-          >
-            <button 
-              onClick={scrollToContact}
-              className="w-full sm:w-auto px-8 py-4 rounded-full font-bold text-white bg-gradient-to-r from-primary to-accent shadow-lg shadow-primary/25 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
+      <section className="py-24 px-6">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 text-sm px-4 py-1.5 rounded-full border border-border bg-muted/50 text-muted-foreground mb-6" data-testid="badge-launch">
+            <span className="w-2 h-2 rounded-full bg-primary" />
+            Now Available
+          </div>
+          <h1 className="text-5xl font-extrabold tracking-tight leading-tight" data-testid="text-hero-title">
+            Build Something{" "}
+            <span className="text-primary">Amazing</span>
+          </h1>
+          <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto" data-testid="text-hero-description">
+            A modern full-stack web application built with React, Tailwind CSS, and a PostgreSQL backend. Fast, secure, and ready to grow with you.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <a
+              href="#contact"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity"
+              data-testid="button-get-started"
             >
-              Start for free
-              <ArrowRight className="w-5 h-5" />
-            </button>
-            <button className="w-full sm:w-auto px-8 py-4 rounded-full font-bold text-foreground bg-white border border-border hover:border-primary/50 hover:bg-gray-50 transition-all duration-300 shadow-sm">
-              Read the docs
-            </button>
-          </motion.div>
-        </section>
+              Get Started
+              <Rocket className="w-4 h-4" />
+            </a>
+            <a
+              href="#features"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-md border border-border bg-card text-foreground font-semibold hover:bg-muted transition-colors"
+              data-testid="button-learn-more"
+            >
+              Learn More
+            </a>
+          </div>
+        </div>
+      </section>
 
-        {/* Features Grid */}
-        <section className="max-w-6xl mx-auto py-24">
-          <div className="grid md:grid-cols-3 gap-8">
+      <section id="features" className="py-20 px-6 bg-muted/30">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold tracking-tight" data-testid="text-features-title">Why Choose Us</h2>
+            <p className="mt-2 text-muted-foreground">Everything you need to build and ship fast.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
             {features.map((feature, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="glass-panel p-8 rounded-3xl group hover:-translate-y-2 transition-all duration-500"
+              <div
+                key={feature.title}
+                className="rounded-md border border-border bg-card p-6 hover-elevate"
+                data-testid={`card-feature-${idx}`}
               >
-                <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-border/50 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
-                  {feature.icon}
+                <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mb-4">
+                  <feature.icon className="w-5 h-5 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-3">{feature.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <h3 className="font-semibold text-lg" data-testid={`text-feature-title-${idx}`}>{feature.title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed" data-testid={`text-feature-desc-${idx}`}>
                   {feature.description}
                 </p>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Contact Section */}
-        <section id="contact" className="max-w-6xl mx-auto py-24">
-          <div className="glass-panel rounded-[2.5rem] overflow-hidden">
-            <div className="grid lg:grid-cols-5 min-h-[600px]">
-              {/* Left Side: Info */}
-              <div className="col-span-2 bg-foreground text-background p-10 md:p-14 flex flex-col justify-between relative overflow-hidden">
-                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-primary via-transparent to-transparent" />
-                
-                <div className="relative z-10">
-                  <h2 className="text-4xl font-bold mb-4 font-display">Let's talk</h2>
-                  <p className="text-background/70 text-lg mb-8">
-                    Ready to transform how your team works? We'd love to hear from you.
-                  </p>
-                </div>
-
-                <div className="relative z-10 space-y-6">
-                  <div>
-                    <h4 className="text-sm font-semibold text-background/50 uppercase tracking-wider mb-2">HQ</h4>
-                    <p className="text-background/90">100 Innovation Drive<br />San Francisco, CA 94103</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-background/50 uppercase tracking-wider mb-2">Contact</h4>
-                    <p className="text-background/90">hello@nexusplatform.io<br />+1 (555) 123-4567</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Side: Form */}
-              <div className="col-span-3 p-10 md:p-14 bg-white/50">
-                <div className="max-w-md mx-auto h-full flex flex-col justify-center">
-                  <div className="mb-8">
-                    <h3 className="text-2xl font-bold text-foreground">Send a message</h3>
-                    <p className="text-muted-foreground mt-2">Fill out the form below and our team will get back to you within 24 hours.</p>
-                  </div>
-                  
-                  <ContactForm />
-                </div>
-              </div>
-            </div>
+      <section id="contact" className="py-20 px-6">
+        <div className="max-w-lg mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold tracking-tight" data-testid="text-contact-title">Get in Touch</h2>
+            <p className="mt-2 text-muted-foreground">Have a question or want to work together? Drop us a message.</p>
           </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-12 px-6 md:px-12 text-center text-muted-foreground">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="font-display font-semibold text-foreground">Nexus</span>
+          <div className="rounded-md border border-border bg-card p-6" data-testid="form-contact-wrapper">
+            <ContactForm />
           </div>
-          <p className="text-sm">© {new Date().getFullYear()} Nexus Platform Inc. All rights reserved.</p>
+        </div>
+      </section>
+
+      <footer className="border-t border-border py-8 px-6">
+        <div className="max-w-6xl mx-auto text-center text-sm text-muted-foreground" data-testid="text-footer">
+          Built with React & Tailwind CSS
         </div>
       </footer>
     </div>
