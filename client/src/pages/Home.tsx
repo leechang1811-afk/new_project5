@@ -1408,7 +1408,7 @@ export default function Home() {
               Mafia:   { emoji: "🔫", bg: "#2C2C2E", label: "마피아" },
               Police:  { emoji: "🔍", bg: "#1C3A5E", label: "경찰" },
               Doctor:  { emoji: "💉", bg: "#1A3C2E", label: "의사" },
-              Citizen: { emoji: "🏘️", bg: "#3A3A3C", label: "시민" },
+              Citizen: { emoji: "🧑", bg: "#3A3A3C", label: "시민" },
             };
             const role = assigned[currentPlayer] ?? "Citizen";
             const visual = roleVisuals[role] ?? roleVisuals.Citizen;
@@ -1675,7 +1675,7 @@ export default function Home() {
                           Mafia: "마피아", Police: "경찰", Doctor: "의사", Citizen: "시민",
                         };
                         const roleEmoji: Record<string, string> = {
-                          Mafia: "🔫", Police: "🔍", Doctor: "💉", Citizen: "🏘️",
+                          Mafia: "🔫", Police: "🔍", Doctor: "💉", Citizen: "🧑",
                         };
                         const dead = alive[p] === false;
                         return (
