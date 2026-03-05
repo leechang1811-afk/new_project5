@@ -1,3 +1,5 @@
+import type { GameBreakdown } from 'shared';
+
 export const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 export interface RunSubmitResponse {
@@ -13,7 +15,7 @@ export async function submitRun(payload: {
   user_hash: string;
   run_score: number;
   max_level: number;
-  game_breakdown: Record<string, number>;
+  game_breakdown: GameBreakdown;
   per_stage: Array<{ game_type: string; level: number; success: boolean; score: number }>;
   client_time: string;
 }): Promise<RunSubmitResponse> {

@@ -10,6 +10,7 @@
     "dev:server": "pnpm --filter server dev",
     "build": "cd packages/shared && npm run build && cd ../.. && cd apps/server && npm run build && cd ../.. && cd apps/client && npm run build && cd ../..",
     "build:client": "pnpm --filter shared run build && pnpm --filter client run build",
+    "build:vercel": "npm run build -w shared && npm run build -w client",
     "build:server": "pnpm --filter shared run build && pnpm --filter server run build",
     "db:generate": "pnpm --filter server db:generate",
     "db:migrate": "pnpm --filter server db:migrate"

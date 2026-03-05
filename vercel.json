@@ -1,8 +1,8 @@
 {
-  "buildCommand": "pnpm run build:client",
+  "buildCommand": "npm run build:vercel",
   "outputDirectory": "apps/client/dist",
   "framework": null,
-  "installCommand": "pnpm install",
+  "installCommand": "npm install",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]

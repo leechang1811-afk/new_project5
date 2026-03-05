@@ -11,7 +11,7 @@
     }
   },
   "scripts": {
-    "build": "npx --yes typescript tsc",
+    "build": "tsc",
     "dev": "tsc --watch"
   },
   "devDependencies": {
