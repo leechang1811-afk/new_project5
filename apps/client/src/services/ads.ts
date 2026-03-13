@@ -28,7 +28,7 @@ class MockAdsService implements AdsService {
     if (!this._interstitialLoaded) {
       await this.loadInterstitial();
     }
-    console.log('[Mock] Interstitial ad shown');
+    if (import.meta.env.DEV) console.log('[Mock] Interstitial ad shown');
     this._lastAdShownAt = Date.now();
     this._interstitialLoaded = false;
     return true;
@@ -43,7 +43,7 @@ class MockAdsService implements AdsService {
     if (!this._rewardedLoaded) {
       await this.loadRewarded();
     }
-    console.log('[Mock] Rewarded ad shown');
+    if (import.meta.env.DEV) console.log('[Mock] Rewarded ad shown');
     this._lastAdShownAt = Date.now();
     this._rewardedLoaded = false;
     return true;

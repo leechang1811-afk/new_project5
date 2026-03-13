@@ -2,7 +2,7 @@
 
 Apps in Toss 미니앱 게임 "한국인 상위 몇%?" MVP
 
-4가지 문제유형(반응 속도, 10초 터치, 기억력, 계산 속도)을 하나의 Run으로 묶은 게임입니다.
+5가지 문제유형(민첩성, 순발력, 기억력, 논리력, 시각 추론)을 하나의 Run으로 묶은 게임입니다.
 
 ## 프로젝트 구조 (모노레포)
 
@@ -32,7 +32,7 @@ Apps in Toss 미니앱 게임 "한국인 상위 몇%?" MVP
 ```bash
 # apps/server/.env
 DATABASE_URL=postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres
-PORT=3001
+PORT=5005
 ```
 
 ## 설치 및 실행
@@ -75,13 +75,13 @@ psql $DATABASE_URL -f apps/server/drizzle/0000_init.sql
 pnpm dev
 ```
 
-- 클라이언트: http://localhost:5002
-- 서버: http://localhost:3001
+- 클라이언트: http://localhost:5173
+- 서버: http://localhost:5005
 
 개별 실행:
 
 ```bash
-pnpm dev:client   # http://localhost:5002
+pnpm dev:client   # http://localhost:5173 (Vite, /api → 5005 프록시)
 pnpm dev:server   # 또는 npm run dev:server
 ```
 
@@ -99,11 +99,11 @@ pnpm build
 - Start Command: `cd apps/server && pnpm start`
 - Environment: `DATABASE_URL` (Supabase connection string)
 
-### Client (Static Site)
+### Client (Vercel)
 
-- Build Command: `cd apps/client && pnpm install && pnpm build`
-- Output: `apps/client/dist`
-- Publish Directory: `dist`
+- Build Command: `npm run build:vercel`
+- Output Directory: `apps/client/dist`
+- Environment: `VITE_API_URL` = 백엔드 API URL (예: `https://your-api.onrender.com/api`)
 
 ## API
 
@@ -120,4 +120,5 @@ pnpm build
 | 변수 | 설명 |
 |------|------|
 | DATABASE_URL | PostgreSQL 연결 문자열 (필수) |
-| PORT | 서버 포트 (기본 3001) |
+| PORT | 서버 포트 (기본 5005) |
+| VITE_API_URL | 클라이언트 API 주소 (Vercel 배포 시 필수) |

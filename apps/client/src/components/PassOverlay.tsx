@@ -7,6 +7,7 @@ interface PassOverlayProps {
   passedLevel: number;
   perStageResults: { score: number }[];
   pendingScore: number;
+  pendingBonus?: number;
   comboCount?: number;
   onComplete: () => void;
 }
@@ -34,6 +35,7 @@ export default function PassOverlay({
   passedLevel,
   perStageResults,
   pendingScore,
+  pendingBonus = 0,
   comboCount = 0,
   onComplete,
 }: PassOverlayProps) {
@@ -132,6 +134,22 @@ export default function PassOverlay({
           {comboCount >= 2 ? '연속 성공!' : '통과입니다!'}
         </motion.p>
 
+        <motion.div
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.08 }}
+          className="mb-2 space-y-1"
+        >
+          <p className="text-base font-bold text-toss-blue">
+            이번 스테이지 +{Math.round(pendingScore)}점
+          </p>
+          {pendingBonus > 0 && (
+            <p className="text-sm font-bold text-amber-600 animate-pulse">
+              ⚡ 3초 보너스 +{pendingBonus}점!
+            </p>
+          )}
+        </motion.div>
+
         {difficultyMsg && (
           <motion.p
             initial={{ y: 10, opacity: 0 }}
@@ -147,7 +165,7 @@ export default function PassOverlay({
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="text-xs text-toss-sub mb-2"
+          className="text-xs text-toss-sub mb-4"
         >
           {passedLevel}/20 완료 · {20 - passedLevel}단계 남았어요
         </motion.p>

@@ -7,6 +7,7 @@ import {
   type ReactionColor,
 } from 'shared';
 import { normalizeStageScore } from 'shared';
+import { playSuccess, playFail } from '../services/sounds';
 
 const COLOR_MAP: Record<ReactionColor, string> = {
   Red: '#EF4444',
@@ -26,7 +27,7 @@ const COLOR_LABELS_KO: Record<ReactionColor, string> = {
 
 interface ReactionGameProps {
   level: number;
-  onSuccess: (score: number) => void;
+  onSuccess: (score: number, bonus?: number) => void;
   onFail: () => void;
 }
 
@@ -36,7 +37,8 @@ export default function ReactionGame({ level, onSuccess, onFail }: ReactionGameP
   const [currentColor, setCurrentColor] = useState<ReactionColor | null>(null);
   const [currentColorIndex, setCurrentColorIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [startTime, setStartTime] = useState(0);
+  const startTimeRef = useRef<number>(0);
+  const currentColorRef = useRef<ReactionColor | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasFailedRef = useRef(false);
 
@@ -47,7 +49,9 @@ export default function ReactionGame({ level, onSuccess, onFail }: ReactionGameP
     hasFailedRef.current = false;
     const target = REACTION_COLORS[Math.floor(Math.random() * REACTION_COLORS.length)]!;
     setTargetColor(target);
-    setCurrentColor(REACTION_COLORS[0]!);
+    const first = REACTION_COLORS[0]!;
+    setCurrentColor(first);
+    currentColorRef.current = first;
     setCurrentColorIndex(0);
     setPhase('instruction');
   }, []);
@@ -59,20 +63,23 @@ export default function ReactionGame({ level, onSuccess, onFail }: ReactionGameP
   useEffect(() => {
     if (phase !== 'instruction') return;
     const t = setTimeout(() => {
+      startTimeRef.current = Date.now();
       setPhase('playing');
       setTimeLeft(timeLimit);
-      setStartTime(Date.now());
     }, 1500);
     return () => clearTimeout(t);
   }, [phase, timeLimit]);
 
-  // playing 중 색상 순환
+  // playing 중 색상 순환 (ref도 동기 업데이트 → 클릭 시 실제 표시색과 일치)
   useEffect(() => {
     if (phase !== 'playing') return;
+    currentColorRef.current = REACTION_COLORS[0]!;
     intervalRef.current = setInterval(() => {
       setCurrentColorIndex((prev) => {
         const next = (prev + 1) % REACTION_COLORS.length;
-        setCurrentColor(REACTION_COLORS[next]!);
+        const nextColor = REACTION_COLORS[next]!;
+        currentColorRef.current = nextColor;
+        setCurrentColor(nextColor);
         return next;
       });
     }, colorInterval);
@@ -88,6 +95,7 @@ export default function ReactionGame({ level, onSuccess, onFail }: ReactionGameP
         if (prev <= 1) {
           if (!hasFailedRef.current) {
             hasFailedRef.current = true;
+            playFail();
             onFail();
           }
           return 0;
@@ -101,16 +109,24 @@ export default function ReactionGame({ level, onSuccess, onFail }: ReactionGameP
   const handleShapeClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (phase !== 'playing' || !targetColor || !currentColor || hasFailedRef.current) return;
-    if (currentColor !== targetColor) {
+    if (phase !== 'playing' || !targetColor || hasFailedRef.current) return;
+    const actualColor = currentColorRef.current;
+    if (!actualColor || actualColor !== targetColor) {
       hasFailedRef.current = true;
+      playFail();
       onFail();
       return;
     }
-    const elapsed = (Date.now() - startTime) / 1000;
-    const rawScore = Math.max(0, 100 - elapsed * 2);
+    playSuccess();
+    const elapsed = (Date.now() - startTimeRef.current) / 1000;
+    let rawScore = Math.max(0, 100 - elapsed * 2);
+    let bonusAmount = 0;
+    if (elapsed < 3) {
+      bonusAmount = Math.min(20, 10 + Math.min(level, 10));
+      rawScore = Math.min(100, rawScore + bonusAmount);
+    }
     const score = normalizeStageScore(rawScore, 100, true);
-    onSuccess(score);
+    onSuccess(score, bonusAmount);
   };
 
   return (

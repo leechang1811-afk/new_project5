@@ -6,10 +6,11 @@ import {
   timingSuccessToleranceForLevel,
   normalizeStageScore,
 } from 'shared';
+import { playSuccess, playFail } from '../services/sounds';
 
 interface Tap10GameProps {
   level: number;
-  onSuccess: (score: number) => void;
+  onSuccess: (score: number, bonus?: number) => void;
   onFail: () => void;
 }
 
@@ -41,6 +42,7 @@ export default function Tap10Game({ level, onSuccess, onFail }: Tap10GameProps) 
       if (displayElapsed >= timeLimitSec) {
         if (!completedRef.current) {
           completedRef.current = true;
+          playFail();
           onFail();
         }
         setElapsed(timeLimitSec);
@@ -64,16 +66,24 @@ export default function Tap10Game({ level, onSuccess, onFail }: Tap10GameProps) 
     const displayElapsed = realElapsed * speedMultiplier;
     if (displayElapsed >= timeLimitSec) {
       completedRef.current = true;
+      playFail();
       onFail();
       return;
     }
     const diff = Math.abs(displayElapsed - targetSec);
     if (diff <= successTolerance) {
       completedRef.current = true;
-      const rawScore = Math.max(0, 100 - diff * 20);
-      onSuccess(normalizeStageScore(rawScore, 100, true));
+      playSuccess();
+      let rawScore = Math.max(0, 100 - diff * 20);
+      let bonusAmount = 0;
+      if (realElapsed < 3) {
+        bonusAmount = Math.min(20, 10 + Math.min(level, 10));
+        rawScore = Math.min(100, rawScore + bonusAmount);
+      }
+      onSuccess(normalizeStageScore(rawScore, 100, true), bonusAmount);
     } else {
       completedRef.current = true;
+      playFail();
       onFail();
     }
   };

@@ -81,3 +81,10 @@ export function fireNewBest(): void {
   confetti({ particleCount: 50, spread: 100, origin: { x: 0.2, y: 0.5 }, angle: 60, colors: COLORS });
   confetti({ particleCount: 50, spread: 100, origin: { x: 0.8, y: 0.5 }, angle: 120, colors: COLORS });
 }
+
+/** 누적 점수 추가 시 팡팡 터지는 소규모 burst */
+export function fireScoreBurst(): void {
+  const burstColors = ['#EAB308', '#F59E0B', '#22C55E', '#3182F6'];
+  confetti({ particleCount: 18, spread: 55, origin: { x: 0.85, y: 0.12 }, colors: burstColors, scalar: 1.1, ticks: 100 });
+  confetti({ particleCount: 12, spread: 45, origin: { x: 0.9, y: 0.15 }, angle: 90, colors: burstColors, scalar: 0.9, ticks: 80 });
+}

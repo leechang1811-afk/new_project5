@@ -54,6 +54,7 @@ export default function Run() {
   const [showUpperLevelMsg, setShowUpperLevelMsg] = useState(false);
   const [showPassOverlay, setShowPassOverlay] = useState(false);
   const [pendingScore, setPendingScore] = useState<number | null>(null);
+  const [pendingBonus, setPendingBonus] = useState<number>(0);
   const hasShownUpgradeRef = useRef(false);
   const hasShownUpperLevelRef = useRef(false);
 
@@ -75,10 +76,11 @@ export default function Run() {
     }
   }, [level]);
 
-  const handleSuccess = (score: number) => {
+  const handleSuccess = (score: number, bonus: number = 0) => {
     const gt = getCurrentGameType();
     if (!gt || !run) return;
     setPendingScore(score);
+    setPendingBonus(bonus);
     setShowPassOverlay(true);
     const combo = getComboCount();
     if (combo >= 1) {
@@ -92,6 +94,7 @@ export default function Run() {
     const score = pendingScore;
     setShowPassOverlay(false);
     setPendingScore(null);
+    setPendingBonus(0);
     if (score === null) return;
     const gt = getCurrentGameType();
     const r = useGameStore.getState().run;
@@ -116,14 +119,24 @@ export default function Run() {
     triggerFail();
   };
 
+  const [revivingInProgress, setRevivingInProgress] = useState(false);
+
   const handleRevive = async () => {
-    const { adsService } = await import('../services/ads');
-    const shown = await adsService.showRewarded('revive');
-    if (shown) {
-      useRevive();
-    } else {
-      confirmGameOver();
-      navigate('/result-gate');
+    const r = useGameStore.getState().run;
+    if (!r || r.usedReviveCount >= 2 || revivingInProgress) return;
+    setRevivingInProgress(true);
+    try {
+      const { adsService } = await import('../services/ads');
+      const shown = await adsService.showRewarded('revive');
+      const state = useGameStore.getState().run;
+      if (shown && state && state.usedReviveCount < 2) {
+        useGameStore.getState().useRevive();
+      } else if (!shown) {
+        confirmGameOver();
+        navigate('/result-gate');
+      }
+    } finally {
+      setRevivingInProgress(false);
     }
   };
 
@@ -142,24 +155,7 @@ export default function Run() {
     );
   }
 
-  const GameComponent = () => {
-    if (!gameType) return null;
-    const common = { level, onSuccess: handleSuccess, onFail: handleFail };
-    switch (gameType) {
-      case 'REACTION':
-        return <ReactionGame {...common} />;
-      case 'TAP10':
-        return <Tap10Game {...common} />;
-      case 'MEMORY':
-        return <MemoryGame {...common} />;
-      case 'CALCULATION':
-        return <CalcGame {...common} />;
-      case 'PAINT':
-        return <PaintGame {...common} />;
-      default:
-        return null;
-    }
-  };
+  const gameProps = { level, onSuccess: handleSuccess, onFail: handleFail };
 
   return (
     <div className="min-h-screen bg-white relative">
@@ -168,6 +164,9 @@ export default function Run() {
         level={level}
         cumulativeScore={cumulativeScore}
         comboCount={getComboCount()}
+        remainingRevives={2 - (run.usedReviveCount ?? 0)}
+        lastAddedScore={run.lastAddedScore}
+        onClearLastAddedScore={useGameStore.getState().clearLastAddedScore}
       />
       {showDifficultyUpgrade ? (
         <motion.div
@@ -222,7 +221,21 @@ export default function Run() {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
           >
-            <GameComponent />
+            {gameType === 'REACTION' && (
+              <ReactionGame level={level} onSuccess={handleSuccess} onFail={handleFail} />
+            )}
+            {gameType === 'TAP10' && (
+              <Tap10Game level={level} onSuccess={handleSuccess} onFail={handleFail} />
+            )}
+            {gameType === 'MEMORY' && (
+              <MemoryGame level={level} onSuccess={handleSuccess} onFail={handleFail} />
+            )}
+            {gameType === 'CALCULATION' && (
+              <CalcGame level={level} onSuccess={handleSuccess} onFail={handleFail} />
+            )}
+            {gameType === 'PAINT' && (
+              <PaintGame level={level} onSuccess={handleSuccess} onFail={handleFail} />
+            )}
           </motion.div>
         </AnimatePresence>
       )}
@@ -232,6 +245,7 @@ export default function Run() {
           passedLevel={level}
           perStageResults={run.perStageResults.map((r) => ({ score: r.score }))}
           pendingScore={pendingScore}
+          pendingBonus={pendingBonus}
           comboCount={getComboCount() + 1}
           onComplete={handlePassComplete}
         />
@@ -239,9 +253,11 @@ export default function Run() {
 
       {showFailOverlay && (
         <FailOverlay
-          canRevive={!run.usedRevive}
+          canRevive={run.usedReviveCount < 2}
+          remainingRevives={2 - run.usedReviveCount}
           failedLevel={level}
           maxLevel={20}
+          revivingInProgress={revivingInProgress}
           onRevive={handleRevive}
           onExit={handleGameOver}
         />

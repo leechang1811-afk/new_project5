@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCalcParams, normalizeStageScore, timeLimitForLevel } from 'shared';
+import { playSuccess, playFail } from '../services/sounds';
 
 interface CalcGameProps {
   level: number;
-  onSuccess: (score: number) => void;
+  onSuccess: (score: number, bonus?: number) => void;
   onFail: () => void;
 }
 
@@ -29,8 +30,10 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
   const [oxMode, setOxMode] = useState(false);
   const [oxStatement, setOxStatement] = useState('');
   const [oxCorrect, setOxCorrect] = useState(false);
+  const questionStartRef = useRef<number>(0);
 
   const nextQuestion = useCallback(() => {
+    questionStartRef.current = Date.now();
     if (params.useOX) {
       const { expr: e, result } = randomExpr(params.maxNum, params.ops);
       const wrongResult = result + (Math.random() > 0.5 ? 1 : -1);
@@ -53,6 +56,7 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
     const id = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
+          playFail();
           onFail();
           return 0;
         }
@@ -62,19 +66,35 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
     return () => clearInterval(id);
   }, [onFail]);
 
+  const reportSuccess = () => {
+    const elapsed = (Date.now() - questionStartRef.current) / 1000;
+    let rawScore = 100;
+    let bonusAmount = 0;
+    if (elapsed < 3) {
+      bonusAmount = Math.min(20, 10 + Math.min(level, 10));
+      rawScore = Math.min(100, rawScore + bonusAmount);
+    }
+    const score = normalizeStageScore(rawScore, 100, true);
+    onSuccess(score, bonusAmount);
+  };
+
   const handleSubmit = () => {
     if (oxMode) {
       const correct = userAnswer.toLowerCase() === 'o' || userAnswer === '1';
       if (correct === oxCorrect) {
-        onSuccess(normalizeStageScore(100, 100, true));
+        playSuccess();
+        reportSuccess();
       } else {
+        playFail();
         onFail();
       }
     } else if (expr) {
       const num = parseInt(userAnswer, 10);
       if (num === expr.result) {
-        onSuccess(normalizeStageScore(100, 100, true));
+        playSuccess();
+        reportSuccess();
       } else {
+        playFail();
         onFail();
       }
     }
@@ -100,8 +120,13 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (oxCorrect) onSuccess(normalizeStageScore(100, 100, true));
-                  else onFail();
+                  if (oxCorrect) {
+                    playSuccess();
+                    reportSuccess();
+                  } else {
+                    playFail();
+                    onFail();
+                  }
                 }}
                 className="px-8 py-4 rounded-2xl border-2 border-toss-border hover:border-toss-blue transition"
               >
@@ -111,8 +136,13 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (!oxCorrect) onSuccess(normalizeStageScore(100, 100, true));
-                  else onFail();
+                  if (!oxCorrect) {
+                    playSuccess();
+                    reportSuccess();
+                  } else {
+                    playFail();
+                    onFail();
+                  }
                 }}
                 className="px-8 py-4 rounded-2xl border-2 border-toss-border hover:border-toss-blue transition"
               >

@@ -9,10 +9,11 @@ export interface RunState {
   cumulativeScore: number;
   perStageResults: PerStageResult[];
   gameBreakdown: GameBreakdown;
-  usedRevive: boolean;
+  usedReviveCount: number; // 0~2, 광고 부활 최대 2회
   isRevivedLevel: boolean;
   failed: boolean;
   comboCount: number;
+  lastAddedScore?: number; // 통과 시 추가된 점수 (팡팡 애니용)
 }
 
 export interface CompletedRunData {
@@ -37,6 +38,7 @@ interface GameStore {
   getComboCount: () => number;
   endRun: () => void;
   setUserHash: (hash: string) => void;
+  clearLastAddedScore: () => void;
 }
 
 async function sha256Hex(str: string): Promise<string> {
@@ -75,7 +77,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         cumulativeScore: 0,
         perStageResults: [],
         gameBreakdown: {},
-        usedRevive: false,
+        usedReviveCount: 0,
         isRevivedLevel: false,
         failed: false,
         comboCount: 0,
@@ -91,7 +93,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const prev = breakdown[k] ?? 0;
     const count = run.perStageResults.filter((r) => r.game_type === k).length + 1;
     breakdown[k] = (prev * (count - 1) + result.score) / count;
-    const newCumulative = run.cumulativeScore + result.score;
+    const added = Math.round(result.score);
+    const newCumulative = run.cumulativeScore + added;
     const newCombo = result.success ? (run.comboCount ?? 0) + 1 : 0;
     set({
       run: {
@@ -103,6 +106,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         gameBreakdown: breakdown,
         isRevivedLevel: false,
         comboCount: newCombo,
+        lastAddedScore: result.success ? added : undefined,
       },
     });
   },
@@ -112,10 +116,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   triggerFail: () => {
     const { run } = get();
     if (!run) return;
-    if (!run.usedRevive) {
-      set({ run: { ...run, failed: true, comboCount: 0 } });
-    } else {
+    if (run.usedReviveCount >= 2) {
       get().confirmGameOver();
+    } else {
+      set({ run: { ...run, failed: true, comboCount: 0 } });
     }
   },
 
@@ -138,11 +142,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   useRevive: () => {
     const { run } = get();
-    if (!run || run.usedRevive) return;
+    if (!run || run.usedReviveCount >= 2) return;
+    const nextUsed = Math.min(2, run.usedReviveCount + 1);
     set({
       run: {
         ...run,
-        usedRevive: true,
+        usedReviveCount: nextUsed,
         failed: false,
         level: Math.max(1, run.level - 1),
         currentIndex: run.currentIndex,
@@ -162,4 +167,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   getComboCount: () => get().run?.comboCount ?? 0,
 
   endRun: () => set({ run: null, lastCompletedRun: null }),
+
+  clearLastAddedScore: () => {
+    const { run } = get();
+    if (run && run.lastAddedScore != null) {
+      set({ run: { ...run, lastAddedScore: undefined } });
+    }
+  },
 }));

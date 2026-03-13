@@ -40,13 +40,13 @@ export function timingSpeedMultiplierForLevel(level: number): number {
 }
 
 /**
- * 반응속도 게임 전용 제한시간: 1단계 45초, 20단계 8초
+ * 반응속도 게임 전용 제한시간: 난이도 완화 — 1단계 50초, 20단계 10초
  */
 export function reactionTimeLimitForLevel(level: number): number {
-  if (level <= 1) return 45;
-  if (level >= 20) return 8;
+  if (level <= 1) return 50;
+  if (level >= 20) return 10;
   const t = (level - 1) / 19;
-  return Math.round(45 - t * 37);
+  return Math.round(50 - t * 40);
 }
 
 /**
@@ -60,32 +60,33 @@ export function tap10TimeLimitForLevel(level: number): number {
 }
 
 /**
- * 물감 색깔 맞추기 게임 제한시간(초)
+ * 물감 색깔 맞추기 게임 제한시간(초) — 쉬우면서 아깝게, 초반 넉넉 후반 긴장
  */
 export function paintTimeLimitForLevel(level: number): number {
-  if (level <= 1) return 30;
-  if (level >= 20) return 8;
-  const t = (level - 1) / 19;
-  return Math.round(30 - t * 22);
+  if (level <= 1) return 50;
+  if (level <= 3) return 46;
+  if (level <= 5) return 42;
+  if (level <= 8) return 36 + (8 - level); // 36~39
+  if (level >= 20) return 14;
+  if (level >= 16) return 17 + (20 - level); // 17~21
+  if (level >= 9) return 24 + (16 - level);   // 24~31
+  return Math.round(36 - (level - 6) * 0.8);
 }
 
 /**
- * 반응속도 게임 색상 전환 주기(ms):
- * - 9~14: 약 25% 성공 (380ms→180ms)
- * - 16~19: 더 어려움 (150ms→70ms)
- * - 20: 1% 통과 (40ms)
+ * 반응속도 게임 색상 전환 주기(ms): 난이도 완화 — 초반 더 느림
  */
 export function colorIntervalForLevel(level: number): number {
-  if (level <= 1) return 800;
-  if (level >= 20) return 40;
+  if (level <= 1) return 900;
+  if (level >= 20) return 50;
   if (level >= 16) {
     const t = (level - 16) / 4;
-    return Math.round(150 - t * 80);
+    return Math.round(180 - t * 100);
   }
   if (level >= 9) {
     const t = (level - 9) / 7;
-    return Math.round(380 - t * 200);
+    return Math.round(420 - t * 250);
   }
   const t = (level - 1) / 8;
-  return Math.round(900 - t * 450);
+  return Math.round(950 - t * 450);
 }

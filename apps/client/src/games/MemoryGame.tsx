@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getMemoryParams, normalizeStageScore, timeLimitForLevel } from 'shared';
+import { playSuccess, playFail, playReveal } from '../services/sounds';
 
 interface MemoryGameProps {
   level: number;
-  onSuccess: (score: number) => void;
+  onSuccess: (score: number, bonus?: number) => void;
   onFail: () => void;
 }
 
@@ -30,6 +31,7 @@ export default function MemoryGame({ level, onSuccess, onFail }: MemoryGameProps
   const [selectedCells, setSelectedCells] = useState<number[]>([]);
   const [patternAnswer, setPatternAnswer] = useState<number[]>([]);
   const [timeLeft, setTimeLeft] = useState(0);
+  const answerStartRef = useRef<number>(0);
 
   const startRound = useCallback(() => {
     if (params.usePattern && params.patternSize) {
@@ -53,6 +55,8 @@ export default function MemoryGame({ level, onSuccess, onFail }: MemoryGameProps
   useEffect(() => {
     if (phase !== 'show') return;
     const t = setTimeout(() => {
+      playReveal();
+      answerStartRef.current = Date.now();
       setPhase('answer');
       setTimeLeft(timeLimit);
     }, params.exposeMs);
@@ -64,6 +68,7 @@ export default function MemoryGame({ level, onSuccess, onFail }: MemoryGameProps
     const id = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
+          playFail();
           onFail();
           return 0;
         }
@@ -86,11 +91,20 @@ export default function MemoryGame({ level, onSuccess, onFail }: MemoryGameProps
     const match = selected.filter((i) => patternAnswer.includes(i)).length;
     const wrong = selected.filter((i) => !patternAnswer.includes(i)).length;
     if (wrong > 0 || match < correct) {
+      playFail();
       onFail();
       return;
     }
-    const score = normalizeStageScore((match / correct) * 100, 100, true);
-    onSuccess(score);
+    playSuccess();
+    const elapsed = (Date.now() - answerStartRef.current) / 1000;
+    let rawScore = (match / correct) * 100;
+    let bonusAmount = 0;
+    if (elapsed < 3) {
+      bonusAmount = Math.min(20, 10 + Math.min(level, 10));
+      rawScore = Math.min(100, rawScore + bonusAmount);
+    }
+    const score = normalizeStageScore(rawScore, 100, true);
+    onSuccess(score, bonusAmount);
   };
 
   const handleSubmit = () => {
@@ -98,9 +112,18 @@ export default function MemoryGame({ level, onSuccess, onFail }: MemoryGameProps
       handlePatternSubmit();
     } else if (typeof target === 'string') {
       if (userInput.trim() === target) {
-        const score = normalizeStageScore(100, 100, true);
-        onSuccess(score);
+        playSuccess();
+        const elapsed = (Date.now() - answerStartRef.current) / 1000;
+        let rawScore = 100;
+        let bonusAmount = 0;
+        if (elapsed < 3) {
+          bonusAmount = Math.min(20, 10 + Math.min(level, 10));
+          rawScore = Math.min(100, rawScore + bonusAmount);
+        }
+        const score = normalizeStageScore(rawScore, 100, true);
+        onSuccess(score, bonusAmount);
       } else {
+        playFail();
         onFail();
       }
     }

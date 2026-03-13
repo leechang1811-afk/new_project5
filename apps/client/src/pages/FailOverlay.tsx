@@ -2,10 +2,12 @@ import { motion } from 'framer-motion';
 
 interface FailOverlayProps {
   canRevive: boolean;
+  remainingRevives?: number;
   failedLevel?: number;
   maxLevel?: number;
   onRevive: () => void;
   onExit: () => void;
+  revivingInProgress?: boolean;
 }
 
 const ZEIGARNIK_MESSAGES: Record<number, string> = {
@@ -22,7 +24,7 @@ function getZeigarnikMessage(level: number): string {
   return ZEIGARNIK_MESSAGES[level] ?? `${level}단계까지 오셨어요. 다시 도전하면 더 잘할 수 있어요!`;
 }
 
-export default function FailOverlay({ canRevive, failedLevel = 0, maxLevel = 20, onRevive, onExit }: FailOverlayProps) {
+export default function FailOverlay({ canRevive, remainingRevives = 0, failedLevel = 0, maxLevel = 20, onRevive, onExit, revivingInProgress = false }: FailOverlayProps) {
   const progressPct = maxLevel > 0 ? Math.round((failedLevel / maxLevel) * 100) : 0;
 
   return (
@@ -52,10 +54,15 @@ export default function FailOverlay({ canRevive, failedLevel = 0, maxLevel = 20,
         <div className="flex flex-col gap-3">
           {canRevive && (
             <button
+              type="button"
               onClick={onRevive}
-              className="w-full py-3.5 rounded-2xl bg-toss-blue text-white font-semibold shadow-md hover:opacity-95 transition"
+              disabled={revivingInProgress}
+              className="w-full py-3.5 rounded-2xl bg-toss-blue text-white font-semibold shadow-md hover:opacity-95 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              광고 보고 한 번 더!
+              <span className="block">짧은 광고 시청 후 같은 단계부터 다시!</span>
+              <span className="block mt-0.5 text-white/90 text-sm font-medium">
+                남은 부활 {remainingRevives}회
+              </span>
             </button>
           )}
           <button
