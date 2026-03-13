@@ -40,7 +40,7 @@ export default function Home() {
         className="text-center max-w-md w-full"
       >
         <h1 className="text-2xl md:text-3xl font-bold text-toss-text mb-3 leading-tight">
-          내 두뇌 점수는 상위 몇%?
+          두뇌 순위 확인
         </h1>
         <p className="text-toss-text text-base mb-2 font-medium">
           두뇌 게임 5가지로 실력을 테스트해보세요
