@@ -22,33 +22,62 @@ if (!apiKey) {
   process.exit(1);
 }
 
-if (!databaseUrl) {
-  console.error('❌ DATABASE_URL가 apps/server/.env에 없습니다.');
-  process.exit(1);
-}
+// DATABASE_URL 없어도 Start Command 업데이트는 진행
+
+const START_CMD = 'node --dns-result-order=ipv4first apps/server/dist/index.js';
 
 async function main() {
-  const res = await fetch(
-    `https://api.render.com/v1/services/${RENDER_SERVICE_ID}/env-vars/DATABASE_URL`,
+  // 1. Start Command 업데이트 (IPv4 우선 - ENETUNREACH 방지)
+  const patchRes = await fetch(
+    `https://api.render.com/v1/services/${RENDER_SERVICE_ID}`,
     {
-      method: 'PUT',
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        value: databaseUrl,
+        serviceDetails: {
+          envSpecificDetails: {
+            startCommand: START_CMD,
+          },
+        },
       }),
     }
   );
-
-  if (!res.ok) {
-    const err = await res.text();
-    console.error('❌ Render API 오류:', res.status, err);
-    process.exit(1);
+  if (patchRes.ok) {
+    console.log('✅ Render Start Command 업데이트 완료 (IPv4 우선)');
+  } else {
+    const err = await patchRes.text();
+    console.warn('⚠️ Start Command 업데이트 실패 (무시하고 진행):', err.slice(0, 100));
   }
 
-  console.log('✅ Render에 DATABASE_URL 설정 완료');
+  // 2. DATABASE_URL 설정 (있는 경우만)
+  if (databaseUrl) {
+    const res = await fetch(
+      `https://api.render.com/v1/services/${RENDER_SERVICE_ID}/env-vars/DATABASE_URL`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          value: databaseUrl,
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('❌ Render API 오류 (DATABASE_URL):', res.status, err);
+      process.exit(1);
+    }
+
+    console.log('✅ Render에 DATABASE_URL 설정 완료');
+  } else {
+    console.log('   (DATABASE_URL 없음 - Start Command만 업데이트됨)');
+  }
 
   // 재배포 트리거
   const deployRes = await fetch(
