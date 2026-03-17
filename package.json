@@ -11,6 +11,7 @@
     "build": "cd packages/shared && npm run build && cd ../.. && cd apps/server && npm run build && cd ../.. && cd apps/client && npm run build && cd ../..",
     "build:client": "cd packages/shared && npm run build && cd ../../apps/client && npm run build",
     "build:vercel": "cd packages/shared && npm run build && cd ../../apps/client && npm run build",
+    "deploy": "npm run build:vercel && vercel --prod",
     "build:server": "cd packages/shared && npm run build && cd ../../apps/server && npm run build",
     "db:generate": "cd apps/server && npm run db:generate",
     "db:migrate": "cd apps/server && npm run db:migrate"

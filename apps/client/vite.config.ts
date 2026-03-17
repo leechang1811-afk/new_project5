@@ -7,7 +7,10 @@ export default defineConfig({
     exclude: ['shared'],
   },
   server: {
-    port: 3000,
+    host: '127.0.0.1',
+    port: 5010,
+    strictPort: false,
+    open: true,
     proxy: {
       '/api': { target: 'http://localhost:5005', changeOrigin: true },
     },

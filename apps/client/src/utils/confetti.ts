@@ -39,37 +39,61 @@ export function fireCombo(count: number, level: number = 1): void {
   });
 }
 
+/** 20단계 올클리어 — 상위 0.1% 도파민 폭발 축포 */
 export function fireChampion(): void {
-  const duration = 3500;
+  const duration = 5500;
   const end = Date.now() + duration;
-  const championColors = ['#FBBF24', '#F59E0B', '#D97706', '#FCD34D', '#FDE68A'];
+  const championColors = ['#FBBF24', '#F59E0B', '#D97706', '#FCD34D', '#FDE68A', '#FEF3C7', '#FDE047'];
 
   const frame = () => {
+    // 좌우 폭발 (축포 느낌)
     confetti({
-      particleCount: 12,
+      particleCount: 35,
       angle: 60,
-      spread: 70,
-      origin: { x: 0, y: 0.5 },
+      spread: 85,
+      origin: { x: 0, y: 0.6 },
       colors: championColors,
-      ticks: 150,
-      scalar: 1.8,
+      ticks: 180,
+      scalar: 2.2,
+      gravity: 0.9,
     });
     confetti({
-      particleCount: 12,
+      particleCount: 35,
       angle: 120,
-      spread: 70,
-      origin: { x: 1, y: 0.5 },
+      spread: 85,
+      origin: { x: 1, y: 0.6 },
       colors: championColors,
-      ticks: 150,
-      scalar: 1.8,
+      ticks: 180,
+      scalar: 2.2,
+      gravity: 0.9,
     });
+    // 하단에서 위로 터지는 축포
     confetti({
-      particleCount: 8,
-      spread: 100,
-      origin: { y: 0.6 },
+      particleCount: 45,
+      spread: 140,
+      origin: { x: 0.5, y: 0.75 },
+      colors: championColors,
+      ticks: 160,
+      scalar: 1.8,
+      startVelocity: 45,
+    });
+    // 좌측 중앙
+    confetti({
+      particleCount: 25,
+      spread: 110,
+      origin: { x: 0.2, y: 0.5 },
       colors: championColors,
       ticks: 150,
-      scalar: 1.5,
+      scalar: 1.6,
+    });
+    // 우측 중앙
+    confetti({
+      particleCount: 25,
+      spread: 110,
+      origin: { x: 0.8, y: 0.5 },
+      colors: championColors,
+      ticks: 150,
+      scalar: 1.6,
     });
     if (Date.now() < end) requestAnimationFrame(frame);
   };
@@ -95,4 +119,14 @@ export function fireBonusBurst(): void {
   confetti({ particleCount: 35, spread: 70, origin: { x: 0.85, y: 0.1 }, colors: goldColors, scalar: 1.4, ticks: 120 });
   confetti({ particleCount: 25, spread: 60, origin: { x: 0.88, y: 0.08 }, angle: 90, colors: goldColors, scalar: 1.2, ticks: 100 });
   confetti({ particleCount: 20, spread: 80, origin: { x: 0.82, y: 0.12 }, colors: goldColors, scalar: 1.0, ticks: 90 });
+}
+
+/** 마일스톤(5/10/15단계) 달성 시 도파민 burst */
+export function fireMilestoneBurst(level: number): void {
+  const intensity = level >= 15 ? 1.5 : level >= 10 ? 1.2 : 1;
+  const count = Math.floor(40 * intensity);
+  const spread = 100 + level * 2;
+  confetti({ particleCount: count, spread, origin: { x: 0.5, y: 0.5 }, colors: COLORS, scalar: 1.3, ticks: 100 });
+  confetti({ particleCount: Math.floor(count * 0.7), spread: spread + 20, origin: { x: 0.3, y: 0.4 }, colors: COLORS, scalar: 1.1 });
+  confetti({ particleCount: Math.floor(count * 0.7), spread: spread + 20, origin: { x: 0.7, y: 0.4 }, colors: COLORS, scalar: 1.1 });
 }

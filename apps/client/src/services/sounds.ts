@@ -94,3 +94,17 @@ export function playDropSelect(): void {
 export function playReveal(): void {
   playTone(523, 0.03, 'sine', 0.05);
 }
+
+/** PERFECT! — 3초 보너스 달성 시 화려한 상승 */
+export function playPerfect(): void {
+  playTone(523, 0.06, 'sine', 0.12);
+  setTimeout(() => playTone(659, 0.06, 'sine', 0.1), 50);
+  setTimeout(() => playTone(784, 0.08, 'sine', 0.1), 100);
+  setTimeout(() => playTone(1047, 0.12, 'sine', 0.08), 150);
+}
+
+/** GREAT! — 높은 점수 달성 */
+export function playGreat(): void {
+  playTone(587, 0.05, 'sine', 0.1);
+  setTimeout(() => playTone(784, 0.08, 'sine', 0.08), 60);
+}

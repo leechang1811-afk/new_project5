@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { computeRunScore } from 'shared';
 import { getPercentilePreview } from '../services/api';
+import { fireMilestoneBurst, fireChampion } from '../utils/confetti';
 
 interface PassOverlayProps {
   passedLevel: number;
@@ -50,6 +51,22 @@ export default function PassOverlay({
     ['잘하셨어요!', '완벽해요!', '대단해요!', '굿!', '수준이에요!'][Math.floor(Math.random() * 5)]!
   );
 
+  // Perfect: 3초 보너스 | Great: 2연속+ 콤보 | Good: 기본
+  const tier: 'perfect' | 'great' | 'good' =
+    pendingBonus > 0 ? 'perfect' : comboCount >= 2 ? 'great' : 'good';
+
+  // 마일스톤(5/10/15) 달성 시 도파민 burst
+  const isMilestone = [5, 10, 15].includes(passedLevel);
+  useEffect(() => {
+    if (isMilestone) fireMilestoneBurst(passedLevel);
+  }, [isMilestone, passedLevel]);
+
+  // 20단계 올클리어 — 챔피언 축포 즉시
+  const isChampion = passedLevel === 20;
+  useEffect(() => {
+    if (isChampion) fireChampion();
+  }, [isChampion]);
+
   // DB 기반 퍼센타일 조회 (기본점수 + 보너스 반영)
   const stageTotal = Math.round(pendingScore) + pendingBonus;
   useEffect(() => {
@@ -94,6 +111,17 @@ export default function PassOverlay({
         ? '🎉 15단계 통과! 상위 구간 돌입!'
         : null;
 
+  const championMsg = passedLevel === 20 ? '👑 챔피언! 상위 0.1% · 정말 잘했어요!' : null;
+
+  const milestoneMsg =
+    passedLevel === 5
+      ? '🏆 5단계 마일스톤!'
+      : passedLevel === 10
+        ? '🌟 10단계 마일스톤!'
+        : passedLevel === 15
+          ? '👑 15단계 마일스톤!'
+          : null;
+
   const handleSkip = () => {
     if (!completedRef.current) {
       completedRef.current = true;
@@ -119,6 +147,23 @@ export default function PassOverlay({
         transition={{ type: 'spring', damping: 15 }}
         className="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center"
       >
+        {/* 티어 배지 */}
+        <motion.div
+          initial={{ scale: 0, rotate: -10 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', damping: 12 }}
+          className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold mb-2 ${
+            tier === 'perfect'
+              ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-white shadow-lg shadow-amber-300/50'
+              : tier === 'great'
+                ? 'bg-gradient-to-r from-violet-400 to-purple-500 text-white shadow-lg shadow-violet-300/50'
+                : 'bg-toss-blue/15 text-toss-blue'
+          }`}
+        >
+          {tier === 'perfect' && '✨ PERFECT!'}
+          {tier === 'great' && '🔥 GREAT!'}
+          {tier === 'good' && '👍 GOOD!'}
+        </motion.div>
         <motion.p
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -151,14 +196,16 @@ export default function PassOverlay({
           )}
         </motion.div>
 
-        {difficultyMsg && (
+        {(championMsg || difficultyMsg || milestoneMsg) && (
           <motion.p
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.15 }}
-            className="text-sm text-toss-sub mb-4"
+            className={`text-sm mb-4 ${
+              championMsg ? 'text-xl font-black text-amber-600 animate-pulse' : milestoneMsg ? 'font-bold text-amber-600 animate-pulse' : 'text-toss-sub'
+            }`}
           >
-            {difficultyMsg}
+            {championMsg ?? milestoneMsg ?? difficultyMsg}
           </motion.p>
         )}
 
@@ -168,7 +215,7 @@ export default function PassOverlay({
           transition={{ delay: 0.1 }}
           className="text-xs text-toss-sub mb-4"
         >
-          {passedLevel}/20 완료 · {20 - passedLevel}단계 남았어요
+          {passedLevel === 20 ? '20/20 완료! 🎉' : `${passedLevel}/20 완료 · ${20 - passedLevel}단계 남았어요`}
         </motion.p>
         {percentile && (
           <motion.div

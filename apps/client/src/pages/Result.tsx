@@ -193,12 +193,23 @@ export default function Result() {
               transition={{ type: 'spring', damping: 20 }}
               className={`rounded-3xl p-8 text-center shadow-xl ${
                 lastCompletedRun.maxLevel === 20
-                  ? 'bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-200'
+                  ? 'bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-200 ring-4 ring-amber-300/60 shadow-amber-200/50'
                   : 'bg-gradient-to-br from-toss-blue to-blue-600'
               }`}
             >
               {lastCompletedRun.maxLevel === 20 && (
-                <p className="text-2xl font-black text-amber-800 mb-2">🎉 Champion!</p>
+                <>
+                  <motion.p
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', damping: 12, delay: 0.1 }}
+                    className="text-5xl mb-2"
+                  >
+                    👑
+                  </motion.p>
+                  <p className="text-2xl font-black text-amber-800 mb-1">챔피언!</p>
+                  <p className="text-base font-bold text-amber-700 mb-3">정말 잘했어요! 🎉 축하해요!</p>
+                </>
               )}
               <p className={`text-5xl md:text-6xl font-black ${lastCompletedRun.maxLevel === 20 ? 'text-amber-900' : 'text-white'}`}>
                 상위 {lastCompletedRun.maxLevel === 20 ? '0.1' : res?.percentileTop ?? '-'}%
@@ -328,17 +339,20 @@ export default function Result() {
               )}
             </motion.div>
 
-            {/* 🎯 다음 목표 & Zeigarnik */}
+            {/* 🎯 다음 목표 & Zeigarnik - 한 번 더 도전 유도 */}
             {lastCompletedRun.maxLevel < 20 && (
               <motion.div
                 initial={{ y: 8, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="rounded-2xl bg-toss-blue/10 border border-toss-blue/20 p-4"
+                className="rounded-2xl bg-toss-blue/10 border-2 border-toss-blue/30 p-5"
               >
-                <p className="text-toss-blue font-semibold">
-                  {lastCompletedRun.maxLevel}단계까지 왔어요!
+                <p className="text-toss-blue font-bold text-base">
+                  🎯 다음 목표: {lastCompletedRun.maxLevel + 1}단계 도전!
                 </p>
-                <p className="text-toss-text text-sm mt-0.5">{res?.nextGoalHint}</p>
+                <p className="text-toss-text text-sm mt-1.5 font-medium">
+                  {res?.nextGoalHint ?? `1단계만 더 클리어하면 상위권에 가까워져요`}
+                </p>
+                <p className="text-toss-sub text-xs mt-2">한 번 더 도전해 보세요 👇</p>
               </motion.div>
             )}
 

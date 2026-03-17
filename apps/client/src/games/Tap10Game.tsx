@@ -6,12 +6,12 @@ import {
   timingSuccessToleranceForLevel,
   normalizeStageScore,
 } from 'shared';
-import { playSuccess, playFail } from '../services/sounds';
+import { playFail } from '../services/sounds';
 
 interface Tap10GameProps {
   level: number;
   onSuccess: (score: number, bonus?: number) => void;
-  onFail: () => void;
+  onFail: (reason?: string) => void;
 }
 
 /** targetSec은 0~min(10, timeLimitSec) 안에서. 탭 목표 시간 최대 10초 */
@@ -43,7 +43,7 @@ export default function Tap10Game({ level, onSuccess, onFail }: Tap10GameProps) 
         if (!completedRef.current) {
           completedRef.current = true;
           playFail();
-          onFail();
+          onFail('timeout');
         }
         setElapsed(timeLimitSec);
         return;
@@ -67,20 +67,19 @@ export default function Tap10Game({ level, onSuccess, onFail }: Tap10GameProps) 
     if (displayElapsed >= timeLimitSec) {
       completedRef.current = true;
       playFail();
-      onFail();
+      onFail('timeout');
       return;
     }
     const diff = Math.abs(displayElapsed - targetSec);
     if (diff <= successTolerance) {
       completedRef.current = true;
-      playSuccess();
       const baseRawScore = Math.max(0, 100 - diff * 20);
       const bonusAmount = realElapsed < 3 ? Math.min(20, 10 + Math.min(level, 10)) : 0;
       onSuccess(normalizeStageScore(baseRawScore, 100, true), bonusAmount);
     } else {
       completedRef.current = true;
       playFail();
-      onFail();
+      onFail(displayElapsed < targetSec ? 'too_early' : 'too_late');
     }
   };
 

@@ -75,11 +75,14 @@ export default function StageHeader({
 
   return (
     <header className="bg-white border-b border-toss-border">
-      {/* 진행률 바 */}
-      <div className="h-1 bg-toss-bg">
-        <div
-          className="h-full bg-toss-blue transition-all duration-500"
-          style={{ width: `${(level / 20) * 100}%` }}
+      {/* 진행률 바 - 부드러운 애니메이션 */}
+      <div className="h-1.5 bg-toss-bg overflow-hidden">
+        <motion.div
+          className="h-full bg-gradient-to-r from-toss-blue to-blue-400"
+          initial={{ width: 0 }}
+          animate={{ width: `${(level / 20) * 100}%` }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          style={{ boxShadow: '0 0 8px rgba(49,130,246,0.5)' }}
         />
       </div>
       <div className="px-4 py-3">
@@ -119,9 +122,19 @@ export default function StageHeader({
               </span>
             )}
             {comboCount >= 2 && (
-              <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 text-xs font-bold animate-pulse border border-amber-200/60 shadow-sm">
-                🔥 {comboCount}연속!
-              </span>
+              <motion.span
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', damping: 12 }}
+                className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 text-xs font-bold border border-amber-200/60 shadow-sm"
+              >
+                <motion.span
+                  animate={{ scale: [1, 1.08, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.2 }}
+                >
+                  🔥 {comboCount}연속!
+                </motion.span>
+              </motion.span>
             )}
             <div className="relative flex items-center gap-1">
               <span className="px-2 py-0.5 rounded-lg bg-toss-bg text-toss-blue text-xs font-medium">

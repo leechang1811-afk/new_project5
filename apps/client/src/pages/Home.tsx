@@ -3,6 +3,15 @@ import { motion } from 'framer-motion';
 import { ensureUserHash, useGameStore } from '../store/gameStore';
 import { useEffect, useState } from 'react';
 import { getStreakState } from '../services/streak';
+import { API_BASE } from '../services/api';
+
+interface MeSummary {
+  best_score?: number;
+  best_level?: number;
+  alltime_percentile_top?: number | null;
+  percentile_top?: number | null;
+  alltime_rank?: number | null;
+}
 
 export default function Home() {
   const navigate = useNavigate();
@@ -10,6 +19,7 @@ export default function Home() {
   const sharedPercentile = searchParams.get('p');
   const endRun = useGameStore((s) => s.endRun);
   const [streakState, setStreakState] = useState(() => getStreakState());
+  const [meData, setMeData] = useState<MeSummary | null>(null);
 
   useEffect(() => {
     ensureUserHash();
@@ -23,14 +33,34 @@ export default function Home() {
     setStreakState(getStreakState());
   }, []);
 
+  useEffect(() => {
+    ensureUserHash().then((hash) =>
+      fetch(`${API_BASE}/me/summary?user_hash=${encodeURIComponent(hash)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then(setMeData)
+    );
+  }, []);
+
   const startGame = () => {
     navigate('/run');
   };
 
   const { count: streakCount, playedToday, canExtend } = streakState;
+  const percentileTop = meData?.alltime_percentile_top ?? meData?.percentile_top ?? null;
+  const bestLevel = meData?.best_level ?? null;
+
+  // 오늘의 목표: 최고 기록이 있으면 "1단계 더", 20이면 "기록 갱신", 없으면 "상위 50% 달성"
+  const todayGoal = bestLevel != null
+    ? bestLevel >= 20
+      ? 'Champion! 오늘도 20단계 도전해서 기록 갱신해 보세요'
+      : `지난번 ${bestLevel}단계 → 오늘은 ${bestLevel + 1}단계 도전!`
+    : '오늘의 목표: 상위 50% 달성';
 
   // Loss aversion: 스트릭이 끊기기 전에!
   const streakAtRisk = canExtend && streakCount > 0;
+
+  // 스트릭 배지 (7, 14, 30일)
+  const streakBadge = streakCount >= 30 ? '🏆' : streakCount >= 14 ? '⭐' : streakCount >= 7 ? '🎖️' : null;
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
@@ -45,11 +75,30 @@ export default function Home() {
         <p className="text-toss-text text-base mb-2 font-medium">
           대한민국에서 내 두뇌 순위 확인
         </p>
-        <p className="text-toss-sub text-sm mb-6 leading-relaxed">
+        <p className="text-toss-sub text-sm mb-4 leading-relaxed">
           5가지 게임으로 5분 만에 결과 확인 · 한국인 평균과 비교해 드려요
         </p>
 
-        {/* Streak badge - Investment 표시 */}
+        {/* 내 최고 기록 + 오늘의 목표 */}
+        {(percentileTop != null || bestLevel != null) && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-4 rounded-2xl bg-toss-blue/5 border border-toss-blue/20 text-left"
+          >
+            {percentileTop != null && (
+              <p className="text-toss-text font-semibold text-sm">
+                내 최고: 상위 <span className="text-toss-blue">{percentileTop}%</span>
+                {meData?.alltime_rank != null && (
+                  <span className="text-toss-sub font-medium ml-1">· 전체 #{meData.alltime_rank}등</span>
+                )}
+              </p>
+            )}
+            <p className="text-toss-sub text-xs mt-1">{todayGoal}</p>
+          </motion.div>
+        )}
+
+        {/* Streak badge - Investment 표시 + 7/14/30일 배지 */}
         {streakCount > 0 && (
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -60,8 +109,9 @@ export default function Home() {
                 : 'bg-amber-50 border border-amber-200 text-amber-700'
             }`}
           >
-            <span>🔥</span>
+            <span>{streakBadge ?? '🔥'}</span>
             <span>내 두뇌 건강 지키기 {streakCount}일차</span>
+            {streakBadge && <span className="text-xs">({streakCount >= 30 ? '30일' : streakCount >= 14 ? '14일' : '7일'} 달성!)</span>}
           </motion.div>
         )}
 

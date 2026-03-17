@@ -15,6 +15,7 @@ export interface RunState {
   comboCount: number;
   lastAddedScore?: number; // 통과 시 추가된 점수 (팡팡 애니용)
   lastAddedBonus?: number; // 3초 보너스 등 (따로 빵빵 터짐)
+  lastFailedReason?: string; // Tap10 등: 'too_early' | 'too_late' | 'timeout'
 }
 
 export interface CompletedRunData {
@@ -31,7 +32,7 @@ interface GameStore {
   startRun: () => void;
   nextLevel: (result: PerStageResult, bonus?: number) => void;
   failRun: () => void;
-  triggerFail: () => void;
+  triggerFail: (reason?: string) => void;
   useRevive: () => void;
   confirmGameOver: () => void;
   getCurrentGameType: () => GameType | null;
@@ -82,6 +83,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         isRevivedLevel: false,
         failed: false,
         comboCount: 0,
+        lastFailedReason: undefined,
       },
     });
   },
@@ -116,13 +118,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   failRun: () => set({ run: null }),
 
-  triggerFail: () => {
+  triggerFail: (reason?: string) => {
     const { run } = get();
     if (!run) return;
     if (run.usedReviveCount >= 2) {
       get().confirmGameOver();
     } else {
-      set({ run: { ...run, failed: true, comboCount: 0 } });
+      set({ run: { ...run, failed: true, comboCount: 0, lastFailedReason: reason } });
     }
   },
 
@@ -155,6 +157,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         level: Math.max(1, run.level - 1),
         currentIndex: run.currentIndex,
         isRevivedLevel: true,
+        lastFailedReason: undefined,
       },
     });
   },

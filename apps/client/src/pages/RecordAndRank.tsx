@@ -222,7 +222,14 @@ export default function RecordAndRank() {
                 animate={{ y: 0, opacity: 1 }}
                 className="flex items-center justify-between rounded-2xl bg-amber-50 border border-amber-100 px-5 py-4"
               >
-                <span className="text-amber-700 font-semibold">🔥 두뇌 건강 지키기 {streakCount}일차</span>
+                <span className="text-amber-700 font-semibold">
+                  {streakCount >= 30 ? '🏆' : streakCount >= 14 ? '⭐' : streakCount >= 7 ? '🎖️' : '🔥'} 두뇌 건강 지키기 {streakCount}일차
+                  {streakCount >= 7 && (
+                    <span className="text-amber-600 text-xs font-medium ml-1">
+                      ({streakCount >= 30 ? '30일' : streakCount >= 14 ? '14일' : '7일'} 달성!)
+                    </span>
+                  )}
+                </span>
                 <span className="text-amber-600 text-sm">{canExtend ? '오늘 유지해요!' : '수고했어요!'}</span>
               </motion.div>
             )}

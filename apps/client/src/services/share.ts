@@ -14,7 +14,7 @@ const APP_TITLE = '내 두뇌 몇 등?';
 
 function getShareText(data: ShareResultData): string {
   if (data.isChampion) {
-    return `내 두뇌 점수는 상위 0.1%! 🎉 20단계 모두 달성했어요. 총점 ${data.runScore.toLocaleString()}점`;
+    return `👑 내 두뇌 상위 0.1%! 20단계 올클리어 달성 · 총점 ${data.runScore.toLocaleString()}점`;
   }
   return `내 두뇌 점수는 상위 ${data.percentileTop}%! 총점 ${data.runScore.toLocaleString()}점, ${data.maxLevel}단계 도전`;
 }

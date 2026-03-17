@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCalcParams, normalizeStageScore, timeLimitForLevel } from 'shared';
-import { playSuccess, playFail } from '../services/sounds';
+import { playFail } from '../services/sounds';
 
 interface CalcGameProps {
   level: number;
@@ -78,7 +78,6 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
     if (oxMode) {
       const correct = userAnswer.toLowerCase() === 'o' || userAnswer === '1';
       if (correct === oxCorrect) {
-        playSuccess();
         reportSuccess();
       } else {
         playFail();
@@ -87,7 +86,6 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
     } else if (expr) {
       const num = parseInt(userAnswer, 10);
       if (num === expr.result) {
-        playSuccess();
         reportSuccess();
       } else {
         playFail();
@@ -117,7 +115,6 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
                 onClick={(e) => {
                   e.preventDefault();
                   if (oxCorrect) {
-                    playSuccess();
                     reportSuccess();
                   } else {
                     playFail();
@@ -133,7 +130,6 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
                 onClick={(e) => {
                   e.preventDefault();
                   if (!oxCorrect) {
-                    playSuccess();
                     reportSuccess();
                   } else {
                     playFail();

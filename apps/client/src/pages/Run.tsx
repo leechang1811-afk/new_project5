@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fireSuccess, fireCombo } from '../utils/confetti';
+import { playSuccess, playPerfect, playCombo } from '../services/sounds';
 import {
   useGameStore,
   ensureUserHash,
@@ -89,6 +90,9 @@ export default function Run() {
     } else {
       fireSuccess(level);
     }
+    if (bonus > 0) playPerfect();
+    else if (combo >= 1) playCombo();
+    else playSuccess();
     // 즉시 nextLevel 호출 → 누적점수(기본+보너스)가 바로 반영됨
     const r = useGameStore.getState().run;
     const effectiveLevel = r?.isRevivedLevel ? Math.max(1, (r?.level ?? 1) - 1) : level;
@@ -105,20 +109,20 @@ export default function Run() {
   };
 
   const handlePassComplete = () => {
+    const nextRun = useGameStore.getState().run;
+    if (nextRun && nextRun.level > 20) {
+      // 20단계 클리어 시: 즉시 confirm 후 이동 (빈 화면 방지)
+      useGameStore.getState().confirmGameOver();
+      navigate('/result-gate', { replace: true });
+      return;
+    }
     setShowPassOverlay(false);
     setPendingScore(null);
     setPendingBonus(0);
-    const nextRun = useGameStore.getState().run;
-    if (nextRun && nextRun.level > 20) {
-      useGameStore.getState().confirmGameOver();
-      requestAnimationFrame(() => {
-        navigate('/result-gate', { replace: true });
-      });
-    }
   };
 
-  const handleFail = () => {
-    triggerFail();
+  const handleFail = (reason?: string) => {
+    triggerFail(reason);
   };
 
   const [revivingInProgress, setRevivingInProgress] = useState(false);
@@ -215,6 +219,10 @@ export default function Run() {
         </motion.div>
       ) : showPassOverlay ? (
         <div className="min-h-[60vh]" />
+      ) : !gameType ? (
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="w-10 h-10 border-2 border-toss-blue border-t-transparent rounded-full animate-spin" />
+        </div>
       ) : (
         <AnimatePresence mode="wait">
           <motion.div
@@ -260,6 +268,7 @@ export default function Run() {
           remainingRevives={2 - run.usedReviveCount}
           failedLevel={level}
           maxLevel={20}
+          failedReason={run.lastFailedReason}
           revivingInProgress={revivingInProgress}
           onRevive={handleRevive}
           onExit={handleGameOver}

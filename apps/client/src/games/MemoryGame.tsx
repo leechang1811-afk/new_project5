@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getMemoryParams, normalizeStageScore, timeLimitForLevel } from 'shared';
-import { playSuccess, playFail, playReveal } from '../services/sounds';
+import { playFail, playReveal } from '../services/sounds';
 
 interface MemoryGameProps {
   level: number;
@@ -95,7 +95,6 @@ export default function MemoryGame({ level, onSuccess, onFail }: MemoryGameProps
       onFail();
       return;
     }
-    playSuccess();
     const elapsed = (Date.now() - answerStartRef.current) / 1000;
     const baseRawScore = (match / correct) * 100;
     const bonusAmount = elapsed < 3 ? Math.min(20, 10 + Math.min(level, 10)) : 0;
@@ -108,7 +107,6 @@ export default function MemoryGame({ level, onSuccess, onFail }: MemoryGameProps
       handlePatternSubmit();
     } else if (typeof target === 'string') {
       if (userInput.trim() === target) {
-        playSuccess();
         const elapsed = (Date.now() - answerStartRef.current) / 1000;
         const baseRawScore = 100;
         const bonusAmount = elapsed < 3 ? Math.min(20, 10 + Math.min(level, 10)) : 0;

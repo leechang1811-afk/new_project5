@@ -5,6 +5,7 @@ interface FailOverlayProps {
   remainingRevives?: number;
   failedLevel?: number;
   maxLevel?: number;
+  failedReason?: string; // Tap10: 'too_early' | 'too_late' | 'timeout'
   onRevive: () => void;
   onExit: () => void;
   revivingInProgress?: boolean;
@@ -24,8 +25,22 @@ function getZeigarnikMessage(level: number): string {
   return ZEIGARNIK_MESSAGES[level] ?? `${level}단계까지 오셨어요. 다시 도전하면 더 잘할 수 있어요!`;
 }
 
-export default function FailOverlay({ canRevive, remainingRevives = 0, failedLevel = 0, maxLevel = 20, onRevive, onExit, revivingInProgress = false }: FailOverlayProps) {
+function getFailReasonMessage(reason: string): string {
+  switch (reason) {
+    case 'too_early':
+      return '너무 일찍 탭했어요. 조금만 더 기다려 보세요!';
+    case 'too_late':
+      return '너무 늦게 탭했어요. 조금만 더 빨리!';
+    case 'timeout':
+      return '제한시간이 끝났어요. 다음엔 더 빨리 탭해 보세요!';
+    default:
+      return '';
+  }
+}
+
+export default function FailOverlay({ canRevive, remainingRevives = 0, failedLevel = 0, maxLevel = 20, failedReason, onRevive, onExit, revivingInProgress = false }: FailOverlayProps) {
   const progressPct = maxLevel > 0 ? Math.round((failedLevel / maxLevel) * 100) : 0;
+  const reasonMsg = failedReason ? getFailReasonMessage(failedReason) : '';
 
   return (
     <motion.div
@@ -43,6 +58,9 @@ export default function FailOverlay({ canRevive, remainingRevives = 0, failedLev
         <p className="text-center text-toss-text font-medium mb-1">
           아쉽게도 {failedLevel}단계에서 멈췄어요
         </p>
+        {reasonMsg ? (
+          <p className="text-center text-amber-600 text-sm font-medium mb-2">💡 {reasonMsg}</p>
+        ) : null}
         <p className="text-center text-toss-sub text-sm mb-4">
           {getZeigarnikMessage(failedLevel)}
         </p>

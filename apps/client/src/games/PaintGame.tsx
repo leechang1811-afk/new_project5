@@ -5,7 +5,7 @@ import {
   paintTimeLimitForLevel,
   normalizeStageScore,
 } from 'shared';
-import { playSuccess, playFail } from '../services/sounds';
+import { playFail } from '../services/sounds';
 
 type PaintColor = 'R' | 'G' | 'B' | 'Y' | 'M' | 'C' | 'W' | 'O' | 'L' | 'P' | 'T' | 'K';
 
@@ -343,7 +343,6 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
       }
 
       if (target && mixed === target) {
-        playSuccess();
         hasEndedRef.current = true;
         burstingRef.current = true;
         setMergeFeedback('correct');
