@@ -2,7 +2,7 @@
 # https://render.com
 services:
   - type: web
-    name: korea-quiz-api
+    name: korea-quiz
     runtime: node
     buildCommand: npm install && npm run build:server
     startCommand: node apps/server/dist/index.js

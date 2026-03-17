@@ -14,7 +14,8 @@
     "deploy": "npm run build:vercel && vercel --prod",
     "build:server": "cd packages/shared && npm run build && cd ../../apps/server && npm run build",
     "db:generate": "cd apps/server && npm run db:generate",
-    "db:migrate": "cd apps/server && npm run db:migrate"
+    "db:migrate": "cd apps/server && npm run db:migrate",
+    "render:sync-db": "node apps/server/scripts/set-render-env.mjs"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
