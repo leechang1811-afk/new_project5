@@ -10,18 +10,12 @@
 - 좌측 **Project Settings** → **General** 에서 프로젝트가 **Active** 인지 확인
 - 무료 플랜: 1주일 미접속 시 Paused 될 수 있음 → **Restore project** 클릭
 
-### 1-2. Connection String 복사
+### 1-2. Connection String 복사 (대시보드에서 직접 복사 권장)
 1. **Project Settings** (톱니바퀴) → **Database**
-2. **Connection string** 섹션
-3. **URI** 탭 선택
-4. **Connection pooling** (Transaction 모드) 선택 → **port 6543** 사용
-5. 형식 예시:
-   ```
-   postgresql://postgres.svnhwtiwvzwbwdbmkecw:[YOUR-PASSWORD]@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true
-   ```
-6. `[YOUR-PASSWORD]` 를 **실제 DB 비밀번호**로 교체 (Project Settings → Database → Database password)
-7. 비밀번호에 `@`, `#`, `%` 등 특수문자가 있으면 **URL 인코딩** 필요
-   - 예: `pass@word` → `pass%40word`
+2. **Connection string** 섹션 → **URI** 탭
+3. **Connection pooling** → **Session** 모드 (포트 5432) 선택 후 **복사**
+4. `[YOUR-PASSWORD]` 를 **실제 DB 비밀번호**로 교체
+5. 비밀번호에 `@`, `#`, `%` 등 특수문자가 있으면 **URL 인코딩** 필요
 
 ### 1-3. 연결 테스트 (선택)
 - **SQL Editor** → `SELECT 1;` 실행하여 DB 응답 확인
@@ -41,8 +35,7 @@
 ### 2-2. 값 확인
 - 앞뒤 공백 없음
 - 따옴표로 감싸지 않음 (그냥 `postgresql://...` 만 입력)
-- `postgres.프로젝트ID` 형식 (pooler 사용 시)
-- 포트 `6543` (Transaction pooler)
+- **Session 모드**: 포트 `5432`, 사용자 `postgres.프로젝트ID`
 
 ### 2-3. 변경 후 재배포
 - 환경변수 수정/추가 후 **Save** → **Manual Deploy** → **Deploy latest commit**
@@ -57,12 +50,16 @@
 | `Connection refused` | 잘못된 호스트/포트, Supabase Paused | 1-1, 1-2 확인 |
 | `Password authentication failed` | 비밀번호 오류, 특수문자 미인코딩 | 1-2 비밀번호 확인 |
 | `ENETUNREACH` (IPv6 주소) | Render가 Supabase IPv6로 연결 시도 후 실패 | 아래 "ENETUNREACH 조치" 참고 |
+| `Tenant or user not found` | 프로젝트 Paused, 잘못된 연결 문자열 | 아래 "Tenant 조치" 참고 |
 | `timeout` | 네트워크/방화벽 | Supabase Session 모드(5432) 시도 |
 
-### ENETUNREACH 상세 조치 (포트 5432 사용 중일 때)
-1. **DATABASE_URL** → **포트 6543** Connection Pooler 사용 (Transaction 모드)
-   - Supabase: Database → Connection string → **Connection pooling** 선택
-   - `aws-0-ap-northeast-2.pooler.supabase.com:6543` (5432 아님)
+### Tenant or user not found 조치
+1. **Supabase 프로젝트** → Paused면 **Restore project**
+2. **Connection string** → Supabase Connect 버튼에서 **새로 복사** (수동 조합 금지)
+3. **Session 모드** (포트 5432) 사용: `aws-0-ap-northeast-2.pooler.supabase.com:5432`
+
+### ENETUNREACH 상세 조치
+1. **DATABASE_URL** → **Session 모드** (포트 5432): `aws-0-ap-northeast-2.pooler.supabase.com:5432`
 2. **Render Start Command**에 IPv4 플래그 추가
    - 현재: `node apps/server/dist/index.js`
    - 변경: `node --dns-result-order=ipv4first apps/server/dist/index.js`
@@ -72,12 +69,13 @@
 
 ## 4️⃣ 연결 문자열 예시 (프로젝트 ID: svnhwtiwvzwbwdbmkecw)
 
+**Session 모드 (권장):**
 ```
-postgresql://postgres.svnhwtiwvzwbwdbmkecw:내비밀번호@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true
+postgresql://postgres.svnhwtiwvzwbwdbmkecw:내비밀번호@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres
 ```
 
-- `aws-0-ap-northeast-2` 부분은 Supabase 대시보드에 표시된 **리전**으로 교체
 - **내비밀번호**를 실제 DB 비밀번호로 교체
+- Supabase Connect 버튼에서 복사한 값을 사용하는 것이 가장 안전함
 
 ---
 
