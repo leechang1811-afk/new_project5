@@ -85,40 +85,41 @@ export default function StageHeader({
           style={{ boxShadow: '0 0 8px rgba(49,130,246,0.5)' }}
         />
       </div>
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-toss-sub">문제유형 {gameIndex}/5</span>
+      <div className="px-3 py-2">
+        {/* 1행: 유형·단계·제한시간·mute — 모바일 최적화 */}
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 shrink">
+            <span className="text-xs text-toss-sub whitespace-nowrap">유형 {gameIndex}/5</span>
+            <span className="text-xs text-toss-sub hidden sm:inline">·</span>
+            <span className="text-xs text-toss-sub whitespace-nowrap">{level}/20 · {timeLimit}초</span>
+          </div>
+          <div className="flex items-center gap-0.5 shrink-0">
+            <span className="text-xs font-medium text-toss-text hidden sm:inline">{GAME_TYPE_LABELS[gameType]}</span>
             <button
               type="button"
               onClick={handleMuteToggle}
-              className="p-1 rounded-lg hover:bg-toss-bg transition"
+              className="p-1 rounded-lg hover:bg-toss-bg transition -mr-1"
               aria-label={muted ? '소리 켜기' : '소리 끄기'}
             >
               {muted ? (
-                <svg className="w-5 h-5 text-toss-sub" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-toss-sub" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
                 </svg>
               ) : (
-                <svg className="w-5 h-5 text-toss-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-toss-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                 </svg>
               )}
             </button>
           </div>
-          <div className="text-sm font-medium text-toss-text text-center flex-1">
-            {GAME_TYPE_LABELS[gameType]}
-          </div>
         </div>
-        <div className="flex items-center justify-between mt-2">
-          <div className="text-sm text-toss-sub">
-            {level}/20단계 · 제한시간 {timeLimit}초
-          </div>
-          <div className="flex items-center gap-2">
+        {/* 2행: 배지 — flex-wrap으로 모바일에서 자연스럽게 줄바꿈 */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-1.5 justify-between">
+          <div className="flex flex-wrap gap-1.5 min-w-0">
             {remainingRevives > 0 && (
-              <span className="px-2 py-0.5 rounded-lg bg-green-50 text-green-700 text-xs font-medium border border-green-200">
-                💪 부활 {remainingRevives}회
+              <span className="px-1.5 py-0.5 rounded-md bg-green-50 text-green-700 text-[11px] font-medium border border-green-200 whitespace-nowrap">
+                💪 {remainingRevives}회
               </span>
             )}
             {comboCount >= 2 && (
@@ -126,41 +127,32 @@ export default function StageHeader({
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: 'spring', damping: 12 }}
-                className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 text-xs font-bold border border-amber-200/60 shadow-sm"
+                className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 text-[11px] font-bold border border-amber-200/60 whitespace-nowrap"
               >
-                <motion.span
-                  animate={{ scale: [1, 1.08, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.2 }}
-                >
-                  🔥 {comboCount}연속!
+                <motion.span animate={{ scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 1.2 }}>
+                  🔥 {comboCount}연속
                 </motion.span>
               </motion.span>
             )}
-            <div className="relative flex items-center gap-1">
-              <span className="px-2 py-0.5 rounded-lg bg-toss-bg text-toss-blue text-xs font-medium">
-                누적 점수 {cumulativeScore}
-              </span>
-              <AnimatePresence>
-                {(lastAddedScore != null && lastAddedScore > 0) || (lastAddedBonus != null && lastAddedBonus > 0) ? (
-                  <motion.span
-                    key={`add-${lastAddedScore ?? 0}-${lastAddedBonus ?? 0}`}
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1.1, opacity: 1 }}
-                    exit={{ scale: 1.2, opacity: 0 }}
-                    transition={{ type: 'spring', damping: 14 }}
-                    className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-toss-blue/10 text-toss-blue font-bold text-xs border border-toss-blue/30"
-                  >
-                    {lastAddedScore != null && lastAddedScore > 0 && (
-                      <span>+{lastAddedScore}</span>
-                    )}
-                    {lastAddedBonus != null && lastAddedBonus > 0 && (
-                      <span className="text-amber-600">+{lastAddedBonus}</span>
-                    )}
-                  </motion.span>
-                ) : null}
-              </AnimatePresence>
-            </div>
+            <span className="px-1.5 py-0.5 rounded-md bg-toss-bg text-toss-blue text-[11px] font-medium whitespace-nowrap">
+              {cumulativeScore}점
+            </span>
           </div>
+          <AnimatePresence>
+            {(lastAddedScore != null && lastAddedScore > 0) || (lastAddedBonus != null && lastAddedBonus > 0) ? (
+              <motion.span
+                key={`add-${lastAddedScore ?? 0}-${lastAddedBonus ?? 0}`}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1.05, opacity: 1 }}
+                exit={{ scale: 1.1, opacity: 0 }}
+                transition={{ type: 'spring', damping: 14 }}
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-toss-blue/10 text-toss-blue font-bold text-[11px] border border-toss-blue/30"
+              >
+                {lastAddedScore != null && lastAddedScore > 0 && <span>+{lastAddedScore}</span>}
+                {lastAddedBonus != null && lastAddedBonus > 0 && <span className="text-amber-600">+{lastAddedBonus}</span>}
+              </motion.span>
+            ) : null}
+          </AnimatePresence>
         </div>
       </div>
     </header>

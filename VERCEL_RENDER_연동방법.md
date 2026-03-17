@@ -7,8 +7,8 @@
 
 ### 1. Render 서비스 URL 확인
 1. [Render 대시보드](https://dashboard.render.com) 로그인
-2. **korea-quiz-api** (또는 해당 Web Service) 클릭
-3. 상단 **URL** 복사 (예: `https://korea-quiz-api.onrender.com`)
+2. **korea-quiz** (또는 해당 Web Service) 클릭
+3. 상단 **URL** 복사 (예: `https://korea-quiz.onrender.com`)
 
 ### 2. Vercel에 환경변수 추가
 1. [Vercel 대시보드](https://vercel.com) 로그인
@@ -18,7 +18,7 @@
 
 | Name | Value |
 |------|-------|
-| `VITE_API_URL` | `https://korea-quiz-api.onrender.com/api` |
+| `VITE_API_URL` | `https://korea-quiz.onrender.com/api` |
 
 > ⚠️ **끝에 `/api` 꼭 붙이세요!**
 
