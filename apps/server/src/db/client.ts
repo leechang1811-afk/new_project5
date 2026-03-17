@@ -9,13 +9,13 @@ dns.setDefaultResultOrder('ipv4first');
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error('DATABASE_URL is required');
-// Supabase SSL: 연결 문자열에 sslmode 없으면 추가 (Render 등 외부 연결 시 필요)
-const connStr = connectionString.includes('sslmode=') ? connectionString : connectionString + (connectionString.includes('?') ? '&' : '?') + 'sslmode=require';
+// Supabase SSL: no-verify = 인증서 검증 생략 (Render 등에서 self-signed certificate 오류 방지)
+const connStr = connectionString.includes('sslmode=')
+  ? connectionString.replace(/sslmode=[^&]+/, 'sslmode=no-verify')
+  : connectionString + (connectionString.includes('?') ? '&' : '?') + 'sslmode=no-verify';
 const pool = new pg.Pool({
   connectionString: connStr,
   connectionTimeoutMillis: 8000,
-  // Render 등에서 Supabase 연결 시 "self-signed certificate in certificate chain" 방지
-  ssl: { rejectUnauthorized: false },
 });
 export const db = drizzle(pool, { schema });
 export type Db = typeof db;
