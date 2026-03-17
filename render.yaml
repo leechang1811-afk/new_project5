@@ -5,7 +5,7 @@ services:
     name: korea-quiz
     runtime: node
     buildCommand: npm install && npm run build:server
-    startCommand: node apps/server/dist/index.js
+    startCommand: node --dns-result-order=ipv4first apps/server/dist/index.js
     envVars:
       - key: DATABASE_URL
         sync: false

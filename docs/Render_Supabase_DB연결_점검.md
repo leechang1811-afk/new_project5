@@ -56,8 +56,17 @@
 | `DATABASE_URL is required` | Render에 DATABASE_URL 미설정 | 2-1 참고 |
 | `Connection refused` | 잘못된 호스트/포트, Supabase Paused | 1-1, 1-2 확인 |
 | `Password authentication failed` | 비밀번호 오류, 특수문자 미인코딩 | 1-2 비밀번호 확인 |
-| `ENETUNREACH` (IPv6 주소) | Render가 Supabase IPv6로 연결 시도 후 실패 | Pooler(6543) 사용, 코드에 IPv4 우선 적용 완료 |
+| `ENETUNREACH` (IPv6 주소) | Render가 Supabase IPv6로 연결 시도 후 실패 | 아래 "ENETUNREACH 조치" 참고 |
 | `timeout` | 네트워크/방화벽 | Supabase Session 모드(5432) 시도 |
+
+### ENETUNREACH 상세 조치 (포트 5432 사용 중일 때)
+1. **DATABASE_URL** → **포트 6543** Connection Pooler 사용 (Transaction 모드)
+   - Supabase: Database → Connection string → **Connection pooling** 선택
+   - `aws-0-ap-northeast-2.pooler.supabase.com:6543` (5432 아님)
+2. **Render Start Command**에 IPv4 플래그 추가
+   - 현재: `node apps/server/dist/index.js`
+   - 변경: `node --dns-result-order=ipv4first apps/server/dist/index.js`
+   - 위치: Render 대시보드 → korea-quiz → Settings → Build & Deploy → Start Command
 
 ---
 
