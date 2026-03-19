@@ -244,9 +244,20 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
 
   // 2색 혼합으로 만들 수 있는 목표색 (Y,M,C,O,L,T)
   const TWO_COLOR_TARGETS: PaintColor[] = ['Y', 'M', 'C', 'O', 'L', 'T'];
+  /** 현재 baseColors로 2색을 섞어 만들 수 있는 목표만 반환 (해당 색이 안 나오는 오류 방지) */
+  const getAchievableTargets = useCallback((): PaintColor[] => {
+    const baseSet = new Set(params.baseColors as PaintColor[]);
+    return TWO_COLOR_TARGETS.filter((t) => {
+      const needed = getBaseColorsForTarget(t);
+      return needed.every((c) => baseSet.has(c));
+    });
+  }, [params.baseColors]);
+
   const getTargetForTwoColors = useCallback((): PaintColor => {
-    return TWO_COLOR_TARGETS[Math.floor(Math.random() * TWO_COLOR_TARGETS.length)]!;
-  }, []);
+    const achievable = getAchievableTargets();
+    if (achievable.length === 0) return TWO_COLOR_TARGETS[0]!; // fallback: Y (R,G는 대부분 있음)
+    return achievable[Math.floor(Math.random() * achievable.length)]!;
+  }, [getAchievableTargets]);
 
   const startGame = useCallback(() => {
     hasEndedRef.current = false;
