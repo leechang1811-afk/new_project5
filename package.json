@@ -7,10 +7,11 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:client": "cd apps/client && npm run dev",
+    "dev:bible": "cd apps/client && npm run dev:bible",
     "dev:server": "cd apps/server && npm run dev",
     "build": "cd packages/shared && npm run build && cd ../.. && cd apps/server && npm run build && cd ../.. && cd apps/client && npm run build && cd ../..",
     "build:client": "cd packages/shared && npm run build && cd ../../apps/client && npm run build",
-    "build:vercel": "cd packages/shared && npm run build && cd ../../apps/client && npm run build",
+    "build:vercel": "mkdir -p apps/client/public/bible && cp bible-1day1read/public/bible/krv.json apps/client/public/bible/ 2>/dev/null || true && cd packages/shared && npm run build && cd ../../apps/client && npm run build",
     "deploy": "npm run build:vercel && vercel --prod",
     "build:server": "cd packages/shared && npm run build && cd ../../apps/server && npm run build",
     "db:generate": "cd apps/server && npm run db:generate",

@@ -179,12 +179,18 @@ export default function Home() {
           </motion.div>
         )}
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex justify-center gap-6">
           <button
             onClick={() => navigate('/record')}
             className="text-base text-toss-sub hover:text-toss-blue transition font-medium py-1"
           >
             기록 & 순위 보기
+          </button>
+          <button
+            onClick={() => navigate('/bible')}
+            className="text-base text-toss-sub hover:text-toss-blue transition font-medium py-1"
+          >
+            1일1독 말씀
           </button>
         </div>
       </motion.div>
