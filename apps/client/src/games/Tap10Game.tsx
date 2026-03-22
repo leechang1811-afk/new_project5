@@ -85,9 +85,11 @@ export default function Tap10Game({ level, onSuccess, onFail }: Tap10GameProps) 
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
-      <div className="mb-6 text-center space-y-1">
-        <p className="text-lg font-medium text-toss-text">1. 탭을 눌러 시작하세요</p>
-        <p className="text-lg font-medium text-toss-text">2. {targetSec}초가 될 때, 다시 탭을 누르세요</p>
+      <div className="mb-4 text-center space-y-1">
+        <p className="text-lg font-medium text-toss-text">
+          {!started ? '탭하면 시작 → 목표 ' : '목표 '}
+          <span className="text-toss-blue font-bold">{targetSec}</span>초에 탭!
+        </p>
       </div>
 
       <div className="mb-6">

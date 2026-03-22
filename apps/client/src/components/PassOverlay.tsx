@@ -40,7 +40,7 @@ export default function PassOverlay({
   comboCount = 0,
   onComplete,
 }: PassOverlayProps) {
-  const [count, setCount] = useState(3);
+  const [count, setCount] = useState(2); // 2-1-Go (빠른 진행)
   const [finalPhase, setFinalPhase] = useState<'ready' | 'go' | null>(null);
   const [percentile, setPercentile] = useState<{
     current: number;
@@ -84,7 +84,7 @@ export default function PassOverlay({
       setFinalPhase('ready');
       return;
     }
-    const t = setTimeout(() => setCount((c) => c - 1), 500);
+    const t = setTimeout(() => setCount((c) => c - 1), 400);
     return () => clearTimeout(t);
   }, [count]);
 
@@ -106,10 +106,12 @@ export default function PassOverlay({
 
   const difficultyMsg =
     passedLevel === 8
-      ? '🎉 8단계 통과! 이제 난이도가 상승합니다'
-      : passedLevel === 15
-        ? '🎉 15단계 통과! 상위 구간 돌입!'
-        : null;
+      ? '다음 스테이지부터 난이도가 올라가요 📈'
+      : passedLevel === 14
+        ? '다음이 상위 구간이에요. 집중!'
+        : passedLevel === 15
+          ? '🎉 15단계 통과! 상위 구간 돌입!'
+          : null;
 
   const championMsg = passedLevel === 20 ? '👑 챔피언! 상위 0.1% · 정말 잘했어요!' : null;
 
@@ -196,44 +198,36 @@ export default function PassOverlay({
           )}
         </motion.div>
 
+        {/* 핵심만: 진행률 + 마일스톤/난이도 예고 */}
+        <motion.p
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.05 }}
+          className="text-sm text-toss-sub mb-3"
+        >
+          {passedLevel === 20 ? '20/20 완료! 🎉' : `${passedLevel}/20`}
+        </motion.p>
         {(championMsg || difficultyMsg || milestoneMsg) && (
           <motion.p
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.15 }}
+            transition={{ delay: 0.08 }}
             className={`text-sm mb-4 ${
-              championMsg ? 'text-xl font-black text-amber-600 animate-pulse' : milestoneMsg ? 'font-bold text-amber-600 animate-pulse' : 'text-toss-sub'
+              championMsg ? 'text-lg font-black text-amber-600' : milestoneMsg ? 'font-bold text-amber-600' : 'text-toss-sub'
             }`}
           >
             {championMsg ?? milestoneMsg ?? difficultyMsg}
           </motion.p>
         )}
 
-        <motion.p
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="text-xs text-toss-sub mb-4"
+        <p className="text-toss-sub text-xs mb-3">화면 터치 시 바로 시작</p>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); handleSkip(); }}
+          className="mb-3 px-4 py-1.5 rounded-lg bg-toss-blue/10 text-toss-blue text-sm font-medium hover:bg-toss-blue/20 transition"
         >
-          {passedLevel === 20 ? '20/20 완료! 🎉' : `${passedLevel}/20 완료 · ${20 - passedLevel}단계 남았어요`}
-        </motion.p>
-        {percentile && (
-          <motion.div
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-sm text-toss-sub mb-4 space-y-1"
-          >
-            <p>현재 상위 {percentile.current}%</p>
-            {percentile.next != null && (
-              <p className="text-toss-blue font-medium">
-                다음 단계 통과하면 상위 {percentile.next}% 👀
-              </p>
-            )}
-          </motion.div>
-        )}
-
-        <p className="text-toss-sub text-xs mb-4">터치하면 바로 시작</p>
+          바로 시작
+        </button>
         <AnimatePresence mode="wait">
           {count > 0 ? (
             <motion.div

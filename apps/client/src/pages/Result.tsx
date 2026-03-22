@@ -12,20 +12,12 @@ import { recordPlay, getStreakState } from '../services/streak';
 import { fireChampion, fireNewBest } from '../utils/confetti';
 import type { RunSubmitResponse } from '../services/api';
 
-const HERO_SUBTEXT_OPTIONS = [
-  '내 두뇌 상위권! 🏆',
-  '한국인 대비 괜찮은 편! 👍',
-  '한국인보다 잘했어요! 🎯',
-];
-
-// Variable reward: 랜덤 칭찬/동기 문구
-const VARIABLE_PRAISE_OPTIONS = [
-  '계속 도전하면 점점 상위권에 가까워져요. 할 수 있어요! 🎯',
-  '매일 한 번씩만 해도 실력이 쑥쑥. 내일도 도전해 보세요!',
-  '두뇌 건강은 꾸준함의 결과예요. 오늘도 수고했어요!',
-  '다음엔 더 잘할 수 있어요. 자신감을 갖고!',
-  '순위표 1위를 노려보세요. 당신도 할 수 있어요!',
-];
+function getNextGoalPraise(percentileTop: number): string {
+  if (percentileTop <= 10) return '순위표 1위를 노려보세요!';
+  if (percentileTop <= 30) return '1단계만 더 클리어하면 상위권에 가까워져요';
+  if (percentileTop <= 50) return '매일 한 번씩만 해도 실력이 쑥쑥. 내일도 도전해 보세요!';
+  return '계속 도전하면 점점 상위권에 가까워져요. 할 수 있어요! 🎯';
+}
 
 function computeMyPerTypeSuccess(perStageResults: { game_type: string; success: boolean }[]): Record<string, { successes: number; total: number; rate: number }> {
   const acc: Record<string, { successes: number; total: number }> = {};
@@ -50,8 +42,6 @@ export default function Result() {
   const [error, setError] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [streak, setStreak] = useState(0);
-  const [heroSubtext] = useState(() => HERO_SUBTEXT_OPTIONS[Math.floor(Math.random() * HERO_SUBTEXT_OPTIONS.length)]!);
-  const [variablePraise] = useState(() => VARIABLE_PRAISE_OPTIONS[Math.floor(Math.random() * VARIABLE_PRAISE_OPTIONS.length)]!);
   const hasFiredConfettiRef = useRef(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
 
@@ -81,7 +71,7 @@ export default function Result() {
       });
       setRes(apiRes);
     } catch (e) {
-      setError('연결을 확인하고 다시 시도해주세요');
+      setError('잠시 후 다시 시도해 주세요');
       setRes({
         percentileTop: 50,
         successRatePct: null,
@@ -214,6 +204,9 @@ export default function Result() {
               <p className={`text-5xl md:text-6xl font-black ${lastCompletedRun.maxLevel === 20 ? 'text-amber-900' : 'text-white'}`}>
                 상위 {lastCompletedRun.maxLevel === 20 ? '0.1' : res?.percentileTop ?? '-'}%
               </p>
+              <p className={`mt-1 text-xs ${lastCompletedRun.maxLevel === 20 ? 'text-amber-700' : 'text-white/80'}`}>
+                {lastCompletedRun.maxLevel === 20 ? '100명 중 1등 안' : `100명 중 ${res?.percentileTop ?? 50}등 안`}
+              </p>
               <p className={`mt-2 text-lg font-semibold ${lastCompletedRun.maxLevel === 20 ? 'text-amber-800' : 'text-white/95'}`}>
                 {runScore.toLocaleString()}점 · {lastCompletedRun.maxLevel}단계
               </p>
@@ -230,7 +223,7 @@ export default function Result() {
               >
                 {linkCopied ? (
                   <>
-                    <span>✓</span> 복사됨!
+                    <span>✓</span> 복사됨! 친구에게 보내보세요
                   </>
                 ) : (
                   <>
@@ -243,35 +236,35 @@ export default function Result() {
               </button>
             </motion.div>
 
-            {/* 📊 한 줄 요약 */}
+            {/* 📊 한 줄 요약 - 내 최고가 메인 */}
             <motion.div
               initial={{ y: 8, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.1 }}
               className="flex items-center justify-between rounded-2xl bg-white p-5 shadow-sm border border-slate-100"
             >
-              <div>
-                <p className="text-slate-500 text-xs mb-0.5">이번 점수</p>
-                <p className="text-2xl font-bold text-toss-text">{runScore.toLocaleString()}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-slate-500 text-xs mb-0.5">내 최고</p>
-                <p className="text-2xl font-bold text-toss-blue flex items-center gap-1">
+              <div className="text-center flex-1">
+                <p className="text-slate-500 text-xs mb-0.5">내 최고 점수</p>
+                <p className="text-2xl font-bold text-toss-blue flex items-center justify-center gap-1">
                   {bestScore.toLocaleString()}
                   {isNewBest && <span className="text-[10px] bg-toss-blue text-white px-1.5 py-0.5 rounded-full font-bold">NEW</span>}
                 </p>
               </div>
-              {koreanAvg != null && (
-                <div className="text-right">
-                  <p className="text-slate-500 text-xs mb-0.5">한국 평균</p>
+              <div className="text-center flex-1 border-x border-slate-100">
+                <p className="text-slate-500 text-xs mb-0.5">이번 점수</p>
+                <p className="text-2xl font-bold text-toss-text">{runScore.toLocaleString()}</p>
+              </div>
+              {koreanAvg != null ? (
+                <div className="text-center flex-1">
+                  <p className="text-slate-500 text-xs mb-0.5">한국 평균 대비</p>
                   <p className={`text-lg font-bold ${runScore >= koreanAvg ? 'text-green-600' : 'text-slate-600'}`}>
-                    {runScore >= koreanAvg ? '↑' : '↓'} {Math.abs(runScore - koreanAvg).toLocaleString()}점
+                    {runScore >= koreanAvg ? '+' : '-'}{Math.abs(runScore - koreanAvg).toLocaleString()}점
                   </p>
                 </div>
-              )}
+              ) : null}
             </motion.div>
 
-            {/* 💡 한 줄 인사이트 */}
+            {/* 💡 강점+보완점 (기본 펼침) */}
             <motion.div
               initial={{ y: 8, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -295,7 +288,7 @@ export default function Result() {
                 onClick={() => setShowDetail(!showDetail)}
                 className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-slate-50 transition"
               >
-                <span className="font-semibold text-toss-text">상세 분석</span>
+                <span className="font-semibold text-toss-text">유형별 분석</span>
                 <span className="text-toss-sub text-sm">{showDetail ? '접기 ↑' : '펼치기 ↓'}</span>
               </button>
               {showDetail && (
@@ -339,7 +332,7 @@ export default function Result() {
               )}
             </motion.div>
 
-            {/* 🎯 다음 목표 & Zeigarnik - 한 번 더 도전 유도 */}
+            {/* 🎯 다음 목표 - CTA 바로 위 */}
             {lastCompletedRun.maxLevel < 20 && (
               <motion.div
                 initial={{ y: 8, opacity: 0 }}
@@ -347,16 +340,15 @@ export default function Result() {
                 className="rounded-2xl bg-toss-blue/10 border-2 border-toss-blue/30 p-5"
               >
                 <p className="text-toss-blue font-bold text-base">
-                  🎯 다음 목표: {lastCompletedRun.maxLevel + 1}단계 도전!
+                  🎯 다음 목표: {lastCompletedRun.maxLevel + 1}단계!
                 </p>
-                <p className="text-toss-text text-sm mt-1.5 font-medium">
-                  {res?.nextGoalHint ?? `1단계만 더 클리어하면 상위권에 가까워져요`}
+                <p className="text-toss-text text-sm mt-1 font-medium">
+                  {res?.nextGoalHint ?? getNextGoalPraise(res?.percentileTop ?? 50)}
                 </p>
-                <p className="text-toss-sub text-xs mt-2">한 번 더 도전해 보세요 👇</p>
               </motion.div>
             )}
 
-            {/* CTAs */}
+            {/* CTAs - 주 CTA 명확 */}
             <div className="flex flex-col gap-3 pt-2">
               <motion.button
                 onClick={handleRetry}
@@ -366,8 +358,8 @@ export default function Result() {
               >
                 {streak > 0 ? `한 번 더! 🔥 (${streak}일)` : '한 번 더 도전!'}
               </motion.button>
-              <button onClick={handleHome} className="w-full py-3 rounded-2xl text-toss-sub font-medium">
-                홈으로
+              <button onClick={handleHome} className="text-toss-sub text-sm font-medium py-2">
+                홈으로 돌아가기
               </button>
             </div>
           </div>

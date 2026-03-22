@@ -77,9 +77,9 @@ export default function FailOverlay({ canRevive, remainingRevives = 0, failedLev
               disabled={revivingInProgress}
               className="w-full py-3.5 rounded-2xl bg-toss-blue text-white font-semibold shadow-md hover:opacity-95 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <span className="block">짧은 광고 시청 후 같은 단계부터 다시!</span>
+              <span className="block">같은 단계부터 다시 도전</span>
               <span className="block mt-0.5 text-white/90 text-sm font-medium">
-                남은 부활 {remainingRevives}회
+                부활 {remainingRevives}/2회 · 광고 시청
               </span>
             </button>
           )}

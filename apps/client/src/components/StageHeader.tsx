@@ -94,7 +94,7 @@ export default function StageHeader({
             <span className="text-xs text-toss-sub whitespace-nowrap">{level}/20 · {timeLimit}초</span>
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
-            <span className="text-xs font-medium text-toss-text hidden sm:inline">{GAME_TYPE_LABELS[gameType]}</span>
+            <span className="text-xs font-medium text-toss-text truncate max-w-[4rem] sm:max-w-none">{GAME_TYPE_LABELS[gameType]}</span>
             <button
               type="button"
               onClick={handleMuteToggle}
@@ -119,7 +119,7 @@ export default function StageHeader({
           <div className="flex flex-wrap gap-1.5 min-w-0">
             {remainingRevives > 0 && (
               <span className="px-1.5 py-0.5 rounded-md bg-green-50 text-green-700 text-[11px] font-medium border border-green-200 whitespace-nowrap">
-                💪 {remainingRevives}회
+                💪 부활 {remainingRevives}/2
               </span>
             )}
             {comboCount >= 2 && (

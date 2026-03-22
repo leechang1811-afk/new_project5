@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { adsService } from '../services/ads';
 
 const RESULT_AD_COOLDOWN_MS = 25_000;
-const NAVIGATE_TIMEOUT_MS = 1_500;
+const NAVIGATE_TIMEOUT_MS = 800;
 
 export default function ResultGate() {
   const navigate = useNavigate();
@@ -47,8 +47,8 @@ export default function ResultGate() {
         transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
         className="w-10 h-10 border-2 border-toss-blue border-t-transparent rounded-full"
       />
-      <p className="text-toss-sub text-sm">결과를 불러오는 중이에요</p>
-      <p className="text-toss-sub text-xs">잠시 광고가 나올 수 있어요</p>
+      <p className="text-toss-text text-sm font-medium">결과를 계산하고 있어요</p>
+      <p className="text-toss-sub text-xs">잠시만 기다려 주세요</p>
     </div>
   );
 }

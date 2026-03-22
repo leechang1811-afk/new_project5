@@ -156,15 +156,52 @@ export default function Run() {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
         <div className="w-10 h-10 border-2 border-toss-blue border-t-transparent rounded-full animate-spin" />
-        <p className="text-toss-sub">준비 중...</p>
+        <p className="text-toss-sub">게임을 준비하고 있어요</p>
       </div>
     );
   }
 
   const gameProps = { level, onSuccess: handleSuccess, onFail: handleFail };
 
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || showOnboarding) return;
+    if (localStorage.getItem('ux_onboarding_v1')) return;
+    if (level === 1 && (run?.perStageResults?.length ?? 0) === 0 && !showFailOverlay) {
+      setShowOnboarding(true);
+    }
+  }, [level, run?.perStageResults?.length, showFailOverlay, showOnboarding]);
+  useEffect(() => {
+    if (!showOnboarding) return;
+    const t = setTimeout(() => {
+      setShowOnboarding(false);
+      localStorage.setItem('ux_onboarding_v1', '1');
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [showOnboarding]);
+
   return (
     <div className="min-h-screen bg-white relative">
+      {showOnboarding && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6"
+          onClick={() => { setShowOnboarding(false); localStorage.setItem('ux_onboarding_v1', '1'); }}
+        >
+          <motion.div
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            className="bg-white rounded-2xl p-6 max-w-sm text-center shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-lg font-bold text-toss-text mb-2">총 20단계!</p>
+            <p className="text-toss-sub text-sm mb-3">실패해도 부활 2회 가능</p>
+            <p className="text-toss-sub text-xs">화면 터치로 닫기</p>
+          </motion.div>
+        </motion.div>
+      )}
       <StageHeader
         gameType={gameType!}
         level={level}

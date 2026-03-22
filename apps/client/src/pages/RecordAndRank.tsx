@@ -58,7 +58,7 @@ export default function RecordAndRank() {
       setEntries(lbData.entries ?? []);
       setMeData(summary);
     } catch {
-      setFetchError('연결을 확인하고 다시 시도해주세요');
+      setFetchError('잠시 후 다시 시도해 주세요');
       setEntries([]);
       setMeData(null);
     } finally {
@@ -108,7 +108,6 @@ export default function RecordAndRank() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white p-6 pb-24">
       <div className="max-w-md mx-auto">
-        <p className="text-toss-sub text-sm mb-2">나의 두뇌 지수</p>
         <h1 className="text-2xl font-bold text-toss-text mb-6">기록 & 순위</h1>
 
         {loading ? (
@@ -141,7 +140,7 @@ export default function RecordAndRank() {
                   상위 {meData?.best_level === 20 ? '0.1' : percentileTop ?? '-'}%
                 </p>
                 {meData?.alltime_rank != null && (
-                  <p className="mt-2 text-white/95 font-semibold text-lg">전체 #{meData.alltime_rank}등</p>
+                  <p className="mt-2 text-white/95 font-semibold text-lg">전체 순위 #{meData.alltime_rank}등</p>
                 )}
                 <p className="mt-1 text-white/90 text-sm">
                   {(bestScore ?? 0).toLocaleString()}점 {meData?.best_level != null && `· ${meData.best_level}단계`}
@@ -154,7 +153,7 @@ export default function RecordAndRank() {
                 >
                   {linkCopied ? (
                     <>
-                      <span>✓</span> 복사됨!
+                      <span>✓</span> 복사됨! 친구에게 보내보세요
                     </>
                   ) : (
                     <>
@@ -174,7 +173,7 @@ export default function RecordAndRank() {
               >
                 <p className="text-5xl mb-2">🏆</p>
                 <p className="text-xl font-bold text-toss-text mb-1">아직 기록이 없어요</p>
-                <p className="text-toss-sub text-sm mb-5">첫 도전을 해보세요!</p>
+                <p className="text-toss-sub text-sm mb-5">첫 도전 후 순위에 참가해 보세요!</p>
                 <button
                   type="button"
                   onClick={() => {
@@ -199,7 +198,7 @@ export default function RecordAndRank() {
                 <p className="text-slate-500 text-xs mb-3 font-medium">내 점수</p>
                 <div className="grid grid-cols-4 gap-3">
                   {[
-                    { label: '최고', value: bestScore, accent: true },
+                    { label: '최고 점수', value: bestScore, accent: true },
                     { label: '최저', value: minScore, accent: false },
                     { label: '평균', value: avgScore, accent: false },
                     { label: '최신', value: meData?.latest_score ?? null, accent: false },
@@ -242,7 +241,7 @@ export default function RecordAndRank() {
               >
                 {meData?.best_rank != null && (
                   <div className="flex-1 rounded-2xl bg-white p-4 shadow-sm border border-slate-100 text-center">
-                    <p className="text-slate-500 text-xs mb-0.5">이번 달</p>
+                    <p className="text-slate-500 text-xs mb-0.5">이번 달 순위</p>
                     <p className="text-xl font-bold text-toss-text">#{meData.best_rank}등</p>
                   </div>
                 )}

@@ -49,12 +49,12 @@ export default function Home() {
   const percentileTop = meData?.alltime_percentile_top ?? meData?.percentile_top ?? null;
   const bestLevel = meData?.best_level ?? null;
 
-  // 오늘의 목표: 최고 기록이 있으면 "1단계 더", 20이면 "기록 갱신", 없으면 "상위 50% 달성"
+  // 오늘의 목표: 신규는 "상위 50%", 기존은 "1단계 더"
   const todayGoal = bestLevel != null
     ? bestLevel >= 20
       ? 'Champion! 오늘도 20단계 도전해서 기록 갱신해 보세요'
       : `지난번 ${bestLevel}단계 → 오늘은 ${bestLevel + 1}단계 도전!`
-    : '오늘의 목표: 상위 50% 달성';
+    : '100명 중 50등 안에 들기! 첫 도전에 도전해 보세요';
 
   // Loss aversion: 스트릭이 끊기기 전에!
   const streakAtRisk = canExtend && streakCount > 0;
@@ -115,31 +115,31 @@ export default function Home() {
           </motion.div>
         )}
 
-        {/* Trigger 메시지 - Loss aversion / Scarcity / Curiosity */}
+        {/* Trigger 메시지 - 단일 핵심 문구 */}
         {streakAtRisk && (
           <p className="text-red-600 text-sm font-medium mb-4">
             지금 도전하면 {streakCount + 1}일차 달성!
           </p>
         )}
-        {!playedToday && !canExtend && streakCount === 0 && (
+        {!streakAtRisk && !playedToday && (
           <p className="text-toss-sub text-sm mb-4">
-            오늘의 도전, 시작해볼까요?
+            총 20단계, 5분이면 결과 확인돼요
           </p>
         )}
-        {playedToday && (
+        {!streakAtRisk && playedToday && (
           <p className="text-toss-blue text-sm font-medium mb-4">
-            오늘 이미 한 번! 한 번 더하면 실력이 쑥쑥 🚀
+            한 번 더 도전하면 실력이 쑥쑥 🚀
           </p>
         )}
 
         <div className="text-toss-sub text-sm mb-6 bg-toss-bg rounded-xl py-4 px-5 text-left">
-          <p className="font-medium text-toss-text mb-2">게임 내용</p>
-          <ul className="space-y-1 text-sm">
-            <li>① 민첩성</li>
-            <li>② 순발력</li>
-            <li>③ 집중력</li>
-            <li>④ 논리력</li>
-            <li>⑤ 시각 추론</li>
+          <p className="font-medium text-toss-text mb-2">게임 내용 (총 20단계)</p>
+          <ul className="space-y-2 text-sm">
+            <li>① 민첩성 · <span className="text-toss-text">색이 바뀌면 빨간색만 탭!</span></li>
+            <li>② 순발력 · <span className="text-toss-text">N초에 맞춰 탭!</span></li>
+            <li>③ 집중력 · <span className="text-toss-text">숫자·패턴 기억하기</span></li>
+            <li>④ 논리력 · <span className="text-toss-text">덧셈·뺄셈 계산</span></li>
+            <li>⑤ 시각 추론 · <span className="text-toss-text">색 섞어서 맞추기</span></li>
           </ul>
         </div>
 
@@ -155,10 +155,6 @@ export default function Home() {
         >
           {streakAtRisk ? '🔥 오늘도 지키기!' : playedToday ? '한 번 더 도전!' : '시작하기'}
         </motion.button>
-
-        <p className="text-toss-sub text-sm mt-5 leading-relaxed">
-          친구와 함께 두뇌 점수를 겨뤄 보세요
-        </p>
 
         {sharedPercentile && (
           <motion.div
@@ -179,14 +175,15 @@ export default function Home() {
           </motion.div>
         )}
 
-        <div className="mt-8 flex justify-center">
+        <p className="mt-6 text-toss-sub text-xs">
+          친구들과 겨뤄보세요 ·{' '}
           <button
             onClick={() => navigate('/record')}
-            className="text-base text-toss-sub hover:text-toss-blue transition font-medium py-1"
+            className="text-toss-sub hover:text-toss-blue transition underline"
           >
-            기록 & 순위 보기
+            기록 & 순위
           </button>
-        </div>
+        </p>
       </motion.div>
     </div>
   );
