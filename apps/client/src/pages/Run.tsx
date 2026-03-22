@@ -58,6 +58,7 @@ export default function Run() {
   const [passedLevelForOverlay, setPassedLevelForOverlay] = useState(1);
   const hasShownUpgradeRef = useRef(false);
   const hasShownUpperLevelRef = useRef(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (level === 9 && !hasShownUpgradeRef.current) {
@@ -76,6 +77,22 @@ export default function Run() {
       return () => clearTimeout(t);
     }
   }, [level]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || showOnboarding) return;
+    if (localStorage.getItem('ux_onboarding_v1')) return;
+    if (run && level === 1 && (run?.perStageResults?.length ?? 0) === 0 && !showFailOverlay) {
+      setShowOnboarding(true);
+    }
+  }, [run, level, showFailOverlay, showOnboarding]);
+  useEffect(() => {
+    if (!showOnboarding) return;
+    const t = setTimeout(() => {
+      setShowOnboarding(false);
+      localStorage.setItem('ux_onboarding_v1', '1');
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [showOnboarding]);
 
   const handleSuccess = (score: number, bonus: number = 0) => {
     const gt = getCurrentGameType();
@@ -162,23 +179,6 @@ export default function Run() {
   }
 
   const gameProps = { level, onSuccess: handleSuccess, onFail: handleFail };
-
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  useEffect(() => {
-    if (typeof window === 'undefined' || showOnboarding) return;
-    if (localStorage.getItem('ux_onboarding_v1')) return;
-    if (level === 1 && (run?.perStageResults?.length ?? 0) === 0 && !showFailOverlay) {
-      setShowOnboarding(true);
-    }
-  }, [level, run?.perStageResults?.length, showFailOverlay, showOnboarding]);
-  useEffect(() => {
-    if (!showOnboarding) return;
-    const t = setTimeout(() => {
-      setShowOnboarding(false);
-      localStorage.setItem('ux_onboarding_v1', '1');
-    }, 2500);
-    return () => clearTimeout(t);
-  }, [showOnboarding]);
 
   return (
     <div className="min-h-screen bg-white relative">
