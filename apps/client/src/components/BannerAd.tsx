@@ -3,16 +3,21 @@
  * TossAds.initialize → attachBanner (앱인토스 WebView 전용)
  */
 import { useEffect, useRef } from 'react';
-import { TossAds } from '@apps-in-toss/web-framework';
 import { AD_GROUP_BANNER } from '../services/ads';
 
 let initPromise: Promise<boolean> | null = null;
+let sdkPromise: Promise<typeof import('@apps-in-toss/web-framework')> | null = null;
 
-function ensureTossAdsInit(): Promise<boolean> {
+function getBannerSdk() {
+  if (!sdkPromise) sdkPromise = import('@apps-in-toss/web-framework');
+  return sdkPromise;
+}
+
+function ensureTossAdsInit(sdk: typeof import('@apps-in-toss/web-framework')): Promise<boolean> {
   if (initPromise) return initPromise;
-  if (!TossAds?.initialize?.isSupported?.()) return Promise.resolve(false);
+  if (sdk.TossAds?.initialize?.isSupported?.() !== true) return Promise.resolve(false);
   initPromise = new Promise((resolve) => {
-    TossAds.initialize({
+    sdk.TossAds.initialize({
       callbacks: {
         onInitialized: () => resolve(true),
         onInitializationFailed: () => resolve(false),
@@ -29,28 +34,36 @@ export default function BannerAd() {
   const BANNER_HEIGHT_PX = 96;
 
   useEffect(() => {
-    if (!AD_GROUP_BANNER || !TossAds?.attachBanner?.isSupported?.()) return;
-    ensureTossAdsInit().then((ok) => {
-      if (!ok || !containerRef.current) return;
-      try {
-        const result = TossAds.attachBanner(AD_GROUP_BANNER, containerRef.current, {
-          theme: 'light',
-          tone: 'grey',
-          variant: 'card',
+    if (!AD_GROUP_BANNER) return;
+    // 첫 페인트 후 배너 SDK 로딩 (초기 체감 로딩 개선)
+    const timer = setTimeout(() => {
+      getBannerSdk().then((sdk) => {
+        if (sdk.TossAds?.attachBanner?.isSupported?.() !== true) return;
+        ensureTossAdsInit(sdk).then((ok) => {
+          if (!ok || !containerRef.current) return;
+          try {
+            const result = sdk.TossAds.attachBanner(AD_GROUP_BANNER, containerRef.current, {
+              theme: 'light',
+              tone: 'grey',
+              variant: 'card',
+            });
+            destroyRef.current = result?.destroy ?? null;
+          } catch {
+            // ignore
+          }
         });
-        destroyRef.current = result?.destroy ?? null;
-      } catch {
+      }).catch(() => {
         // ignore
-      }
-    });
+      });
+    }, 600);
     return () => {
+      clearTimeout(timer);
       destroyRef.current?.();
       destroyRef.current = null;
     };
   }, []);
 
   if (!AD_GROUP_BANNER) return null;
-  if (!TossAds?.attachBanner?.isSupported?.()) return null;
 
   return (
     <>

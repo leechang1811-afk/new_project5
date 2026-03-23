@@ -1,16 +1,10 @@
 /**
  * 앱인토스 통합 광고 (인앱 광고 2.0 ver2) 연동
- * 전면형·리워드 모두 loadFullScreenAd / showFullScreenAd 사용
- * adGroupId로 광고 타입 자동 구분
  *
- * 환경변수 (granite.config 또는 .env):
- * - VITE_AD_GROUP_INTERSTITIAL: 전면형 광고 그룹 ID
- * - VITE_AD_GROUP_REWARDED: 리워드 광고 그룹 ID
- *
- * 토스 앱 외부(웹 브라우저 등)에서는 Mock으로 동작
+ * 성능 최적화:
+ * - 초기 번들에서 광고 SDK를 정적으로 불러오지 않음
+ * - 광고 필요 시점에만 동적 import
  */
-
-import { loadFullScreenAd, showFullScreenAd } from '@apps-in-toss/web-framework';
 
 export interface AdsService {
   loadInterstitial(): Promise<void>;
@@ -28,12 +22,19 @@ export const AD_GROUP_BANNER =
   import.meta.env.VITE_AD_GROUP_BANNER ?? 'ait.v2.live.7b08bc10a37f4a1f';
 
 /** 토스 앱 WebView 내부에서만 true */
-function isAdsSupported(): boolean {
-  return (
-    typeof loadFullScreenAd?.isSupported === 'function' &&
-    loadFullScreenAd.isSupported() &&
-    Boolean(AD_GROUP_INTERSTITIAL && AD_GROUP_REWARDED)
-  );
+function canUseRealAds(): boolean {
+  if (!AD_GROUP_INTERSTITIAL || !AD_GROUP_REWARDED) return false;
+  if (typeof window === 'undefined') return false;
+  // 웹/PC에서는 SDK 로딩 자체를 피해서 초기 로딩을 가볍게 유지
+  return Boolean((window as Window & { ReactNativeWebView?: unknown }).ReactNativeWebView);
+}
+
+let adsSdkPromise: Promise<typeof import('@apps-in-toss/web-framework')> | null = null;
+function getAdsSdk() {
+  if (!adsSdkPromise) {
+    adsSdkPromise = import('@apps-in-toss/web-framework');
+  }
+  return adsSdkPromise;
 }
 
 /** 앱인토스 실제 연동 */
@@ -44,8 +45,10 @@ class AppsInTossAdsService implements AdsService {
   private readonly COOLDOWN_MS = 30_000; // PO: 30초 (업계 권장, UX-수익 균형)
 
   async loadInterstitial(): Promise<void> {
+    const sdk = await getAdsSdk();
+    if (sdk.loadFullScreenAd?.isSupported?.() !== true) throw new Error('ads not supported');
     return new Promise((resolve, reject) => {
-      loadFullScreenAd({
+      sdk.loadFullScreenAd({
         options: { adGroupId: AD_GROUP_INTERSTITIAL },
         onEvent: (event) => {
           if (event.type === 'loaded') {
@@ -62,6 +65,8 @@ class AppsInTossAdsService implements AdsService {
   }
 
   async showInterstitial(): Promise<boolean> {
+    const sdk = await getAdsSdk();
+    if (sdk.showFullScreenAd?.isSupported?.() !== true) return false;
     if (Date.now() - this._lastInterstitialAt < this.COOLDOWN_MS) return false;
     if (!this._interstitialLoaded) {
       try {
@@ -73,7 +78,7 @@ class AppsInTossAdsService implements AdsService {
 
     return new Promise((resolve) => {
       let shown = false;
-      showFullScreenAd({
+      sdk.showFullScreenAd({
         options: { adGroupId: AD_GROUP_INTERSTITIAL },
         onEvent: (event) => {
           if (event.type === 'show' || event.type === 'impression') {
@@ -83,7 +88,7 @@ class AppsInTossAdsService implements AdsService {
           if (event.type === 'dismissed' || event.type === 'failedToShow') {
             this._interstitialLoaded = false;
             resolve(shown);
-            loadFullScreenAd({
+            sdk.loadFullScreenAd({
               options: { adGroupId: AD_GROUP_INTERSTITIAL },
               onEvent: (e) => { if (e.type === 'loaded') this._interstitialLoaded = true; },
               onError: () => {},
@@ -99,8 +104,10 @@ class AppsInTossAdsService implements AdsService {
   }
 
   async loadRewarded(): Promise<void> {
+    const sdk = await getAdsSdk();
+    if (sdk.loadFullScreenAd?.isSupported?.() !== true) throw new Error('ads not supported');
     return new Promise((resolve, reject) => {
-      loadFullScreenAd({
+      sdk.loadFullScreenAd({
         options: { adGroupId: AD_GROUP_REWARDED },
         onEvent: (event) => {
           if (event.type === 'loaded') {
@@ -117,6 +124,8 @@ class AppsInTossAdsService implements AdsService {
   }
 
   async showRewarded(_type: 'revive' | 'result'): Promise<boolean> {
+    const sdk = await getAdsSdk();
+    if (sdk.showFullScreenAd?.isSupported?.() !== true) return false;
     if (!this._rewardedLoaded) {
       try {
         await this.loadRewarded();
@@ -127,14 +136,14 @@ class AppsInTossAdsService implements AdsService {
 
     return new Promise((resolve) => {
       let earned = false;
-      showFullScreenAd({
+      sdk.showFullScreenAd({
         options: { adGroupId: AD_GROUP_REWARDED },
         onEvent: (event) => {
           if (event.type === 'userEarnedReward') earned = true;
           if (event.type === 'dismissed' || event.type === 'failedToShow') {
             this._rewardedLoaded = false;
             resolve(earned);
-            loadFullScreenAd({
+            sdk.loadFullScreenAd({
               options: { adGroupId: AD_GROUP_REWARDED },
               onEvent: (e) => { if (e.type === 'loaded') this._rewardedLoaded = true; },
               onError: () => {},
@@ -185,6 +194,6 @@ class MockAdsService implements AdsService {
   }
 }
 
-export const adsService: AdsService = isAdsSupported()
+export const adsService: AdsService = canUseRealAds()
   ? new AppsInTossAdsService()
   : new MockAdsService();
