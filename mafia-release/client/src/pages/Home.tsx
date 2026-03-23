@@ -1,4 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
+import { useFullScreenAd } from "@/hooks/useTossAds";
+import { BannerAd } from "@/components/BannerAd";
 
 type Role = "Mafia" | "Citizen" | "Police" | "Doctor";
 type Phase =
@@ -211,6 +213,10 @@ export default function Home() {
   const [winner, setWinner] = useState<"MAFIA" | "CITIZEN" | null>(null);
   // stale closure 방지용 ref
   const gameOverRef = useRef(false);
+
+  // ✅ 전면형 광고 (게임 종료 후 "새로운 게임 시작하기" 클릭 시에만 노출)
+  const FULLSCREEN_AD_ID = "ait.v2.live.8ac0270fb0af4ad1";
+  const { load: loadFullScreenAd, show: showFullScreenAd, isLoaded: isFullScreenAdLoaded } = useFullScreenAd(FULLSCREEN_AD_ID);
   const timerBlockRef = useRef<HTMLDivElement>(null);
 
   // ✅ 음성 안내(TTS)
@@ -498,6 +504,19 @@ export default function Home() {
 
     return false;
   };
+
+  // ✅ 결과 화면 진입 시 전면형 광고 미리 로드 (버튼 클릭 시 표시용)
+  const fullScreenAdUnregisterRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (phase !== "RESULT" || !gameOver) return;
+    loadFullScreenAd().then((fn) => {
+      fullScreenAdUnregisterRef.current = fn;
+    });
+    return () => {
+      fullScreenAdUnregisterRef.current?.();
+      fullScreenAdUnregisterRef.current = null;
+    };
+  }, [phase, gameOver, loadFullScreenAd]);
 
   // ✅ 밤 결과 자동 적용 및 아침 안내 (speak onEnd → 3초 뒤 TIMER 전환)
   const goToNextDayTimer = () => {
@@ -979,6 +998,19 @@ export default function Home() {
 
   };
 
+  /** 새로운 게임 시작 — 전면형 광고가 로드되어 있으면 표시 후 리셋, 아니면 바로 리셋 */
+  const handleStartNewGame = () => {
+    setShowResultDetails(false);
+    if (isFullScreenAdLoaded) {
+      showFullScreenAd(() => {
+        loadFullScreenAd(); // 다음 게임용 광고 미리 로드
+        resetAll();
+      });
+    } else {
+      resetAll();
+    }
+  };
+
   const glowCard =
     "relative rounded-2xl bg-[#F2F2F7]";
 
@@ -987,7 +1019,7 @@ export default function Home() {
 
   if (!gameStarted) {
     return (
-      <div className="min-h-[100svh] flex flex-col items-center justify-center px-6 gap-3 bg-black">
+      <div className="min-h-[100svh] flex flex-col items-center justify-center px-6 gap-3 bg-black pb-[96px]">
         <p className="text-sm text-white/50">사회자가 필요없는</p>
         <h1 className="text-4xl font-bold tracking-tight text-white">
           마피아 게임 도우미
@@ -1001,12 +1033,16 @@ export default function Home() {
             시작하기
           </button>
         </div>
+
+        <div className="fixed bottom-0 left-0 right-0 z-20 bg-black">
+          <BannerAd />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-[100svh] relative overflow-hidden bg-black text-white">
+    <div className="min-h-[100svh] relative overflow-hidden bg-black text-white pb-[96px]">
 
       {/* 게임 시작 안내 오버레이 */}
       {showInstructions && (
@@ -1701,7 +1737,7 @@ export default function Home() {
               {/* 하단 CTA */}
               <div className="fixed bottom-0 left-0 right-0 px-6 pb-12 pt-4 bg-gradient-to-t from-black via-black/90 to-transparent">
                 <button
-                  onClick={() => { setShowResultDetails(false); resetAll(); }}
+                  onClick={handleStartNewGame}
                   className="w-full py-4 rounded-2xl font-bold text-lg bg-blue-500 text-white transition-all active:scale-95"
                 >
                   새로운 게임 시작하기
@@ -1867,6 +1903,11 @@ export default function Home() {
           )}
 
         </div>
+      </div>
+
+      {/* 하단 배너 광고 (각 화면 맨 아래) */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 bg-black">
+        <BannerAd />
       </div>
     </div>
   );
