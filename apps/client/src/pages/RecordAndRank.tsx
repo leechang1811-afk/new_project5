@@ -5,6 +5,7 @@ import { ensureUserHash, useGameStore } from '../store/gameStore';
 import { API_BASE } from '../services/api';
 import { getStreakState } from '../services/streak';
 import { copyShareLink } from '../services/share';
+import BannerAd from '../components/BannerAd';
 
 interface LeaderboardEntry {
   rank: number;
@@ -106,7 +107,7 @@ export default function RecordAndRank() {
     streakCount > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white p-4 sm:p-6 pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white p-4 sm:p-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <div className="max-w-md mx-auto w-full">
         <h1 className="text-xl sm:text-2xl font-bold text-toss-text mb-4 sm:mb-6">기록 & 순위</h1>
 
@@ -313,6 +314,9 @@ export default function RecordAndRank() {
             </div>
           </div>
         )}
+        <div className="mt-6">
+          <BannerAd />
+        </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { ensureUserHash, useGameStore } from '../store/gameStore';
 import { useEffect, useState } from 'react';
 import { getStreakState } from '../services/streak';
 import { API_BASE } from '../services/api';
+import BannerAd from '../components/BannerAd';
 
 interface MeSummary {
   best_score?: number;
@@ -63,7 +64,7 @@ export default function Home() {
   const streakBadge = streakCount >= 30 ? '🏆' : streakCount >= 14 ? '⭐' : streakCount >= 7 ? '🎖️' : null;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 sm:p-6">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -185,6 +186,9 @@ export default function Home() {
           </button>
         </p>
       </motion.div>
+      <div className="w-full max-w-md mx-auto mt-4">
+        <BannerAd />
+      </div>
     </div>
   );
 }

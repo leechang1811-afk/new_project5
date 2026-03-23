@@ -9,6 +9,7 @@ import { submitRun } from '../services/api';
 import { ensureUserHash } from '../store/gameStore';
 import { copyShareLink } from '../services/share';
 import { recordPlay, getStreakState } from '../services/streak';
+import BannerAd from '../components/BannerAd';
 import { fireChampion, fireNewBest } from '../utils/confetti';
 import type { RunSubmitResponse } from '../services/api';
 
@@ -158,7 +159,7 @@ export default function Result() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-24"
+      className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-[calc(7rem+env(safe-area-inset-bottom))]"
     >
       <div className="max-w-md mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
         {loading ? (
@@ -377,6 +378,9 @@ export default function Result() {
             </button>
           </div>
         )}
+        <div className="mt-6">
+          <BannerAd />
+        </div>
       </div>
     </motion.div>
   );
