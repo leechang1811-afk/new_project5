@@ -486,7 +486,7 @@ export default function App() {
   }, [state.projects]);
   const dashboardRate = view === 'detail' && selectedProject ? selectedProjectRate : overallProjectProgressRate;
   const displayRate = Math.min(94, Math.max(6, dashboardRate));
-  const stairHeights = [14, 24, 38, 54, 72, 92, 114];
+  const stairHeights = [8, 16, 26, 38, 52, 68, 86];
   const stepIndex = Math.round((dashboardRate / 100) * (stairHeights.length - 1));
   const climberBottom = stairHeights[Math.max(0, Math.min(stepIndex, stairHeights.length - 1))] + 18;
   const checkButtonLabel = deviceType === 'mobile' ? '오늘 완료 체크' : '오늘 완료하기';
@@ -541,12 +541,12 @@ export default function App() {
             <p className="text-sm font-semibold">나의 습관형성 달성율</p>
             <p className="text-lg font-bold text-toss-blue">{dashboardRate}%</p>
           </div>
-          <div className="relative mt-4 h-[170px] rounded-xl bg-slate-50 border border-slate-100 overflow-hidden">
-            <div className="absolute inset-x-3 bottom-3 flex items-end gap-2">
+          <div className="relative mt-4 h-[150px] rounded-xl bg-slate-50 border border-slate-100 overflow-hidden">
+            <div className="absolute inset-x-0 bottom-3 flex items-end gap-0">
               {stairHeights.map((height, index) => (
                 <div
                   key={`step-${height}`}
-                  className={`flex-1 rounded-2xl transition-all duration-500 ${
+                  className={`flex-1 transition-all duration-500 ${
                     index <= stepIndex ? 'bg-emerald-400' : 'bg-slate-200'
                   }`}
                   style={{ height: `${height}px` }}
@@ -557,7 +557,7 @@ export default function App() {
               className="absolute text-2xl transition-all duration-700 ease-out"
               style={{
                 left: `calc(${displayRate}% - 12px)`,
-                bottom: `${climberBottom + 6}px`,
+                bottom: `${climberBottom}px`,
               }}
               aria-label="진도 캐릭터"
             >
