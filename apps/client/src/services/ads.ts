@@ -15,11 +15,11 @@ export interface AdsService {
 
 // 광고 그룹 ID (앱인토스 콘솔 발급) - env로 오버라이드 가능
 const AD_GROUP_INTERSTITIAL =
-  import.meta.env.VITE_AD_GROUP_INTERSTITIAL ?? 'ait.v2.live.1dcfae320faa45a1';
+  import.meta.env.VITE_AD_GROUP_INTERSTITIAL ?? 'ait.v2.live.3c6de68820c9461a';
 const AD_GROUP_REWARDED =
   import.meta.env.VITE_AD_GROUP_REWARDED ?? 'ait.v2.live.aa19920554fe4121';
 export const AD_GROUP_BANNER =
-  import.meta.env.VITE_AD_GROUP_BANNER ?? 'ait.v2.live.7b08bc10a37f4a1f';
+  import.meta.env.VITE_AD_GROUP_BANNER ?? 'ait.v2.live.7694969c589c436c';
 
 /** 토스 앱 WebView 내부에서만 true */
 function canUseRealAds(): boolean {
