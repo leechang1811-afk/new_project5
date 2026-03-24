@@ -115,14 +115,14 @@ function safeLoadState(): AppState {
   }
 }
 
-function buildNextStage(previous: Stage, stageNumber: number, durationDays: number): Stage {
-  const nextStart = addDays(previous.endDate, 1);
-  const nextEnd = addDays(nextStart, durationDays - 1);
+function buildNextStage(previous: Stage, stageNumber: number, durationDays: number, nextStart?: string): Stage {
+  const startDate = nextStart ?? addDays(previous.endDate, 1);
+  const nextEnd = addDays(startDate, durationDays - 1);
   return {
     id: makeId(),
     stageNumber,
     title: '',
-    startDate: nextStart,
+    startDate,
     endDate: nextEnd,
     checkDates: [],
     completed: false,
@@ -131,13 +131,14 @@ function buildNextStage(previous: Stage, stageNumber: number, durationDays: numb
   };
 }
 
-function maybeAdvanceStage(project: HabitProject): HabitProject {
+function maybeAdvanceStage(project: HabitProject, transitionDate: string): HabitProject {
   const current = activeStage(project);
   if (current.completed || stageRate(current) < 100) return project;
   const updatedStages = project.stages.map((stage) =>
     stage.id === current.id ? { ...stage, completed: true } : stage
   );
-  const next = buildNextStage(current, current.stageNumber + 1, project.stageDurationDays);
+  // Next stage starts from the day after success transition date.
+  const next = buildNextStage(current, current.stageNumber + 1, project.stageDurationDays, addDays(transitionDate, 1));
   return { ...project, stages: [...updatedStages, next] };
 }
 
@@ -148,7 +149,7 @@ function resolveStageByDeadline(project: HabitProject, today: string): HabitProj
 
   const rate = stageRate(current);
   if (rate >= 100) {
-    return maybeAdvanceStage(project);
+    return maybeAdvanceStage(project, current.endDate);
   }
 
   const failedStages = project.stages.map((stage) =>
@@ -407,7 +408,7 @@ export default function App() {
                   : [...stage.checkDates, today].sort(),
               }
         );
-        return maybeAdvanceStage({ ...project, stages: nextStages });
+        return maybeAdvanceStage({ ...project, stages: nextStages }, today);
       });
       return { ...prev, projects };
     });
@@ -473,15 +474,13 @@ export default function App() {
   const overallTodayRate = useMemo(() => {
     if (state.projects.length === 0) return 0;
     const done = state.projects.filter((project) => {
-      const current = activeStage(project);
-      return current.checkDates.includes(today);
+      return project.stages.some((stage) => stage.checkDates.includes(today));
     }).length;
     return Math.round((done / state.projects.length) * 100);
   }, [state.projects, today]);
   const todayProjectStatus = useMemo(() => {
     return state.projects.map((project) => {
-      const current = activeStage(project);
-      const doneToday = current.checkDates.includes(today);
+      const doneToday = project.stages.some((stage) => stage.checkDates.includes(today));
       return {
         projectId: project.id,
         projectName: project.name,
