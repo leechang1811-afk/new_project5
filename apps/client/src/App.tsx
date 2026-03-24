@@ -169,15 +169,6 @@ function lastNDays(days: number): string[] {
   return result;
 }
 
-function buildStageSuggestions(previousTitle: string): string[] {
-  const base = previousTitle.trim() || '현재 목표';
-  return [
-    `${base} 유지`,
-    `${base} 조금 올리기`,
-    `${base} 다시 도전`,
-  ];
-}
-
 export default function App() {
   const [state, setState] = useState<AppState>(() => safeLoadState());
   const [view, setView] = useState<'create' | 'list' | 'detail'>('create');
@@ -232,14 +223,6 @@ export default function App() {
     if (!selectedProject) return null;
     return activeStage(selectedProject);
   }, [selectedProject]);
-  const previousStage = useMemo(() => {
-    if (!selectedProject || !selectedCurrentStage) return null;
-    return selectedProject.stages.find((stage) => stage.stageNumber === selectedCurrentStage.stageNumber - 1) ?? null;
-  }, [selectedProject, selectedCurrentStage]);
-  const suggestionTitles = useMemo(
-    () => buildStageSuggestions(previousStage?.title ?? ''),
-    [previousStage?.title]
-  );
 
   const shouldShowGuide = useMemo(() => {
     if (!selectedCurrentStage?.needsSetup) return false;
@@ -365,19 +348,19 @@ export default function App() {
   return (
     <main className="mx-auto max-w-md min-h-[100dvh] bg-slate-50 text-toss-text">
       <section className="px-5 pt-8 pb-4">
-        <p className="text-sm text-toss-sub">좋은 습관 기르기</p>
-        <h1 className="text-2xl font-bold mt-1">좋은 습관 기르기</h1>
-        <p className="text-sm text-toss-sub mt-2">하루 체크로 습관을 쌓아요. 목표를 달성하면 다음 단계로 넘어가요.</p>
+        <p className="text-sm text-toss-sub">Korea Habit</p>
+        <h1 className="text-2xl font-bold mt-1">단계형 습관 프로젝트</h1>
+        <p className="text-sm text-toss-sub mt-2">설정한 기간 동안 100% 달성하면 자동으로 다음 단계가 열립니다.</p>
       </section>
 
       <section className="px-5 pb-4">
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl bg-white border border-toss-border p-3">
-            <p className="text-xs text-toss-sub">오늘 달성률</p>
+            <p className="text-xs text-toss-sub">오늘 프로젝트 달성률</p>
             <p className="text-xl font-semibold mt-1">{overallTodayRate}%</p>
           </div>
           <div className="rounded-xl bg-white border border-toss-border p-3">
-            <p className="text-xs text-toss-sub">진행 중</p>
+            <p className="text-xs text-toss-sub">진행 프로젝트</p>
             <p className="text-xl font-semibold mt-1">{state.projects.length}개</p>
           </div>
         </div>
@@ -386,23 +369,23 @@ export default function App() {
       {view === 'create' && (
         <section className="px-5 pb-8">
           <div className="rounded-xl border border-toss-border bg-white p-4">
-            <h2 className="font-semibold">새 목표 만들기</h2>
+            <h2 className="font-semibold">새 습관 프로젝트 만들기</h2>
             <form className="mt-3 space-y-3" onSubmit={createProject}>
               <input
                 value={projectName}
                 onChange={(event) => setProjectName(event.target.value)}
                 className="w-full rounded-xl border border-toss-border px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-toss-blue/20"
-                placeholder="목표 이름 (예: 아침 루틴)"
+                placeholder="프로젝트 이름 (예: 아침 루틴)"
                 maxLength={30}
-                aria-label="목표 이름"
+                aria-label="프로젝트 이름"
               />
               <input
                 value={firstStageTitle}
                 onChange={(event) => setFirstStageTitle(event.target.value)}
                 className="w-full rounded-xl border border-toss-border px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-toss-blue/20"
-                placeholder="첫 단계 목표 (예: 물 2L 마시기)"
+                placeholder="1단계 목표 (예: 물 2L 마시기)"
                 maxLength={30}
-                aria-label="첫 단계 목표"
+                aria-label="1단계 목표"
               />
               <div className="flex gap-2 flex-wrap">
                 {PRESET_TITLES.map((preset) => (
@@ -417,7 +400,7 @@ export default function App() {
                 ))}
               </div>
               <label className="block">
-                <span className="text-sm text-toss-sub">기간</span>
+                <span className="text-sm text-toss-sub">단계 기간</span>
                 <select
                   value={stageDays}
                   onChange={(event) => setStageDays(Number(event.target.value))}
@@ -436,7 +419,7 @@ export default function App() {
                 className="w-full rounded-xl bg-toss-blue text-white py-3 font-medium disabled:opacity-50"
                 disabled={!projectName.trim() || !firstStageTitle.trim()}
               >
-                시작하기
+                프로젝트 시작하기
               </button>
             </form>
           </div>
@@ -451,7 +434,7 @@ export default function App() {
               className={`rounded-lg px-3 py-2 text-sm ${view === 'list' ? 'bg-toss-blue text-white' : 'bg-white border border-toss-border'}`}
               onClick={() => setView('list')}
             >
-              목표 목록
+              프로젝트 목록
             </button>
             <button
               type="button"
@@ -459,14 +442,14 @@ export default function App() {
               onClick={() => setView('detail')}
               disabled={!selectedProject}
             >
-              상세 보기
+              선택 프로젝트
             </button>
             <button
               type="button"
               className="rounded-lg px-3 py-2 text-sm bg-white border border-toss-border ml-auto"
               onClick={() => setView('create')}
             >
-              + 새 목표
+              + 새 프로젝트
             </button>
           </section>
 
@@ -488,7 +471,7 @@ export default function App() {
                       <div>
                         <h3 className="font-semibold">{project.name}</h3>
                         <p className="text-sm text-toss-sub mt-1">
-                          지금 {current.stageNumber}단계 · {current.title || '다음 단계를 설정해 주세요'}
+                          현재 {current.stageNumber}단계 · {current.title || '다음 단계 목표 설정 필요'}
                         </p>
                         <p className="text-xs text-slate-500 mt-1">
                           {current.startDate} ~ {current.endDate}
@@ -533,7 +516,7 @@ export default function App() {
               <div className="rounded-xl border border-toss-border bg-white p-4">
                 <h3 className="font-semibold">{selectedProject.name}</h3>
                 <p className="text-sm text-toss-sub mt-1">
-                  기본 기간 {selectedProject.stageDurationDays}일 · 총 {selectedProject.stages.length}단계
+                  단계 기간 {selectedProject.stageDurationDays}일 · 총 {selectedProject.stages.length}단계
                 </p>
               </div>
 
@@ -545,7 +528,7 @@ export default function App() {
                   return (
                     <>
                       <h4 className="font-semibold">
-                        {current.stageNumber}단계: {current.title || '목표를 설정해 주세요'}
+                        {current.stageNumber}단계: {current.title || '목표 설정 필요'}
                       </h4>
                       <p className="text-sm text-toss-sub mt-1">
                         {current.startDate} ~ {current.endDate} · 달성률 {currentRate}%
@@ -558,25 +541,13 @@ export default function App() {
                             setupActiveStage(selectedProject.id, nextStageTitle, nextStageDays);
                           }}
                         >
-                          <p className="text-sm font-medium">다음 단계 설정</p>
+                          <p className="text-sm font-medium">다음 단계 세팅</p>
                           <input
                             value={nextStageTitle}
                             onChange={(event) => setNextStageTitle(event.target.value)}
-                            placeholder="다음 단계 목표를 적어주세요"
+                            placeholder={`예: ${current.stageNumber}단계에는 난이도 10% 업`}
                             className="w-full rounded-lg border border-toss-border px-3 py-2 bg-white outline-none"
                           />
-                          <div className="flex gap-2 flex-wrap">
-                            {suggestionTitles.map((suggestion) => (
-                              <button
-                                key={suggestion}
-                                type="button"
-                                className="rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-xs text-slate-700"
-                                onClick={() => setNextStageTitle(suggestion)}
-                              >
-                                {suggestion}
-                              </button>
-                            ))}
-                          </div>
                           <select
                             value={nextStageDays}
                             onChange={(event) => setNextStageDays(Number(event.target.value))}
@@ -594,7 +565,7 @@ export default function App() {
                             className="w-full rounded-lg bg-toss-blue text-white py-2 font-medium disabled:opacity-50"
                             disabled={!nextStageTitle.trim()}
                           >
-                            이 목표로 시작
+                            이 단계로 시작하기
                           </button>
                         </form>
                       )}
@@ -606,11 +577,11 @@ export default function App() {
                         onClick={() => toggleTodayOnActiveStage(selectedProject.id)}
                         disabled={!canCheckToday}
                       >
-                        {current.checkDates.includes(today) ? '오늘 완료했어요' : '오늘 완료 체크'}
+                        {current.checkDates.includes(today) ? '오늘 완료됨' : '오늘 체크하기'}
                       </button>
                       {!canCheckToday && (
                         <p className="text-xs text-slate-500 mt-2">
-                          이 단계를 설정한 뒤에 오늘 체크를 할 수 있어요.
+                          현재 단계 기간 안에서만 체크할 수 있어요. 단계 세팅 완료 후 체크가 활성화됩니다.
                         </p>
                       )}
                     </>
@@ -619,7 +590,7 @@ export default function App() {
               </div>
 
               <div className="rounded-xl border border-toss-border bg-white p-4">
-                <h4 className="font-semibold">성공 캘린더 (최근 30일)</h4>
+                <h4 className="font-semibold">단계별 성공 캘린더 (최근 30일)</h4>
                 <div className="mt-3 grid grid-cols-6 gap-1.5">
                   {calendarKeys.map((dateKey) => {
                     const found = selectedProject.stages.find((stage) => stage.checkDates.includes(dateKey));
@@ -641,7 +612,7 @@ export default function App() {
               </div>
 
               <div className="rounded-xl border border-toss-border bg-white p-4">
-                <h4 className="font-semibold">진행 기록</h4>
+                <h4 className="font-semibold">단계 기록</h4>
                 <ul className="mt-3 space-y-2">
                   {selectedProject.stages.map((stage) => (
                     <li key={stage.id} className="border border-slate-200 rounded-lg p-3">
@@ -655,10 +626,10 @@ export default function App() {
                         달성률 {stageRate(stage)}% · 성공 {stage.checkDates.length}회
                       </p>
                       {stage.failed && (
-                        <p className="text-xs mt-1 text-rose-600">이번 단계는 기간 내 미달성으로 종료됐어요</p>
+                        <p className="text-xs mt-1 text-rose-600">실패 처리됨 (기간 내 100% 미달)</p>
                       )}
                       {stage.completed && !stage.failed && (
-                        <p className="text-xs mt-1 text-emerald-600">성공적으로 완료했어요</p>
+                        <p className="text-xs mt-1 text-emerald-600">성공 완료</p>
                       )}
                     </li>
                   ))}
@@ -672,13 +643,13 @@ export default function App() {
       {showStageGuideModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl">
-            <h3 className="text-base font-semibold">다음 단계 안내</h3>
+            <h3 className="text-base font-semibold">단계 세팅 가이드</h3>
             <p className="text-sm text-slate-600 mt-2">
-              지금 단계를 100% 달성하면 다음 단계가 열려요. 다음 목표와 기간은 직접 정하면 됩니다.
+              1단계를 100% 달성하면 다음 단계가 자동으로 열리고, 목표/기간은 사용자가 직접 세팅합니다.
             </p>
             <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700 space-y-1">
-              <p>예시) 물 2L(7일) 성공 → 물 2.3L(7일) 도전</p>
-              <p>예시) 10분 독서(14일) 성공 → 15분 독서(14일) 도전</p>
+              <p>예시 1) 1단계: 물 2L(7일) → 2단계: 물 2.3L(7일)</p>
+              <p>예시 2) 1단계: 10분 독서(14일) → 2단계: 15분 독서(14일)</p>
             </div>
             <div className="mt-4 grid grid-cols-1 gap-2">
               <button
