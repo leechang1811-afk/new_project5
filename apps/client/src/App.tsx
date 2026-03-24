@@ -878,6 +878,9 @@ export default function App() {
                             <br />
                             예시) 10분 독서(14일) 성공 → 15분 독서(14일) 도전
                           </div>
+                          <p className="text-xs text-toss-sub">
+                            안내: 지금 설정하는 다음 단계는 내일부터 시작되고, 오늘 성공한 기록은 그대로 유지돼요.
+                          </p>
                           <select
                             value={nextStageDays}
                             onChange={(event) => setNextStageDays(Number(event.target.value))}
