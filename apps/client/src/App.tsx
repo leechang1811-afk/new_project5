@@ -1,7 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import BannerAd from './components/BannerAd';
 import { track } from './services/analytics';
-import { adsService } from './services/ads';
 import { fireSuccess } from './utils/confetti';
 
 type Stage = {
@@ -288,6 +287,7 @@ export default function App() {
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [editingStageTitle, setEditingStageTitle] = useState('');
   const [editingStageDays, setEditingStageDays] = useState(7);
+  const [climberPose, setClimberPose] = useState<'walk' | 'run'>('walk');
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
@@ -486,13 +486,6 @@ export default function App() {
     const baseUrl = 'https://korea-habits.vercel.app/';
     const shareText = `좋은 습관 기르기\n현재 달성률 ${overallProjectProgressRate}% · 오늘 하루 달성률 ${overallTodayRate}%\n${baseUrl}`;
     try {
-      try {
-        await adsService.loadInterstitial();
-        await adsService.showInterstitial();
-        track('ad_interstitial_shown', { trigger: 'share_link' });
-      } catch {
-        // 광고 실패해도 공유 플로우는 유지
-      }
       await navigator.clipboard.writeText(shareText);
       setShareCopied(true);
       window.setTimeout(() => setShareCopied(false), 1800);
@@ -541,17 +534,17 @@ export default function App() {
   const stepIndex = Math.round((dashboardRate / 100) * (stairHeights.length - 1));
   const climberBottom = stairHeights[Math.max(0, Math.min(stepIndex, stairHeights.length - 1))] + 18;
   const checkButtonLabel = deviceType === 'mobile' ? '오늘 완료 체크' : '오늘 완료하기';
-  const climberIcon = dashboardRate <= 0 ? '🚶‍➡️' : '🏃‍➡️';
-  const selectedProjectDateStageMap = useMemo(() => {
-    if (!selectedProject) return new Map<string, number>();
-    const map = new Map<string, number>();
-    for (const stage of selectedProject.stages) {
-      for (const date of stage.checkDates) {
-        map.set(date, stage.stageNumber);
-      }
+
+  useEffect(() => {
+    if (dashboardRate <= 0) {
+      setClimberPose('walk');
+      return;
     }
-    return map;
-  }, [selectedProject]);
+    const timer = window.setInterval(() => {
+      setClimberPose((prev) => (prev === 'walk' ? 'run' : 'walk'));
+    }, 600);
+    return () => window.clearInterval(timer);
+  }, [dashboardRate]);
 
   function startEditStage(stage: Stage) {
     setEditingStageId(stage.id);
@@ -598,7 +591,7 @@ export default function App() {
                   void copyShareLink();
                 }}
               >
-                내 성공률 공유하기
+                내 성공률 링크 복사
               </button>
               <p className="text-lg font-bold text-toss-blue">{dashboardRate}%</p>
             </div>
@@ -623,7 +616,7 @@ export default function App() {
               }}
               aria-label="진도 캐릭터"
             >
-              {climberIcon}
+              {climberPose === 'walk' ? '🚶‍➡️' : '🏃‍➡️'}
             </div>
             <div className="absolute inset-x-0 px-1 bottom-1 flex justify-between text-[10px] text-slate-400">
               <span>0%</span>
@@ -977,18 +970,18 @@ export default function App() {
                   <h4 className="font-semibold">성공 캘린더 (최근 30일)</h4>
                   <div className="mt-3 grid grid-cols-6 gap-1.5">
                     {calendarKeys.map((dateKey) => {
-                      const foundStageNumber = selectedProjectDateStageMap.get(dateKey);
+                      const found = selectedProject.stages.find((stage) => stage.checkDates.includes(dateKey));
                       const isToday = dateKey === today;
                       return (
                         <div
                           key={dateKey}
                           className={`h-10 rounded-md border text-[10px] flex flex-col items-center justify-center ${
-                            foundStageNumber ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-slate-50 text-slate-500 border-slate-200'
+                            found ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-slate-50 text-slate-500 border-slate-200'
                           } ${isToday ? 'ring-2 ring-toss-blue/30' : ''}`}
-                          title={`${formatDateLabel(dateKey)} ${foundStageNumber ? `${foundStageNumber}단계 성공` : '기록 없음'}`}
+                          title={`${formatDateLabel(dateKey)} ${found ? `${found.stageNumber}단계 성공` : '기록 없음'}`}
                         >
                           <span>{formatDateLabel(dateKey)}</span>
-                          <span>{foundStageNumber ? `${foundStageNumber}단계` : '-'}</span>
+                          <span>{found ? `${found.stageNumber}단계` : '-'}</span>
                         </div>
                       );
                     })}
