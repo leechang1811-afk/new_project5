@@ -277,8 +277,6 @@ export default function App() {
   const [editingStageTitle, setEditingStageTitle] = useState('');
   const [editingStageDays, setEditingStageDays] = useState(7);
   const [climberPose, setClimberPose] = useState<'walk' | 'run'>('walk');
-  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
-  const [editingProjectName, setEditingProjectName] = useState('');
 
   const today = toDateKey();
   const calendarKeys = useMemo(() => lastNDays(30), []);
@@ -450,24 +448,6 @@ export default function App() {
     setState((prev) => ({ ...prev, projects: prev.projects.filter((project) => project.id !== projectId) }));
     if (selectedProjectId === projectId) setSelectedProjectId(null);
     track('project_delete');
-  }
-
-  function startEditProject(project: HabitProject) {
-    setEditingProjectId(project.id);
-    setEditingProjectName(project.name);
-  }
-
-  function applyProjectNameEdit(projectId: string) {
-    const trimmed = editingProjectName.trim();
-    if (!trimmed) return;
-    setState((prev) => ({
-      ...prev,
-      projects: prev.projects.map((project) =>
-        project.id === projectId ? { ...project, name: trimmed.slice(0, 30) } : project
-      ),
-    }));
-    setEditingProjectId(null);
-    track('project_rename');
   }
 
   const overallTodayRate = useMemo(() => {
@@ -788,46 +768,7 @@ export default function App() {
           {view === 'detail' && selectedProject && (
             <section className="px-4 sm:px-6 lg:px-8 pb-10 space-y-3">
               <div className="rounded-xl border border-toss-border bg-white p-4 sm:p-5">
-                {editingProjectId === selectedProject.id ? (
-                  <form
-                    className="space-y-2"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      applyProjectNameEdit(selectedProject.id);
-                    }}
-                  >
-                    <input
-                      value={editingProjectName}
-                      onChange={(event) => setEditingProjectName(event.target.value)}
-                      className="w-full rounded-lg border border-toss-border px-3 py-2 bg-white"
-                      maxLength={30}
-                      placeholder="프로젝트 이름"
-                    />
-                    <div className="flex gap-2">
-                      <button type="submit" className="flex-1 rounded-lg bg-toss-blue text-white py-2 text-sm font-medium">
-                        이름 저장
-                      </button>
-                      <button
-                        type="button"
-                        className="flex-1 rounded-lg border border-slate-300 py-2 text-sm"
-                        onClick={() => setEditingProjectId(null)}
-                      >
-                        취소
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="font-semibold">{selectedProject.name}</h3>
-                    <button
-                      type="button"
-                      className="text-xs text-slate-500 border border-slate-300 rounded-md px-2 py-1"
-                      onClick={() => startEditProject(selectedProject)}
-                    >
-                      프로젝트명 수정
-                    </button>
-                  </div>
-                )}
+                <h3 className="font-semibold">{selectedProject.name}</h3>
                 <p className="text-sm text-toss-sub mt-1">
                   기본 기간 {selectedProject.stageDurationDays}일 · 총 {selectedProject.stages.length}단계
                 </p>
