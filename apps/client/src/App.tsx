@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import BannerAd from './components/BannerAd';
 import { track } from './services/analytics';
+import { fireSuccess } from './utils/confetti';
 
 type Stage = {
   id: string;
@@ -28,7 +29,6 @@ type AppState = {
 
 const STORAGE_KEY = 'korea-habit-projects-v2';
 const PRESET_TITLES = ['물 2L 마시기', '10분 독서', '15분 걷기'];
-const STAGE_HELP_SNOOZE_KEY = 'korea-habit-stage-help-snooze-until';
 
 function makeId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -66,12 +66,6 @@ function daysInclusive(startDate: string, endDate: string): number {
 function stageRate(stage: Stage): number {
   const planned = daysInclusive(stage.startDate, stage.endDate);
   return Math.min(100, Math.round((stage.checkDates.length / planned) * 100));
-}
-
-function parseOrNull(date: string): Date | null {
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed;
 }
 
 function isStageWindowToday(stage: Stage, today: string): boolean {
@@ -187,7 +181,7 @@ export default function App() {
   const [stageDays, setStageDays] = useState(7);
   const [nextStageTitle, setNextStageTitle] = useState('');
   const [nextStageDays, setNextStageDays] = useState(7);
-  const [showStageGuideModal, setShowStageGuideModal] = useState(false);
+  const [celebrationMessage, setCelebrationMessage] = useState<string | null>(null);
 
   const today = toDateKey();
   const calendarKeys = useMemo(() => lastNDays(30), []);
@@ -241,20 +235,6 @@ export default function App() {
     [previousStage?.title]
   );
 
-  const shouldShowGuide = useMemo(() => {
-    if (!selectedCurrentStage?.needsSetup) return false;
-    if (typeof window === 'undefined') return false;
-    const snoozeRaw = window.localStorage.getItem(STAGE_HELP_SNOOZE_KEY);
-    if (!snoozeRaw) return true;
-    const snoozeDate = parseOrNull(snoozeRaw);
-    if (!snoozeDate) return true;
-    return snoozeDate.getTime() < Date.now();
-  }, [selectedCurrentStage?.id, selectedCurrentStage?.needsSetup]);
-
-  useEffect(() => {
-    if (shouldShowGuide) setShowStageGuideModal(true);
-  }, [shouldShowGuide]);
-
   function createProject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const name = projectName.trim();
@@ -291,6 +271,17 @@ export default function App() {
   }
 
   function toggleTodayOnActiveStage(projectId: string) {
+    const targetProject = state.projects.find((project) => project.id === projectId);
+    const current = targetProject ? activeStage(targetProject) : null;
+    const plannedDays = current ? daysInclusive(current.startDate, current.endDate) : 1;
+    const willCompleteStage = current
+      ? !current.checkDates.includes(today) &&
+        !current.completed &&
+        !current.needsSetup &&
+        isStageWindowToday(current, today) &&
+        Math.round(((current.checkDates.length + 1) / plannedDays) * 100) >= 100
+      : false;
+
     setState((prev) => {
       const projects = prev.projects.map((project) => {
         if (project.id !== projectId) return project;
@@ -311,6 +302,12 @@ export default function App() {
       });
       return { ...prev, projects };
     });
+    if (willCompleteStage && current) {
+      fireSuccess(current.stageNumber);
+      setCelebrationMessage(`축하해요! ${current.stageNumber}단계를 100% 달성했어요.`);
+      window.setTimeout(() => setCelebrationMessage(null), 2400);
+      track('stage_completed_100', { stage_number: current.stageNumber });
+    }
     track('stage_toggle_today');
   }
 
@@ -340,13 +337,6 @@ export default function App() {
     track('stage_setup', { duration_days: durationDays });
   }
 
-  function closeGuideFor(days: 7 | 30) {
-    const target = new Date();
-    target.setDate(target.getDate() + days);
-    window.localStorage.setItem(STAGE_HELP_SNOOZE_KEY, target.toISOString());
-    setShowStageGuideModal(false);
-  }
-
   function removeProject(projectId: string) {
     setState((prev) => ({ ...prev, projects: prev.projects.filter((project) => project.id !== projectId) }));
     if (selectedProjectId === projectId) setSelectedProjectId(null);
@@ -361,12 +351,18 @@ export default function App() {
     }).length;
     return Math.round((done / state.projects.length) * 100);
   }, [state.projects, today]);
+  const selectedProjectRate = useMemo(() => {
+    if (!selectedProject) return 0;
+    return stageRate(activeStage(selectedProject));
+  }, [selectedProject]);
 
   return (
     <main className="mx-auto max-w-md min-h-[100dvh] bg-slate-50 text-toss-text">
       <section className="px-5 pt-8 pb-4">
         <p className="text-sm text-toss-sub">좋은 습관 기르기</p>
-        <h1 className="text-2xl font-bold mt-1">좋은 습관 기르기</h1>
+        <h1 className="text-2xl font-bold mt-1">
+          {view === 'detail' && selectedProject ? selectedProject.name : '좋은 습관 기르기'}
+        </h1>
         <p className="text-sm text-toss-sub mt-2">하루 체크로 습관을 쌓아요. 목표를 달성하면 다음 단계로 넘어가요.</p>
       </section>
 
@@ -374,14 +370,28 @@ export default function App() {
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl bg-white border border-toss-border p-3">
             <p className="text-xs text-toss-sub">오늘 달성률</p>
-            <p className="text-xl font-semibold mt-1">{overallTodayRate}%</p>
+            <p className="text-xl font-semibold mt-1">
+              {view === 'detail' && selectedProject ? `${selectedProjectRate}%` : `${overallTodayRate}%`}
+            </p>
           </div>
           <div className="rounded-xl bg-white border border-toss-border p-3">
             <p className="text-xs text-toss-sub">진행 중</p>
-            <p className="text-xl font-semibold mt-1">{state.projects.length}개</p>
+            <p className="text-xl font-semibold mt-1">
+              {view === 'detail' && selectedProject
+                ? `${activeStage(selectedProject).stageNumber}단계`
+                : `${state.projects.length}개`}
+            </p>
           </div>
         </div>
       </section>
+
+      {celebrationMessage && (
+        <section className="px-5 pb-2">
+          <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-emerald-700 text-sm font-medium">
+            {celebrationMessage}
+          </div>
+        </section>
+      )}
 
       {view === 'create' && (
         <section className="px-5 pb-8">
@@ -577,6 +587,11 @@ export default function App() {
                               </button>
                             ))}
                           </div>
+                          <div className="rounded-lg bg-slate-50 border border-slate-200 p-2 text-xs text-slate-600">
+                            예시) 물 2L(7일) 성공 → 물 2.3L(7일) 도전
+                            <br />
+                            예시) 10분 독서(14일) 성공 → 15분 독서(14일) 도전
+                          </div>
                           <select
                             value={nextStageDays}
                             onChange={(event) => setNextStageDays(Number(event.target.value))}
@@ -667,44 +682,6 @@ export default function App() {
             </section>
           )}
         </>
-      )}
-
-      {showStageGuideModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl">
-            <h3 className="text-base font-semibold">다음 단계 안내</h3>
-            <p className="text-sm text-slate-600 mt-2">
-              지금 단계를 100% 달성하면 다음 단계가 열려요. 다음 목표와 기간은 직접 정하면 됩니다.
-            </p>
-            <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700 space-y-1">
-              <p>예시) 물 2L(7일) 성공 → 물 2.3L(7일) 도전</p>
-              <p>예시) 10분 독서(14일) 성공 → 15분 독서(14일) 도전</p>
-            </div>
-            <div className="mt-4 grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                className="rounded-lg border border-slate-300 py-2 text-sm"
-                onClick={() => closeGuideFor(7)}
-              >
-                일주일간 그만보기
-              </button>
-              <button
-                type="button"
-                className="rounded-lg border border-slate-300 py-2 text-sm"
-                onClick={() => closeGuideFor(30)}
-              >
-                한달간 그만보기
-              </button>
-              <button
-                type="button"
-                className="rounded-lg bg-toss-blue text-white py-2 text-sm font-medium"
-                onClick={() => setShowStageGuideModal(false)}
-              >
-                확인
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       <BannerAd />
