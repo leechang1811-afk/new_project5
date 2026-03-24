@@ -484,7 +484,7 @@ export default function App() {
 
   async function copyShareLink() {
     const baseUrl = 'https://korea-habits.vercel.app/';
-    const shareText = `좋은 습관 만들기\n현재 달성률 ${overallProjectProgressRate}% · 오늘 하루 달성률 ${overallTodayRate}%\n${baseUrl}`;
+    const shareText = `좋은 습관 기르기\n현재 달성률 ${overallProjectProgressRate}% · 오늘 하루 달성률 ${overallTodayRate}%\n${baseUrl}`;
     try {
       try {
         await adsService.loadInterstitial();
@@ -575,8 +575,8 @@ export default function App() {
 
   return (
     <main className="mx-auto w-full max-w-5xl min-h-[100dvh] bg-slate-50 text-toss-text">
-      <section className="px-4 sm:px-6 lg:px-8 pt-7 sm:pt-8 pb-4 text-center">
-        <p className="text-sm font-semibold text-emerald-700">좋은 습관 만들기</p>
+      <section className="px-4 sm:px-6 lg:px-8 pt-7 sm:pt-8 pb-4">
+        <p className="text-sm text-toss-sub">좋은 습관 기르기</p>
         <h1 className="text-2xl font-bold mt-1">
           {view === 'detail' && selectedProject ? selectedProject.name : '나의 홈화면'}
         </h1>
@@ -625,11 +625,11 @@ export default function App() {
             >
               {climberIcon}
             </div>
-          </div>
-          <div className="mt-1 px-1 flex justify-between text-[10px] text-slate-400">
-            <span>0%</span>
-            <span>50%</span>
-            <span>100%</span>
+            <div className="absolute inset-x-0 px-1 bottom-1 flex justify-between text-[10px] text-slate-400">
+              <span>0%</span>
+              <span>50%</span>
+              <span>100%</span>
+            </div>
           </div>
         </div>
       </section>
