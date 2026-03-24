@@ -6,30 +6,21 @@ import confetti from 'canvas-confetti';
 const COLORS = ['#3182F6', '#EAB308', '#22C55E', '#EF4444', '#A855F7', '#EC4899', '#06B6D4'];
 
 export function fireSuccess(level: number = 1): void {
-  const base = 55;
-  const levelBonus = Math.min(220, (level - 1) * 20);
+  const base = 30;
+  const levelBonus = Math.min(150, (level - 1) * 15);
   const count = base + levelBonus;
-  const scalar = 1.3 + (level - 1) * 0.06;
-  confetti({ particleCount: count, angle: 60, spread: 75 + level * 3, origin: { x: 0 }, colors: COLORS, scalar });
-  confetti({ particleCount: count, angle: 120, spread: 75 + level * 3, origin: { x: 1 }, colors: COLORS, scalar });
-  confetti({
-    particleCount: Math.floor(count * 0.85),
-    spread: 105 + level * 2,
-    origin: { x: 0.5, y: 0.45 },
-    colors: COLORS,
-    scalar,
-    startVelocity: 42,
-    ticks: 140,
-  });
+  const scalar = 1.2 + (level - 1) * 0.05;
+  confetti({ particleCount: count, angle: 60, spread: 60 + level * 2, origin: { x: 0 }, colors: COLORS, scalar });
+  confetti({ particleCount: count, angle: 120, spread: 60 + level * 2, origin: { x: 1 }, colors: COLORS, scalar });
   if (level >= 3) {
-    confetti({ particleCount: Math.floor(count), spread: 120, origin: { y: 0.55 }, colors: COLORS, scalar });
+    confetti({ particleCount: Math.floor(count * 0.9), spread: 100, origin: { y: 0.5 }, colors: COLORS, scalar });
   }
   if (level >= 10) {
-    confetti({ particleCount: Math.floor(count * 0.8), spread: 125, origin: { x: 0.3, y: 0.3 }, colors: COLORS, scalar });
-    confetti({ particleCount: Math.floor(count * 0.8), spread: 125, origin: { x: 0.7, y: 0.3 }, colors: COLORS, scalar });
+    confetti({ particleCount: Math.floor(count * 0.7), spread: 110, origin: { x: 0.3, y: 0.3 }, colors: COLORS, scalar });
+    confetti({ particleCount: Math.floor(count * 0.7), spread: 110, origin: { x: 0.7, y: 0.3 }, colors: COLORS, scalar });
   }
   if (level >= 15) {
-    confetti({ particleCount: Math.floor(count * 0.75), spread: 150, origin: { x: 0.5, y: 0.1 }, colors: COLORS, scalar });
+    confetti({ particleCount: Math.floor(count * 0.6), spread: 130, origin: { x: 0.5, y: 0 }, colors: COLORS, scalar });
   }
 }
 
