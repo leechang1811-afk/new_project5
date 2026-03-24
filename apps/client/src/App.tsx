@@ -466,14 +466,14 @@ export default function App() {
     if (!selectedProject) return 0;
     return stageRateByConfiguredPeriod(activeStage(selectedProject), selectedProject.stageDurationDays, today);
   }, [selectedProject, today]);
-  const overallProjectProgressRate = useMemo(() => {
+  const overallConfiguredRate = useMemo(() => {
     if (state.projects.length === 0) return 0;
     const sum = state.projects.reduce((acc, project) => {
       return acc + stageRateByConfiguredPeriod(activeStage(project), project.stageDurationDays, today);
     }, 0);
     return Math.round(sum / state.projects.length);
   }, [state.projects, today]);
-  const dashboardRate = view === 'detail' && selectedProject ? selectedProjectRate : overallProjectProgressRate;
+  const dashboardRate = view === 'detail' && selectedProject ? selectedProjectRate : overallTodayRate;
   const displayRate = Math.min(94, Math.max(6, dashboardRate));
   const stairHeights = [8, 16, 26, 38, 52, 68, 86];
   const stepIndex = Math.round((dashboardRate / 100) * (stairHeights.length - 1));
@@ -527,7 +527,7 @@ export default function App() {
       <section className="px-4 sm:px-6 lg:px-8 pb-4">
         <div className="rounded-xl border border-toss-border bg-white p-4 sm:p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold">나의 습관형성 달성율</p>
+            <p className="text-sm font-semibold">현재 설정한 습관 진도</p>
             <p className="text-lg font-bold text-toss-blue">{dashboardRate}%</p>
           </div>
           <div className="relative mt-4 h-[150px] rounded-xl bg-slate-50 border border-slate-100 overflow-hidden">
@@ -535,7 +535,7 @@ export default function App() {
               {stairHeights.map((height, index) => (
                 <div
                   key={`step-${height}`}
-                  className={`flex-1 transition-all duration-500 ${
+                  className={`flex-1 rounded-t-md transition-all duration-500 ${
                     index <= stepIndex ? 'bg-emerald-400' : 'bg-slate-200'
                   }`}
                   style={{ height: `${height}px` }}
@@ -550,7 +550,7 @@ export default function App() {
               }}
               aria-label="진도 캐릭터"
             >
-              {climberPose === 'walk' ? '🚶‍➡️' : '🏃‍➡️'}
+              {climberPose === 'walk' ? '🚶' : '🏃'}
             </div>
             <div className="absolute inset-x-0 px-1 bottom-1 flex justify-between text-[10px] text-slate-400">
               <span>0%</span>
@@ -566,7 +566,7 @@ export default function App() {
           <div className="rounded-xl bg-white border border-toss-border p-3">
             <p className="text-xs text-toss-sub">현재 달성률</p>
             <p className="text-xl font-semibold mt-1">
-              {view === 'detail' && selectedProject ? `${selectedProjectRate}%` : `${overallProjectProgressRate}%`}
+              {dashboardRate}%
             </p>
           </div>
           <div className="rounded-xl bg-white border border-toss-border p-3">
@@ -580,8 +580,9 @@ export default function App() {
           </div>
         </div>
         <div className="rounded-xl bg-white border border-toss-border p-3 mt-2">
-          <p className="text-xs text-toss-sub">오늘 하루 달성률</p>
-          <p className="text-xl font-semibold mt-1">{overallTodayRate}%</p>
+          <p className="text-xs text-toss-sub">전체 기준 달성률 현황</p>
+          <p className="text-xl font-semibold mt-1">{overallConfiguredRate}%</p>
+          <p className="text-[11px] text-toss-sub mt-1">전체 프로젝트의 설정 기간 기준 평균</p>
         </div>
       </section>
 
