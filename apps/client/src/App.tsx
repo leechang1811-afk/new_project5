@@ -172,81 +172,6 @@ function buildStageSuggestions(previousTitle: string): string[] {
   ];
 }
 
-function stageDurationDays(stage: Stage): number {
-  return daysInclusive(stage.startDate, stage.endDate);
-}
-
-function rebalanceProjectAfterStageEdit(project: HabitProject, stageId: string, title: string, durationDays: number): HabitProject {
-  const stages = [...project.stages].sort((a, b) => a.stageNumber - b.stageNumber);
-  const editIndex = stages.findIndex((stage) => stage.id === stageId);
-  if (editIndex < 0) return project;
-
-  const edited = stages[editIndex];
-  const updatedEdited: Stage = {
-    ...edited,
-    title: title.trim().slice(0, 30) || edited.title,
-    endDate: addDays(edited.startDate, durationDays - 1),
-    completed: false,
-    failed: false,
-    needsSetup: false,
-  };
-
-  const nextStages: Stage[] = [];
-  for (let i = 0; i < stages.length; i += 1) {
-    const source = i === editIndex ? updatedEdited : stages[i];
-    if (i < editIndex) {
-      nextStages.push(source);
-      continue;
-    }
-    if (i === editIndex) {
-      // Keep only checks that are inside the updated period.
-      const filteredChecks = source.checkDates.filter((date) => date >= source.startDate && date <= source.endDate);
-      nextStages.push({ ...source, checkDates: filteredChecks });
-      continue;
-    }
-
-    const previous = nextStages[i - 1];
-    const duration = stageDurationDays(source);
-    const startDate = addDays(previous.endDate, 1);
-    const endDate = addDays(startDate, duration - 1);
-    const checkDates = source.checkDates.filter((date) => date >= startDate && date <= endDate);
-    nextStages.push({
-      ...source,
-      startDate,
-      endDate,
-      checkDates,
-      completed: false,
-      failed: false,
-      needsSetup: source.needsSetup,
-    });
-  }
-
-  // Re-evaluate stage progression from the edited stage.
-  let blockNextStages = false;
-  const normalized = nextStages.map((stage, idx) => {
-    if (idx < editIndex) return stage;
-    if (blockNextStages) {
-      return {
-        ...stage,
-        completed: false,
-        failed: false,
-      };
-    }
-    const rate = stageRate(stage);
-    if (stage.needsSetup) {
-      blockNextStages = true;
-      return { ...stage, completed: false, failed: false };
-    }
-    if (rate >= 100) {
-      return { ...stage, completed: true, failed: false };
-    }
-    blockNextStages = true;
-    return { ...stage, completed: false, failed: false };
-  });
-
-  return { ...project, stages: normalized };
-}
-
 export default function App() {
   const [state, setState] = useState<AppState>(() => safeLoadState());
   const [view, setView] = useState<'create' | 'list' | 'detail'>('create');
@@ -258,9 +183,6 @@ export default function App() {
   const [nextStageDays, setNextStageDays] = useState(7);
   const [celebrationMessage, setCelebrationMessage] = useState<string | null>(null);
   const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
-  const [editingStageId, setEditingStageId] = useState<string | null>(null);
-  const [editingStageTitle, setEditingStageTitle] = useState('');
-  const [editingStageDays, setEditingStageDays] = useState(7);
 
   const today = toDateKey();
   const calendarKeys = useMemo(() => lastNDays(30), []);
@@ -448,32 +370,12 @@ export default function App() {
   }, [selectedProject]);
   const checkButtonLabel = deviceType === 'mobile' ? '오늘 완료 체크' : '오늘 완료하기';
 
-  function startEditStage(stage: Stage) {
-    setEditingStageId(stage.id);
-    setEditingStageTitle(stage.title || '');
-    setEditingStageDays(stageDurationDays(stage));
-  }
-
-  function applyStageEdit(projectId: string, stageId: string) {
-    if (!editingStageTitle.trim()) return;
-    setState((prev) => ({
-      ...prev,
-      projects: prev.projects.map((project) =>
-        project.id === projectId
-          ? rebalanceProjectAfterStageEdit(project, stageId, editingStageTitle, editingStageDays)
-          : project
-      ),
-    }));
-    setEditingStageId(null);
-    track('stage_edit', { duration_days: editingStageDays });
-  }
-
   return (
     <main className="mx-auto w-full max-w-5xl min-h-[100dvh] bg-slate-50 text-toss-text">
       <section className="px-4 sm:px-6 lg:px-8 pt-7 sm:pt-8 pb-4">
         <p className="text-sm text-toss-sub">좋은 습관 기르기</p>
         <h1 className="text-2xl font-bold mt-1">
-          {view === 'detail' && selectedProject ? selectedProject.name : '나의 홈화면'}
+          {view === 'detail' && selectedProject ? selectedProject.name : '좋은 습관 기르기'}
         </h1>
         <p className="text-sm text-toss-sub mt-2">
           하루 체크로 습관을 쌓아요. 목표를 달성하면 다음 단계로 넘어가요.
@@ -576,7 +478,7 @@ export default function App() {
               className={`rounded-lg px-3 py-2 text-sm ${view === 'list' ? 'bg-toss-blue text-white' : 'bg-white border border-toss-border'}`}
               onClick={() => setView('list')}
             >
-              전체 습관보기
+              목표 목록
             </button>
             <button
               type="button"
@@ -790,54 +692,6 @@ export default function App() {
                         )}
                         {stage.completed && !stage.failed && (
                           <p className="text-xs mt-1 text-emerald-600">성공적으로 완료했어요</p>
-                        )}
-                        {editingStageId === stage.id ? (
-                          <form
-                            className="mt-2 space-y-2"
-                            onSubmit={(event) => {
-                              event.preventDefault();
-                              applyStageEdit(selectedProject.id, stage.id);
-                            }}
-                          >
-                            <input
-                              value={editingStageTitle}
-                              onChange={(event) => setEditingStageTitle(event.target.value)}
-                              className="w-full rounded-lg border border-toss-border px-3 py-2 text-sm bg-white"
-                              placeholder="수정할 목표를 입력해 주세요"
-                            />
-                            <select
-                              value={editingStageDays}
-                              onChange={(event) => setEditingStageDays(Number(event.target.value))}
-                              className="w-full rounded-lg border border-toss-border px-3 py-2 text-sm bg-white"
-                            >
-                              <option value={1}>1일</option>
-                              <option value={3}>3일</option>
-                              <option value={7}>7일</option>
-                              <option value={14}>14일</option>
-                              <option value={21}>21일</option>
-                              <option value={30}>30일</option>
-                            </select>
-                            <div className="flex gap-2">
-                              <button type="submit" className="flex-1 rounded-lg bg-toss-blue text-white py-2 text-sm font-medium">
-                                수정 저장
-                              </button>
-                              <button
-                                type="button"
-                                className="flex-1 rounded-lg border border-slate-300 py-2 text-sm"
-                                onClick={() => setEditingStageId(null)}
-                              >
-                                취소
-                              </button>
-                            </div>
-                          </form>
-                        ) : (
-                          <button
-                            type="button"
-                            className="mt-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-700"
-                            onClick={() => startEditStage(stage)}
-                          >
-                            단계 수정하기
-                          </button>
                         )}
                       </li>
                     ))}
