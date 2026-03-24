@@ -10,6 +10,7 @@ type Stage = {
   endDate: string;
   checkDates: string[];
   completed: boolean;
+  needsSetup?: boolean;
 };
 
 type HabitProject = {
@@ -26,6 +27,7 @@ type AppState = {
 
 const STORAGE_KEY = 'korea-habit-projects-v2';
 const PRESET_TITLES = ['물 2L 마시기', '10분 독서', '15분 걷기'];
+const STAGE_HELP_SNOOZE_KEY = 'korea-habit-stage-help-snooze-until';
 
 function makeId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -65,6 +67,12 @@ function stageRate(stage: Stage): number {
   return Math.min(100, Math.round((stage.checkDates.length / planned) * 100));
 }
 
+function parseOrNull(date: string): Date | null {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
 function isStageWindowToday(stage: Stage, today: string): boolean {
   return today >= stage.startDate && today <= stage.endDate;
 }
@@ -91,6 +99,7 @@ function safeLoadState(): AppState {
               stageNumber: Number.isFinite(stage.stageNumber) ? stage.stageNumber : idx + 1,
               checkDates: Array.isArray(stage.checkDates) ? stage.checkDates : [],
               completed: Boolean(stage.completed),
+              needsSetup: Boolean(stage.needsSetup),
             }))
           : [],
       })),
@@ -106,11 +115,12 @@ function buildNextStage(previous: Stage, stageNumber: number, durationDays: numb
   return {
     id: makeId(),
     stageNumber,
-    title: `${stageNumber}단계`,
+    title: '',
     startDate: nextStart,
     endDate: nextEnd,
     checkDates: [],
     completed: false,
+    needsSetup: true,
   };
 }
 
@@ -142,6 +152,9 @@ export default function App() {
   const [projectName, setProjectName] = useState('');
   const [firstStageTitle, setFirstStageTitle] = useState('');
   const [stageDays, setStageDays] = useState(7);
+  const [nextStageTitle, setNextStageTitle] = useState('');
+  const [nextStageDays, setNextStageDays] = useState(7);
+  const [showStageGuideModal, setShowStageGuideModal] = useState(false);
 
   const today = toDateKey();
   const calendarKeys = useMemo(() => lastNDays(30), []);
@@ -170,6 +183,25 @@ export default function App() {
     return state.projects.find((project) => project.id === selectedProjectId) ?? null;
   }, [selectedProjectId, state.projects]);
 
+  const selectedCurrentStage = useMemo(() => {
+    if (!selectedProject) return null;
+    return activeStage(selectedProject);
+  }, [selectedProject]);
+
+  const shouldShowGuide = useMemo(() => {
+    if (!selectedCurrentStage?.needsSetup) return false;
+    if (typeof window === 'undefined') return false;
+    const snoozeRaw = window.localStorage.getItem(STAGE_HELP_SNOOZE_KEY);
+    if (!snoozeRaw) return true;
+    const snoozeDate = parseOrNull(snoozeRaw);
+    if (!snoozeDate) return true;
+    return snoozeDate.getTime() < Date.now();
+  }, [selectedCurrentStage?.id, selectedCurrentStage?.needsSetup]);
+
+  useEffect(() => {
+    if (shouldShowGuide) setShowStageGuideModal(true);
+  }, [shouldShowGuide]);
+
   function createProject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const name = projectName.trim();
@@ -191,6 +223,7 @@ export default function App() {
           endDate: end,
           checkDates: [],
           completed: false,
+          needsSetup: false,
         },
       ],
     };
@@ -208,7 +241,7 @@ export default function App() {
       const projects = prev.projects.map((project) => {
         if (project.id !== projectId) return project;
         const current = activeStage(project);
-        if (!isStageWindowToday(current, today) || current.completed) return project;
+        if (!isStageWindowToday(current, today) || current.completed || current.needsSetup) return project;
         const checked = current.checkDates.includes(today);
         const nextStages = project.stages.map((stage) =>
           stage.id !== current.id
@@ -225,6 +258,39 @@ export default function App() {
       return { ...prev, projects };
     });
     track('stage_toggle_today');
+  }
+
+  function setupActiveStage(projectId: string, title: string, durationDays: number) {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    setState((prev) => {
+      const projects = prev.projects.map((project) => {
+        if (project.id !== projectId) return project;
+        const current = activeStage(project);
+        const newEnd = addDays(current.startDate, durationDays - 1);
+        const nextStages = project.stages.map((stage) =>
+          stage.id === current.id
+            ? {
+                ...stage,
+                title: trimmed.slice(0, 30),
+                endDate: newEnd,
+                needsSetup: false,
+              }
+            : stage
+        );
+        return { ...project, stages: nextStages, stageDurationDays: durationDays };
+      });
+      return { ...prev, projects };
+    });
+    setNextStageTitle('');
+    track('stage_setup', { duration_days: durationDays });
+  }
+
+  function closeGuideFor(days: 7 | 30) {
+    const target = new Date();
+    target.setDate(target.getDate() + days);
+    window.localStorage.setItem(STAGE_HELP_SNOOZE_KEY, target.toISOString());
+    setShowStageGuideModal(false);
   }
 
   function removeProject(projectId: string) {
@@ -366,7 +432,7 @@ export default function App() {
                       <div>
                         <h3 className="font-semibold">{project.name}</h3>
                         <p className="text-sm text-toss-sub mt-1">
-                          현재 {current.stageNumber}단계 · {current.title}
+                          현재 {current.stageNumber}단계 · {current.title || '다음 단계 목표 설정 필요'}
                         </p>
                         <p className="text-xs text-slate-500 mt-1">
                           {current.startDate} ~ {current.endDate}
@@ -386,7 +452,20 @@ export default function App() {
                     <div className="mt-3 h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div className="h-full bg-emerald-500" style={{ width: `${currentRate}%` }} />
                     </div>
-                    <p className="text-sm mt-2 text-slate-700">단계 달성률 {currentRate}%</p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <p className="text-sm text-slate-700">단계 달성률 {currentRate}%</p>
+                      <button
+                        type="button"
+                        className="text-sm text-toss-blue font-medium"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedProjectId(project.id);
+                          setView('detail');
+                        }}
+                      >
+                        상세내용보기
+                      </button>
+                    </div>
                   </article>
                 );
               })}
@@ -406,15 +485,49 @@ export default function App() {
                 {(() => {
                   const current = activeStage(selectedProject);
                   const currentRate = stageRate(current);
-                  const canCheckToday = isStageWindowToday(current, today) && !current.completed;
+                  const canCheckToday = isStageWindowToday(current, today) && !current.completed && !current.needsSetup;
                   return (
                     <>
                       <h4 className="font-semibold">
-                        {current.stageNumber}단계: {current.title}
+                        {current.stageNumber}단계: {current.title || '목표 설정 필요'}
                       </h4>
                       <p className="text-sm text-toss-sub mt-1">
                         {current.startDate} ~ {current.endDate} · 달성률 {currentRate}%
                       </p>
+                      {current.needsSetup && (
+                        <form
+                          className="mt-3 rounded-lg border border-slate-200 p-3 space-y-2"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            setupActiveStage(selectedProject.id, nextStageTitle, nextStageDays);
+                          }}
+                        >
+                          <p className="text-sm font-medium">다음 단계 세팅</p>
+                          <input
+                            value={nextStageTitle}
+                            onChange={(event) => setNextStageTitle(event.target.value)}
+                            placeholder={`예: ${current.stageNumber}단계에는 난이도 10% 업`}
+                            className="w-full rounded-lg border border-toss-border px-3 py-2 bg-white outline-none"
+                          />
+                          <select
+                            value={nextStageDays}
+                            onChange={(event) => setNextStageDays(Number(event.target.value))}
+                            className="w-full rounded-lg border border-toss-border px-3 py-2 bg-white"
+                          >
+                            <option value={7}>7일</option>
+                            <option value={14}>14일</option>
+                            <option value={21}>21일</option>
+                            <option value={30}>30일</option>
+                          </select>
+                          <button
+                            type="submit"
+                            className="w-full rounded-lg bg-toss-blue text-white py-2 font-medium disabled:opacity-50"
+                            disabled={!nextStageTitle.trim()}
+                          >
+                            이 단계로 시작하기
+                          </button>
+                        </form>
+                      )}
                       <button
                         type="button"
                         className={`mt-3 w-full rounded-xl py-3 font-medium ${
@@ -427,7 +540,7 @@ export default function App() {
                       </button>
                       {!canCheckToday && (
                         <p className="text-xs text-slate-500 mt-2">
-                          현재 단계 기간 안에서만 체크할 수 있어요. 100% 달성 시 다음 단계가 자동 생성됩니다.
+                          현재 단계 기간 안에서만 체크할 수 있어요. 단계 세팅 완료 후 체크가 활성화됩니다.
                         </p>
                       )}
                     </>
@@ -463,7 +576,7 @@ export default function App() {
                   {selectedProject.stages.map((stage) => (
                     <li key={stage.id} className="border border-slate-200 rounded-lg p-3">
                       <p className="text-sm font-medium">
-                        {stage.stageNumber}단계 · {stage.title}
+                        {stage.stageNumber}단계 · {stage.title || '목표 미설정'}
                       </p>
                       <p className="text-xs text-slate-500 mt-1">
                         {stage.startDate} ~ {stage.endDate}
@@ -478,6 +591,44 @@ export default function App() {
             </section>
           )}
         </>
+      )}
+
+      {showStageGuideModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl">
+            <h3 className="text-base font-semibold">단계 세팅 가이드</h3>
+            <p className="text-sm text-slate-600 mt-2">
+              1단계를 100% 달성하면 다음 단계가 자동으로 열리고, 목표/기간은 사용자가 직접 세팅합니다.
+            </p>
+            <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700 space-y-1">
+              <p>예시 1) 1단계: 물 2L(7일) → 2단계: 물 2.3L(7일)</p>
+              <p>예시 2) 1단계: 10분 독서(14일) → 2단계: 15분 독서(14일)</p>
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-slate-300 py-2 text-sm"
+                onClick={() => closeGuideFor(7)}
+              >
+                일주일간 그만보기
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border border-slate-300 py-2 text-sm"
+                onClick={() => closeGuideFor(30)}
+              >
+                한달간 그만보기
+              </button>
+              <button
+                type="button"
+                className="rounded-lg bg-toss-blue text-white py-2 text-sm font-medium"
+                onClick={() => setShowStageGuideModal(false)}
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <BannerAd />
