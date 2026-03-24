@@ -68,16 +68,6 @@ function stageRate(stage: Stage): number {
   return Math.min(100, Math.round((stage.checkDates.length / planned) * 100));
 }
 
-function stageRateByConfiguredPeriod(stage: Stage, periodDays: number, today: string): number {
-  const rangeStart = addDays(today, -(periodDays - 1));
-  const effectiveStart = stage.startDate > rangeStart ? stage.startDate : rangeStart;
-  const effectiveEnd = stage.endDate < today ? stage.endDate : today;
-  if (effectiveEnd < effectiveStart) return 0;
-  const plannedDays = daysInclusive(effectiveStart, effectiveEnd);
-  const done = stage.checkDates.filter((date) => date >= effectiveStart && date <= effectiveEnd).length;
-  return Math.min(100, Math.round((done / plannedDays) * 100));
-}
-
 function isStageWindowToday(stage: Stage, today: string): boolean {
   return today >= stage.startDate && today <= stage.endDate;
 }
@@ -192,8 +182,6 @@ function rebalanceProjectAfterStageEdit(project: HabitProject, stageId: string, 
   if (editIndex < 0) return project;
 
   const edited = stages[editIndex];
-  const originalDuration = stageDurationDays(edited);
-  const isDurationIncreased = durationDays > originalDuration;
   const updatedEdited: Stage = {
     ...edited,
     title: title.trim().slice(0, 30) || edited.title,
@@ -256,9 +244,6 @@ function rebalanceProjectAfterStageEdit(project: HabitProject, stageId: string, 
     return { ...stage, completed: false, failed: false };
   });
 
-  if (isDurationIncreased) {
-    return { ...project, stages: normalized.slice(0, editIndex + 1) };
-  }
   return { ...project, stages: normalized };
 }
 
@@ -276,7 +261,6 @@ export default function App() {
   const [editingStageId, setEditingStageId] = useState<string | null>(null);
   const [editingStageTitle, setEditingStageTitle] = useState('');
   const [editingStageDays, setEditingStageDays] = useState(7);
-  const [climberPose, setClimberPose] = useState<'walk' | 'run'>('walk');
 
   const today = toDateKey();
   const calendarKeys = useMemo(() => lastNDays(30), []);
@@ -462,34 +446,12 @@ export default function App() {
     if (!selectedProject) return 0;
     return stageRate(activeStage(selectedProject));
   }, [selectedProject]);
-  const selectedProjectConfiguredRate = useMemo(() => {
-    if (!selectedProject) return 0;
-    return stageRateByConfiguredPeriod(activeStage(selectedProject), selectedProject.stageDurationDays, today);
-  }, [selectedProject, today]);
-  const overallConfiguredRate = useMemo(() => {
-    if (state.projects.length === 0) return 0;
-    const sum = state.projects.reduce((acc, project) => {
-      return acc + stageRateByConfiguredPeriod(activeStage(project), project.stageDurationDays, today);
-    }, 0);
-    return Math.round(sum / state.projects.length);
-  }, [state.projects, today]);
   const dashboardRate = view === 'detail' && selectedProject ? selectedProjectRate : overallTodayRate;
   const displayRate = Math.min(94, Math.max(6, dashboardRate));
-  const stairHeights = [8, 16, 26, 38, 52, 68, 86];
+  const stairHeights = [14, 18, 22, 26, 30, 34, 38];
   const stepIndex = Math.round((dashboardRate / 100) * (stairHeights.length - 1));
   const climberBottom = stairHeights[Math.max(0, Math.min(stepIndex, stairHeights.length - 1))] + 18;
   const checkButtonLabel = deviceType === 'mobile' ? '오늘 완료 체크' : '오늘 완료하기';
-
-  useEffect(() => {
-    if (dashboardRate <= 0) {
-      setClimberPose('walk');
-      return;
-    }
-    const timer = window.setInterval(() => {
-      setClimberPose((prev) => (prev === 'walk' ? 'run' : 'walk'));
-    }, 600);
-    return () => window.clearInterval(timer);
-  }, [dashboardRate]);
 
   function startEditStage(stage: Stage) {
     setEditingStageId(stage.id);
@@ -527,11 +489,11 @@ export default function App() {
       <section className="px-4 sm:px-6 lg:px-8 pb-4">
         <div className="rounded-xl border border-toss-border bg-white p-4 sm:p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold">현재 설정한 습관 진도</p>
+            <p className="text-sm font-semibold">오늘의 계단 진도</p>
             <p className="text-lg font-bold text-toss-blue">{dashboardRate}%</p>
           </div>
-          <div className="relative mt-4 h-[150px] rounded-xl bg-slate-50 border border-slate-100 overflow-hidden">
-            <div className="absolute inset-x-0 bottom-3 flex items-end gap-0">
+          <div className="relative mt-4 h-[110px] rounded-xl bg-slate-50 border border-slate-100 overflow-hidden">
+            <div className="absolute inset-x-3 bottom-3 flex items-end gap-1.5">
               {stairHeights.map((height, index) => (
                 <div
                   key={`step-${height}`}
@@ -550,9 +512,9 @@ export default function App() {
               }}
               aria-label="진도 캐릭터"
             >
-              {climberPose === 'walk' ? '🚶' : '🏃'}
+              🧍
             </div>
-            <div className="absolute inset-x-0 px-1 bottom-1 flex justify-between text-[10px] text-slate-400">
+            <div className="absolute inset-x-3 bottom-1 flex justify-between text-[10px] text-slate-400">
               <span>0%</span>
               <span>50%</span>
               <span>100%</span>
@@ -564,7 +526,7 @@ export default function App() {
       <section className="px-4 sm:px-6 lg:px-8 pb-4">
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl bg-white border border-toss-border p-3">
-            <p className="text-xs text-toss-sub">현재 달성률</p>
+            <p className="text-xs text-toss-sub">오늘 달성률</p>
             <p className="text-xl font-semibold mt-1">
               {dashboardRate}%
             </p>
@@ -576,13 +538,7 @@ export default function App() {
                 ? `${activeStage(selectedProject).stageNumber}단계`
                 : `${state.projects.length}개`}
             </p>
-            <p className="text-[11px] text-toss-sub mt-1">오늘 달성률 {overallTodayRate}%</p>
           </div>
-        </div>
-        <div className="rounded-xl bg-white border border-toss-border p-3 mt-2">
-          <p className="text-xs text-toss-sub">전체 기준 달성률 현황</p>
-          <p className="text-xl font-semibold mt-1">{overallConfiguredRate}%</p>
-          <p className="text-[11px] text-toss-sub mt-1">전체 프로젝트의 설정 기간 기준 평균</p>
         </div>
       </section>
 
@@ -720,9 +676,7 @@ export default function App() {
                       <div className="h-full bg-emerald-500" style={{ width: `${currentRate}%` }} />
                     </div>
                     <div className="mt-2 flex items-center justify-between">
-                      <p className="text-sm text-slate-700">
-                        현재 {currentRate}% · 기간 기준 {stageRateByConfiguredPeriod(current, project.stageDurationDays, today)}%
-                      </p>
+                      <p className="text-sm text-slate-700">단계 달성률 {currentRate}%</p>
                       <button
                         type="button"
                         className="text-sm text-toss-blue font-medium"
@@ -748,7 +702,6 @@ export default function App() {
                 <p className="text-sm text-toss-sub mt-1">
                   기본 기간 {selectedProject.stageDurationDays}일 · 총 {selectedProject.stages.length}단계
                 </p>
-                <p className="text-sm text-toss-sub mt-1">기간 기준 달성률 {selectedProjectConfiguredRate}%</p>
               </div>
 
               <div className="rounded-xl border border-toss-border bg-white p-4 sm:p-5">
