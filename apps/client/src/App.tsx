@@ -260,16 +260,6 @@ function rebalanceProjectAfterStageEdit(project: HabitProject, stageId: string, 
   if (isDurationIncreased) {
     return { ...project, stages: normalized.slice(0, editIndex + 1) };
   }
-
-  const hasActiveStage = normalized.some((stage) => !stage.completed && !stage.failed);
-  if (!hasActiveStage && normalized.length > 0) {
-    const last = normalized[normalized.length - 1];
-    return {
-      ...project,
-      stages: [...normalized, buildNextStage(last, last.stageNumber + 1, project.stageDurationDays)],
-    };
-  }
-
   return { ...project, stages: normalized };
 }
 
@@ -687,9 +677,9 @@ export default function App() {
                   onChange={(event) => setStageDays(Number(event.target.value))}
                   className="mt-1 w-full rounded-xl border border-toss-border px-3 py-2 bg-white"
                 >
-                  <option value={1}>1일</option>
-                  <option value={3}>3일</option>
                   <option value={7}>7일</option>
+                  <option value={3}>3일</option>
+                  <option value={1}>1일</option>
                   <option value={14}>14일</option>
                   <option value={21}>21일</option>
                   <option value={30}>30일</option>
@@ -896,9 +886,9 @@ export default function App() {
                             onChange={(event) => setNextStageDays(Number(event.target.value))}
                             className="w-full rounded-lg border border-toss-border px-3 py-2 bg-white"
                           >
-                            <option value={1}>1일</option>
-                            <option value={3}>3일</option>
                             <option value={7}>7일</option>
+                            <option value={3}>3일</option>
+                            <option value={1}>1일</option>
                             <option value={14}>14일</option>
                             <option value={21}>21일</option>
                             <option value={30}>30일</option>
