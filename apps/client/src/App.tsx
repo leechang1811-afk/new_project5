@@ -446,11 +446,6 @@ export default function App() {
     if (!selectedProject) return 0;
     return stageRate(activeStage(selectedProject));
   }, [selectedProject]);
-  const dashboardRate = view === 'detail' && selectedProject ? selectedProjectRate : overallTodayRate;
-  const displayRate = Math.min(94, Math.max(6, dashboardRate));
-  const stairHeights = [14, 18, 22, 26, 30, 34, 38];
-  const stepIndex = Math.round((dashboardRate / 100) * (stairHeights.length - 1));
-  const climberBottom = stairHeights[Math.max(0, Math.min(stepIndex, stairHeights.length - 1))] + 18;
   const checkButtonLabel = deviceType === 'mobile' ? '오늘 완료 체크' : '오늘 완료하기';
 
   function startEditStage(stage: Stage) {
@@ -487,48 +482,11 @@ export default function App() {
       </section>
 
       <section className="px-4 sm:px-6 lg:px-8 pb-4">
-        <div className="rounded-xl border border-toss-border bg-white p-4 sm:p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold">오늘의 계단 진도</p>
-            <p className="text-lg font-bold text-toss-blue">{dashboardRate}%</p>
-          </div>
-          <div className="relative mt-4 h-[110px] rounded-xl bg-slate-50 border border-slate-100 overflow-hidden">
-            <div className="absolute inset-x-3 bottom-3 flex items-end gap-1.5">
-              {stairHeights.map((height, index) => (
-                <div
-                  key={`step-${height}`}
-                  className={`flex-1 rounded-t-md transition-all duration-500 ${
-                    index <= stepIndex ? 'bg-emerald-400' : 'bg-slate-200'
-                  }`}
-                  style={{ height: `${height}px` }}
-                />
-              ))}
-            </div>
-            <div
-              className="absolute text-2xl transition-all duration-700 ease-out"
-              style={{
-                left: `calc(${displayRate}% - 12px)`,
-                bottom: `${climberBottom}px`,
-              }}
-              aria-label="진도 캐릭터"
-            >
-              🧍
-            </div>
-            <div className="absolute inset-x-3 bottom-1 flex justify-between text-[10px] text-slate-400">
-              <span>0%</span>
-              <span>50%</span>
-              <span>100%</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4 sm:px-6 lg:px-8 pb-4">
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl bg-white border border-toss-border p-3">
             <p className="text-xs text-toss-sub">오늘 달성률</p>
             <p className="text-xl font-semibold mt-1">
-              {dashboardRate}%
+              {view === 'detail' && selectedProject ? `${selectedProjectRate}%` : `${overallTodayRate}%`}
             </p>
           </div>
           <div className="rounded-xl bg-white border border-toss-border p-3">
