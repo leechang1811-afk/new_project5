@@ -66,42 +66,10 @@ function weeklyCompletedCount(checkedDates: string[]): number {
   return count;
 }
 
-function formatDateLabel(dateKeyValue: string): string {
-  const date = new Date(`${dateKeyValue}T00:00:00`);
-  return `${date.getMonth() + 1}/${date.getDate()}`;
-}
-
-function daysBetweenInclusive(startIso: string, end: Date = new Date()): number {
-  const start = new Date(startIso);
-  if (Number.isNaN(start.getTime())) return 1;
-  const startDateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-  const endDateOnly = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-  const diffMs = endDateOnly.getTime() - startDateOnly.getTime();
-  const diffDays = Math.floor(diffMs / 86_400_000) + 1;
-  return Math.max(diffDays, 1);
-}
-
-function lifetimeSuccessRate(habit: Habit): number {
-  const totalDays = daysBetweenInclusive(habit.createdAt);
-  return Math.round((habit.checkedDates.length / totalDays) * 100);
-}
-
-function lastNDaysKeys(days: number): string[] {
-  const keys: string[] = [];
-  const cursor = new Date();
-  for (let i = days - 1; i >= 0; i -= 1) {
-    const date = new Date(cursor);
-    date.setDate(cursor.getDate() - i);
-    keys.push(todayKey(date));
-  }
-  return keys;
-}
-
 export default function App() {
   const [state, setState] = useState<HabitState>(() => safeLoadState());
   const [habitName, setHabitName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
 
   const dateKey = todayKey();
 
@@ -125,27 +93,6 @@ export default function App() {
     () => state.habits.reduce((acc, habit) => acc + weeklyCompletedCount(habit.checkedDates), 0),
     [state.habits]
   );
-
-  const successHistory = useMemo(() => {
-    return state.habits
-      .flatMap((habit) =>
-        habit.checkedDates.map((date) => ({
-          date,
-          habitName: habit.name,
-          habitId: habit.id,
-        }))
-      )
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, 20);
-  }, [state.habits]);
-
-  const selectedHabit = useMemo(() => {
-    if (state.habits.length === 0) return null;
-    if (!selectedHabitId) return state.habits[0];
-    return state.habits.find((habit) => habit.id === selectedHabitId) ?? state.habits[0];
-  }, [state.habits, selectedHabitId]);
-
-  const calendarKeys = useMemo(() => lastNDaysKeys(30), []);
 
   async function maybeShowInterstitial(nextCounter: number) {
     if (nextCounter % 5 !== 0) return;
@@ -320,71 +267,6 @@ export default function App() {
             );
           })
         )}
-      </section>
-
-      {state.habits.length > 0 && (
-        <section className="px-5 pb-8">
-          <div className="rounded-xl border border-toss-border bg-white p-4">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="font-semibold">성공 캘린더</h3>
-              <select
-                value={selectedHabit?.id ?? ''}
-                onChange={(event) => setSelectedHabitId(event.target.value)}
-                className="rounded-lg border border-toss-border px-2 py-1 text-sm bg-white"
-                aria-label="습관 선택"
-              >
-                {state.habits.map((habit) => (
-                  <option key={habit.id} value={habit.id}>
-                    {habit.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {selectedHabit && (
-              <>
-                <p className="text-sm text-toss-sub mt-2">
-                  누적 성공률 {lifetimeSuccessRate(selectedHabit)}% · 생성일 이후 {selectedHabit.checkedDates.length}회 성공
-                </p>
-                <div className="mt-3 grid grid-cols-6 gap-1.5">
-                  {calendarKeys.map((key) => {
-                    const done = selectedHabit.checkedDates.includes(key);
-                    const isToday = key === dateKey;
-                    return (
-                      <div
-                        key={key}
-                        className={`h-10 rounded-md border text-[10px] flex items-center justify-center ${
-                          done ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-slate-50 text-slate-500 border-slate-200'
-                        } ${isToday ? 'ring-2 ring-toss-blue/30' : ''}`}
-                        title={`${formatDateLabel(key)} ${done ? '성공' : '미완료'}`}
-                      >
-                        {formatDateLabel(key)}
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-      )}
-
-      <section className="px-5 pb-10">
-        <div className="rounded-xl border border-toss-border bg-white p-4">
-          <h3 className="font-semibold">최근 성공 기록</h3>
-          {successHistory.length === 0 ? (
-            <p className="text-sm text-toss-sub mt-2">아직 성공 기록이 없어요. 오늘 첫 체크를 해보세요.</p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {successHistory.map((item) => (
-                <li key={`${item.habitId}-${item.date}`} className="flex items-center justify-between text-sm">
-                  <span className="text-slate-700">{item.habitName}</span>
-                  <span className="text-toss-sub">{item.date}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
       </section>
       <BannerAd />
     </main>
