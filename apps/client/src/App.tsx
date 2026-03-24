@@ -458,17 +458,6 @@ export default function App() {
     }).length;
     return Math.round((done / state.projects.length) * 100);
   }, [state.projects, today]);
-  const todayProjectStatus = useMemo(() => {
-    return state.projects.map((project) => {
-      const current = activeStage(project);
-      const doneToday = current.checkDates.includes(today);
-      return {
-        projectId: project.id,
-        projectName: project.name,
-        doneToday,
-      };
-    });
-  }, [state.projects, today]);
   const selectedProjectRate = useMemo(() => {
     if (!selectedProject) return 0;
     return stageRate(activeStage(selectedProject));
@@ -593,20 +582,6 @@ export default function App() {
         <div className="rounded-xl bg-white border border-toss-border p-3 mt-2">
           <p className="text-xs text-toss-sub">오늘 하루 달성률</p>
           <p className="text-xl font-semibold mt-1">{overallTodayRate}%</p>
-          <div className="mt-2 space-y-1">
-            {todayProjectStatus.length === 0 ? (
-              <p className="text-[11px] text-toss-sub">아직 만든 프로젝트가 없어요</p>
-            ) : (
-              todayProjectStatus.map((item) => (
-                <div key={item.projectId} className="flex items-center justify-between text-xs">
-                  <span className="text-slate-600 truncate pr-2">{item.projectName}</span>
-                  <span className={item.doneToday ? 'text-emerald-600 font-semibold' : 'text-rose-500 font-semibold'}>
-                    {item.doneToday ? 'O' : 'X'}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
         </div>
       </section>
 
