@@ -469,10 +469,10 @@ export default function App() {
   const overallProjectProgressRate = useMemo(() => {
     if (state.projects.length === 0) return 0;
     const sum = state.projects.reduce((acc, project) => {
-      return acc + stageRate(activeStage(project));
+      return acc + stageRateByConfiguredPeriod(activeStage(project), project.stageDurationDays, today);
     }, 0);
     return Math.round(sum / state.projects.length);
-  }, [state.projects]);
+  }, [state.projects, today]);
   const dashboardRate = view === 'detail' && selectedProject ? selectedProjectRate : overallProjectProgressRate;
   const displayRate = Math.min(94, Math.max(6, dashboardRate));
   const stairHeights = [8, 16, 26, 38, 52, 68, 86];
