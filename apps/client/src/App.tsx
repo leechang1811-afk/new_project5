@@ -290,7 +290,6 @@ export default function App() {
   const [climberPose, setClimberPose] = useState<'walk' | 'run'>('walk');
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
-  const [shareCopied, setShareCopied] = useState(false);
 
   const today = toDateKey();
   const calendarKeys = useMemo(() => lastNDays(30), []);
@@ -482,20 +481,6 @@ export default function App() {
     track('project_rename');
   }
 
-  async function copyShareLink() {
-    const baseUrl = 'https://korea-habits.vercel.app/';
-    const shareText = `좋은 습관 기르기\n현재 달성률 ${overallProjectProgressRate}% · 오늘 하루 달성률 ${overallTodayRate}%\n${baseUrl}`;
-    try {
-      await navigator.clipboard.writeText(shareText);
-      setShareCopied(true);
-      window.setTimeout(() => setShareCopied(false), 1800);
-      track('share_link_copy');
-    } catch {
-      // fallback
-      window.prompt('아래 내용을 복사해 공유해 주세요.', shareText);
-    }
-  }
-
   const overallTodayRate = useMemo(() => {
     if (state.projects.length === 0) return 0;
     const done = state.projects.filter((project) => {
@@ -582,19 +567,8 @@ export default function App() {
       <section className="px-4 sm:px-6 lg:px-8 pb-4">
         <div className="rounded-xl border border-toss-border bg-white p-4 sm:p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold">나의 습관형성 달성률</p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="text-xs border border-slate-300 rounded-md px-2 py-1 text-slate-700"
-                onClick={() => {
-                  void copyShareLink();
-                }}
-              >
-                내 성공률 링크 복사
-              </button>
-              <p className="text-lg font-bold text-toss-blue">{dashboardRate}%</p>
-            </div>
+            <p className="text-sm font-semibold">나의 습관형성 달성율</p>
+            <p className="text-lg font-bold text-toss-blue">{dashboardRate}%</p>
           </div>
           <div className="relative mt-4 h-[170px] rounded-xl bg-slate-50 border border-slate-100 overflow-hidden">
             <div className="absolute inset-x-3 bottom-3 flex items-end gap-2">
@@ -630,13 +604,13 @@ export default function App() {
       <section className="px-4 sm:px-6 lg:px-8 pb-4">
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl bg-white border border-toss-border p-3">
-            <p className="text-xs text-toss-sub">전체 진행 달성률</p>
+            <p className="text-xs text-toss-sub">현재 달성률</p>
             <p className="text-xl font-semibold mt-1">
               {view === 'detail' && selectedProject ? `${selectedProjectRate}%` : `${overallProjectProgressRate}%`}
             </p>
           </div>
           <div className="rounded-xl bg-white border border-toss-border p-3">
-            <p className="text-xs text-toss-sub">진행 현황</p>
+            <p className="text-xs text-toss-sub">진행 중</p>
             <p className="text-xl font-semibold mt-1">
               {view === 'detail' && selectedProject
                 ? `${activeStage(selectedProject).stageNumber}단계`
@@ -669,13 +643,6 @@ export default function App() {
         <section className="px-4 sm:px-6 lg:px-8 pb-2">
           <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-emerald-700 text-sm font-medium">
             {celebrationMessage}
-          </div>
-        </section>
-      )}
-      {shareCopied && (
-        <section className="px-4 sm:px-6 lg:px-8 pb-2">
-          <div className="rounded-xl bg-blue-50 border border-blue-200 px-3 py-2 text-blue-700 text-sm font-medium">
-            공유 링크를 복사했어요.
           </div>
         </section>
       )}
