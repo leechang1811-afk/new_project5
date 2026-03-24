@@ -182,7 +182,6 @@ export default function App() {
   const [nextStageTitle, setNextStageTitle] = useState('');
   const [nextStageDays, setNextStageDays] = useState(7);
   const [celebrationMessage, setCelebrationMessage] = useState<string | null>(null);
-  const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
 
   const today = toDateKey();
   const calendarKeys = useMemo(() => lastNDays(30), []);
@@ -205,18 +204,6 @@ export default function App() {
   useEffect(() => {
     track('app_open', { projects: state.projects.length });
   }, [state.projects.length]);
-
-  useEffect(() => {
-    const detect = () => {
-      const width = window.innerWidth;
-      if (width < 640) setDeviceType('mobile');
-      else if (width < 1024) setDeviceType('tablet');
-      else setDeviceType('desktop');
-    };
-    detect();
-    window.addEventListener('resize', detect);
-    return () => window.removeEventListener('resize', detect);
-  }, []);
 
   useEffect(() => {
     setState((prev) => {
@@ -368,22 +355,18 @@ export default function App() {
     if (!selectedProject) return 0;
     return stageRate(activeStage(selectedProject));
   }, [selectedProject]);
-  const checkButtonLabel = deviceType === 'mobile' ? '오늘 완료 체크' : '오늘 완료하기';
 
   return (
-    <main className="mx-auto w-full max-w-5xl min-h-[100dvh] bg-slate-50 text-toss-text">
-      <section className="px-4 sm:px-6 lg:px-8 pt-7 sm:pt-8 pb-4">
+    <main className="mx-auto max-w-md min-h-[100dvh] bg-slate-50 text-toss-text">
+      <section className="px-5 pt-8 pb-4">
         <p className="text-sm text-toss-sub">좋은 습관 기르기</p>
         <h1 className="text-2xl font-bold mt-1">
           {view === 'detail' && selectedProject ? selectedProject.name : '좋은 습관 기르기'}
         </h1>
-        <p className="text-sm text-toss-sub mt-2">
-          하루 체크로 습관을 쌓아요. 목표를 달성하면 다음 단계로 넘어가요.
-          {deviceType === 'desktop' ? ' 큰 화면에서는 기록을 한눈에 볼 수 있어요.' : ''}
-        </p>
+        <p className="text-sm text-toss-sub mt-2">하루 체크로 습관을 쌓아요. 목표를 달성하면 다음 단계로 넘어가요.</p>
       </section>
 
-      <section className="px-4 sm:px-6 lg:px-8 pb-4">
+      <section className="px-5 pb-4">
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl bg-white border border-toss-border p-3">
             <p className="text-xs text-toss-sub">오늘 달성률</p>
@@ -403,7 +386,7 @@ export default function App() {
       </section>
 
       {celebrationMessage && (
-        <section className="px-4 sm:px-6 lg:px-8 pb-2">
+        <section className="px-5 pb-2">
           <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-emerald-700 text-sm font-medium">
             {celebrationMessage}
           </div>
@@ -411,8 +394,8 @@ export default function App() {
       )}
 
       {view === 'create' && (
-        <section className="px-4 sm:px-6 lg:px-8 pb-8">
-          <div className="rounded-xl border border-toss-border bg-white p-4 sm:p-5">
+        <section className="px-5 pb-8">
+          <div className="rounded-xl border border-toss-border bg-white p-4">
             <h2 className="font-semibold">새 목표 만들기</h2>
             <form className="mt-3 space-y-3" onSubmit={createProject}>
               <input
@@ -443,7 +426,7 @@ export default function App() {
                   </button>
                 ))}
               </div>
-              <label className="block sm:max-w-xs">
+              <label className="block">
                 <span className="text-sm text-toss-sub">기간</span>
                 <select
                   value={stageDays}
@@ -472,7 +455,7 @@ export default function App() {
 
       {view !== 'create' && (
         <>
-          <section className="px-4 sm:px-6 lg:px-8 pb-3 flex gap-2 overflow-x-auto">
+          <section className="px-5 pb-3 flex gap-2">
             <button
               type="button"
               className={`rounded-lg px-3 py-2 text-sm ${view === 'list' ? 'bg-toss-blue text-white' : 'bg-white border border-toss-border'}`}
@@ -498,14 +481,14 @@ export default function App() {
           </section>
 
           {view === 'list' && (
-            <section className="px-4 sm:px-6 lg:px-8 pb-8 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <section className="px-5 pb-8 space-y-3">
               {state.projects.map((project) => {
                 const current = activeStage(project);
                 const currentRate = stageRate(current);
                 return (
                   <article
                     key={project.id}
-                    className="rounded-xl border border-toss-border bg-white p-4 sm:p-5"
+                    className="rounded-xl border border-toss-border bg-white p-4"
                     onClick={() => {
                       setSelectedProjectId(project.id);
                       setView('detail');
@@ -556,15 +539,15 @@ export default function App() {
           )}
 
           {view === 'detail' && selectedProject && (
-            <section className="px-4 sm:px-6 lg:px-8 pb-10 space-y-3">
-              <div className="rounded-xl border border-toss-border bg-white p-4 sm:p-5">
+            <section className="px-5 pb-10 space-y-3">
+              <div className="rounded-xl border border-toss-border bg-white p-4">
                 <h3 className="font-semibold">{selectedProject.name}</h3>
                 <p className="text-sm text-toss-sub mt-1">
                   기본 기간 {selectedProject.stageDurationDays}일 · 총 {selectedProject.stages.length}단계
                 </p>
               </div>
 
-              <div className="rounded-xl border border-toss-border bg-white p-4 sm:p-5">
+              <div className="rounded-xl border border-toss-border bg-white p-4">
                 {(() => {
                   const current = activeStage(selectedProject);
                   const currentRate = stageRate(current);
@@ -638,7 +621,7 @@ export default function App() {
                         onClick={() => toggleTodayOnActiveStage(selectedProject.id)}
                         disabled={!canCheckToday}
                       >
-                        {current.checkDates.includes(today) ? '오늘 완료했어요' : checkButtonLabel}
+                        {current.checkDates.includes(today) ? '오늘 완료했어요' : '오늘 완료 체크'}
                       </button>
                       {!canCheckToday && (
                         <p className="text-xs text-slate-500 mt-2">
@@ -650,53 +633,51 @@ export default function App() {
                 })()}
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                <div className="rounded-xl border border-toss-border bg-white p-4 sm:p-5">
-                  <h4 className="font-semibold">성공 캘린더 (최근 30일)</h4>
-                  <div className="mt-3 grid grid-cols-6 gap-1.5">
-                    {calendarKeys.map((dateKey) => {
-                      const found = selectedProject.stages.find((stage) => stage.checkDates.includes(dateKey));
-                      const isToday = dateKey === today;
-                      return (
-                        <div
-                          key={dateKey}
-                          className={`h-10 rounded-md border text-[10px] flex flex-col items-center justify-center ${
-                            found ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-slate-50 text-slate-500 border-slate-200'
-                          } ${isToday ? 'ring-2 ring-toss-blue/30' : ''}`}
-                          title={`${formatDateLabel(dateKey)} ${found ? `${found.stageNumber}단계 성공` : '기록 없음'}`}
-                        >
-                          <span>{formatDateLabel(dateKey)}</span>
-                          <span>{found ? `${found.stageNumber}단계` : '-'}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+              <div className="rounded-xl border border-toss-border bg-white p-4">
+                <h4 className="font-semibold">성공 캘린더 (최근 30일)</h4>
+                <div className="mt-3 grid grid-cols-6 gap-1.5">
+                  {calendarKeys.map((dateKey) => {
+                    const found = selectedProject.stages.find((stage) => stage.checkDates.includes(dateKey));
+                    const isToday = dateKey === today;
+                    return (
+                      <div
+                        key={dateKey}
+                        className={`h-10 rounded-md border text-[10px] flex flex-col items-center justify-center ${
+                          found ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-slate-50 text-slate-500 border-slate-200'
+                        } ${isToday ? 'ring-2 ring-toss-blue/30' : ''}`}
+                        title={`${formatDateLabel(dateKey)} ${found ? `${found.stageNumber}단계 성공` : '기록 없음'}`}
+                      >
+                        <span>{formatDateLabel(dateKey)}</span>
+                        <span>{found ? `${found.stageNumber}단계` : '-'}</span>
+                      </div>
+                    );
+                  })}
                 </div>
+              </div>
 
-                <div className="rounded-xl border border-toss-border bg-white p-4 sm:p-5">
-                  <h4 className="font-semibold">진행 기록</h4>
-                  <ul className="mt-3 space-y-2">
-                    {selectedProject.stages.map((stage) => (
-                      <li key={stage.id} className="border border-slate-200 rounded-lg p-3">
-                        <p className="text-sm font-medium">
-                          {stage.stageNumber}단계 · {stage.title || '목표 미설정'}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {stage.startDate} ~ {stage.endDate}
-                        </p>
-                        <p className="text-sm mt-1">
-                          달성률 {stageRate(stage)}% · 성공 {stage.checkDates.length}회
-                        </p>
-                        {stage.failed && (
-                          <p className="text-xs mt-1 text-rose-600">이번 단계는 기간 내 미달성으로 종료됐어요</p>
-                        )}
-                        {stage.completed && !stage.failed && (
-                          <p className="text-xs mt-1 text-emerald-600">성공적으로 완료했어요</p>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              <div className="rounded-xl border border-toss-border bg-white p-4">
+                <h4 className="font-semibold">진행 기록</h4>
+                <ul className="mt-3 space-y-2">
+                  {selectedProject.stages.map((stage) => (
+                    <li key={stage.id} className="border border-slate-200 rounded-lg p-3">
+                      <p className="text-sm font-medium">
+                        {stage.stageNumber}단계 · {stage.title || '목표 미설정'}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {stage.startDate} ~ {stage.endDate}
+                      </p>
+                      <p className="text-sm mt-1">
+                        달성률 {stageRate(stage)}% · 성공 {stage.checkDates.length}회
+                      </p>
+                      {stage.failed && (
+                        <p className="text-xs mt-1 text-rose-600">이번 단계는 기간 내 미달성으로 종료됐어요</p>
+                      )}
+                      {stage.completed && !stage.failed && (
+                        <p className="text-xs mt-1 text-emerald-600">성공적으로 완료했어요</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </section>
           )}
