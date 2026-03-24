@@ -581,7 +581,9 @@ export default function App() {
           {view === 'detail' && selectedProject ? selectedProject.name : '나의 홈화면'}
         </h1>
         <p className="text-sm text-toss-sub mt-2">
-          하루 체크로 습관을 쌓아요. 목표를 달성하면 다음 단계로 넘어가요.
+          하루 체크로 습관을 쌓아요.
+          <br />
+          목표를 달성하면 다음 단계로 넘어가요.
           {deviceType === 'desktop' ? ' 큰 화면에서는 기록을 한눈에 볼 수 있어요.' : ''}
         </p>
       </section>
