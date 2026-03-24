@@ -11,6 +11,7 @@ type Stage = {
   checkDates: string[];
   completed: boolean;
   needsSetup?: boolean;
+  failed?: boolean;
 };
 
 type HabitProject = {
@@ -78,7 +79,7 @@ function isStageWindowToday(stage: Stage, today: string): boolean {
 }
 
 function activeStage(project: HabitProject): Stage {
-  const next = project.stages.find((stage) => !stage.completed);
+  const next = project.stages.find((stage) => !stage.completed && !stage.failed);
   return next ?? project.stages[project.stages.length - 1];
 }
 
@@ -100,6 +101,7 @@ function safeLoadState(): AppState {
               checkDates: Array.isArray(stage.checkDates) ? stage.checkDates : [],
               completed: Boolean(stage.completed),
               needsSetup: Boolean(stage.needsSetup),
+              failed: Boolean(stage.failed),
             }))
           : [],
       })),
@@ -121,6 +123,7 @@ function buildNextStage(previous: Stage, stageNumber: number, durationDays: numb
     checkDates: [],
     completed: false,
     needsSetup: true,
+    failed: false,
   };
 }
 
@@ -132,6 +135,27 @@ function maybeAdvanceStage(project: HabitProject): HabitProject {
   );
   const next = buildNextStage(current, current.stageNumber + 1, project.stageDurationDays);
   return { ...project, stages: [...updatedStages, next] };
+}
+
+function resolveStageByDeadline(project: HabitProject, today: string): HabitProject {
+  const current = activeStage(project);
+  if (current.completed || current.failed || current.needsSetup) return project;
+  if (today <= current.endDate) return project;
+
+  const rate = stageRate(current);
+  if (rate >= 100) {
+    return maybeAdvanceStage(project);
+  }
+
+  const failedStages = project.stages.map((stage) =>
+    stage.id === current.id ? { ...stage, failed: true, completed: true } : stage
+  );
+  const retryStage = {
+    ...buildNextStage(current, current.stageNumber + 1, project.stageDurationDays),
+    startDate: today,
+    endDate: addDays(today, project.stageDurationDays - 1),
+  };
+  return { ...project, stages: [...failedStages, retryStage] };
 }
 
 function lastNDays(days: number): string[] {
@@ -177,6 +201,18 @@ export default function App() {
   useEffect(() => {
     track('app_open', { projects: state.projects.length });
   }, [state.projects.length]);
+
+  useEffect(() => {
+    setState((prev) => {
+      let changed = false;
+      const projects = prev.projects.map((project) => {
+        const resolved = resolveStageByDeadline(project, today);
+        if (resolved !== project) changed = true;
+        return resolved;
+      });
+      return changed ? { ...prev, projects } : prev;
+    });
+  }, [today]);
 
   const selectedProject = useMemo(() => {
     if (!selectedProjectId) return null;
@@ -224,6 +260,7 @@ export default function App() {
           checkDates: [],
           completed: false,
           needsSetup: false,
+          failed: false,
         },
       ],
     };
@@ -370,6 +407,8 @@ export default function App() {
                   className="mt-1 w-full rounded-xl border border-toss-border px-3 py-2 bg-white"
                 >
                   <option value={7}>7일</option>
+                  <option value={3}>3일</option>
+                  <option value={1}>1일</option>
                   <option value={14}>14일</option>
                   <option value={21}>21일</option>
                   <option value={30}>30일</option>
@@ -515,6 +554,8 @@ export default function App() {
                             className="w-full rounded-lg border border-toss-border px-3 py-2 bg-white"
                           >
                             <option value={7}>7일</option>
+                            <option value={3}>3일</option>
+                            <option value={1}>1일</option>
                             <option value={14}>14일</option>
                             <option value={21}>21일</option>
                             <option value={30}>30일</option>
@@ -584,6 +625,12 @@ export default function App() {
                       <p className="text-sm mt-1">
                         달성률 {stageRate(stage)}% · 성공 {stage.checkDates.length}회
                       </p>
+                      {stage.failed && (
+                        <p className="text-xs mt-1 text-rose-600">실패 처리됨 (기간 내 100% 미달)</p>
+                      )}
+                      {stage.completed && !stage.failed && (
+                        <p className="text-xs mt-1 text-emerald-600">성공 완료</p>
+                      )}
                     </li>
                   ))}
                 </ul>
