@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { isAppsInTossWebView } from '../utils/appsInToss';
 import {
   GAME_TYPE_LABELS,
   timeLimitForLevel,
@@ -44,6 +45,10 @@ export default function StageHeader({
   lastAddedBonus = 0,
   onClearLastAddedScore,
 }: StageHeaderProps) {
+  const [inToss, setInToss] = useState(false);
+  useEffect(() => {
+    setInToss(isAppsInTossWebView());
+  }, []);
   const [muted, setMuted] = useState(() => isMuted());
   const prevAddedRef = useRef<number>(0);
   const prevBonusRef = useRef<number>(0);
@@ -74,7 +79,13 @@ export default function StageHeader({
   };
 
   return (
-    <header className="bg-white border-b border-toss-border">
+    <header
+      className={
+        inToss
+          ? 'bg-white border-b border-toss-border pt-11 pr-[4.25rem] sm:pr-16'
+          : 'bg-white border-b border-toss-border'
+      }
+    >
       {/* 진행률 바 - 부드러운 애니메이션 */}
       <div className="h-1.5 bg-toss-bg overflow-hidden">
         <motion.div
