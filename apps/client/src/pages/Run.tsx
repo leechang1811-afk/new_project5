@@ -59,6 +59,7 @@ export default function Run() {
   const hasShownUpgradeRef = useRef(false);
   const hasShownUpperLevelRef = useRef(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const gameScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (level === 9 && !hasShownUpgradeRef.current) {
@@ -77,6 +78,16 @@ export default function Run() {
       return () => clearTimeout(t);
     }
   }, [level]);
+
+  // 단계/유형이 바뀔 때마다 스크롤을 맨 위로 (상단 점수 헤더가 잘리는 현상 완화)
+  useLayoutEffect(() => {
+    gameScrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+  }, [level, gameType]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || showOnboarding) return;
@@ -181,7 +192,7 @@ export default function Run() {
   const gameProps = { level, onSuccess: handleSuccess, onFail: handleFail };
 
   return (
-    <div className="min-h-[100dvh] min-h-screen bg-white relative">
+    <div className="flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden bg-white relative">
       {showOnboarding && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -202,16 +213,22 @@ export default function Run() {
           </motion.div>
         </motion.div>
       )}
-      <StageHeader
-        gameType={gameType!}
-        level={level}
-        cumulativeScore={cumulativeScore}
-        comboCount={getComboCount()}
-        remainingRevives={2 - (run.usedReviveCount ?? 0)}
-        lastAddedScore={run.lastAddedScore}
-        lastAddedBonus={run.lastAddedBonus}
-        onClearLastAddedScore={useGameStore.getState().clearLastAddedScore}
-      />
+      <div className="shrink-0 z-30">
+        <StageHeader
+          gameType={gameType!}
+          level={level}
+          cumulativeScore={cumulativeScore}
+          comboCount={getComboCount()}
+          remainingRevives={2 - (run.usedReviveCount ?? 0)}
+          lastAddedScore={run.lastAddedScore}
+          lastAddedBonus={run.lastAddedBonus}
+          onClearLastAddedScore={useGameStore.getState().clearLastAddedScore}
+        />
+      </div>
+      <div
+        ref={gameScrollRef}
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain touch-pan-y"
+      >
       {showDifficultyUpgrade ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -268,6 +285,7 @@ export default function Run() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
+            className="min-h-full flex flex-col min-h-0"
           >
             {gameType === 'REACTION' && (
               <ReactionGame level={level} onSuccess={handleSuccess} onFail={handleFail} />
@@ -287,6 +305,7 @@ export default function Run() {
           </motion.div>
         </AnimatePresence>
       )}
+      </div>
 
       {showPassOverlay && pendingScore !== null && run && (
         <PassOverlay

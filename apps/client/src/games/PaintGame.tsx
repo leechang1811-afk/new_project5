@@ -213,8 +213,6 @@ interface FallingDrop extends Drop {
   startY: number;
 }
 
-const POOL_TOP = 400;
-
 /** 물감 게임은 항상 2색만 섞기 (고정) */
 const REQUIRED_MIX_COUNT = 2;
 
@@ -233,7 +231,8 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
   const dropIdRef = useRef(0);
   const hasEndedRef = useRef(false);
   const handledIdsRef = useRef<Set<number>>(new Set());
-  const containerRef = useRef<HTMLDivElement>(null);
+  const poolRef = useRef<HTMLDivElement>(null);
+  const [fallTargetY, setFallTargetY] = useState(300);
   const selectedDropsRef = useRef<Drop[]>([]);
   const targetColorRef = useRef<PaintColor | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -278,6 +277,19 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
     startGame();
   }, [startGame]);
 
+  useLayoutEffect(() => {
+    const el = poolRef.current;
+    if (!el) return;
+    const update = () => {
+      const h = el.clientHeight;
+      setFallTargetY(Math.max(72, h - 32));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [phase, targetColor]);
+
   useEffect(() => {
     if (phase !== 'instruction') return;
     const t = setTimeout(() => {
@@ -293,7 +305,7 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
   // Spawn falling drops periodically (필수 색상 가중: 목표에 필요한 색이 더 자주 나옴)
   useEffect(() => {
     if (phase !== 'playing' || hasEndedRef.current) return;
-    const container = containerRef.current;
+    const container = poolRef.current;
     const width = container?.clientWidth ?? 300;
     const baseSet = new Set(params.baseColors);
     const target = targetColorRef.current;
@@ -401,8 +413,8 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
         : null;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] sm:min-h-[60vh] p-4 sm:p-6">
-      <div ref={containerRef} className="w-full max-w-md relative min-h-[280px]">
+    <div className="flex flex-col flex-1 min-h-0 w-full max-w-md mx-auto px-2 sm:px-4 py-1 sm:py-2">
+      <div className="w-full flex flex-col flex-1 min-h-0 relative">
         <AnimatePresence mode="wait">
           {(phase === 'instruction' || phase === 'playing') && targetColor && (
             <motion.div
@@ -410,21 +422,26 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="w-full"
+              className="w-full flex flex-col flex-1 min-h-0"
             >
-              <p className="text-lg font-medium text-toss-text mb-2 text-center">
-                이 색을 맞추세요
-              </p>
-              <div className="flex justify-center items-start gap-4 mb-4">
-                <div className="flex flex-col items-center">
-                  <div className={`rounded-xl overflow-hidden ${isLightColor(targetColor) ? 'bg-slate-300 p-1.5 ring-2 ring-slate-500' : 'border-2 border-toss-border'}`}>
+              <div className="shrink-0 text-center mb-1.5 sm:mb-2">
+                <p className="text-sm sm:text-base font-semibold text-toss-text leading-tight">
+                  이 색을 맞추세요
+                </p>
+                <p className="text-[11px] sm:text-xs text-toss-sub mt-0.5">
+                  제한시간 <span className="font-semibold text-toss-blue">{timeLeft}초</span>
+                </p>
+              </div>
+              <div className="flex justify-center items-start gap-2 sm:gap-3 mb-2 shrink-0">
+                <div className="flex flex-col items-center min-w-0">
+                  <div className={`rounded-lg sm:rounded-xl overflow-hidden ${isLightColor(targetColor) ? 'bg-slate-300 p-1 ring-2 ring-slate-500' : 'border-2 border-toss-border'}`}>
                     <div
-                      className="w-20 h-20 rounded-lg flex-shrink-0"
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-md sm:rounded-lg flex-shrink-0"
                       style={{ backgroundColor: COLOR_HEX[targetColor] }}
                     />
                   </div>
-                  <p className="text-toss-sub text-xs mt-1">목표</p>
-                  <p className={`font-bold text-toss-text mt-0.5 ${level <= 6 ? 'text-base' : 'text-sm'}`}>
+                  <p className="text-toss-sub text-[10px] sm:text-xs mt-0.5">목표</p>
+                  <p className={`font-bold text-toss-text leading-none ${level <= 6 ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'}`}>
                     {COLOR_NAMES[targetColor]}
                   </p>
                 </div>
@@ -432,38 +449,31 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col items-center px-6 py-4 rounded-2xl bg-toss-bg border-2 border-toss-blue shadow-lg shadow-toss-blue/20"
+                    className="flex flex-col items-center px-3 py-2 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl bg-toss-bg border-2 border-toss-blue shadow-md shadow-toss-blue/15 max-w-[55%]"
                   >
-                    <p className="text-toss-blue font-bold text-sm mb-2">내가 섞은 색 ✨</p>
-                    <div className={`rounded-xl overflow-hidden ${isLightColor(previewColor) ? 'bg-slate-300 p-1.5 ring-2 ring-slate-500' : 'border-2 border-toss-blue ring-4 ring-toss-blue/30'}`}>
+                    <p className="text-toss-blue font-bold text-[10px] sm:text-xs mb-1">내가 섞은 색 ✨</p>
+                    <div className={`rounded-lg overflow-hidden ${isLightColor(previewColor) ? 'bg-slate-300 p-1 ring-2 ring-slate-500' : 'border-2 border-toss-blue ring-2 ring-toss-blue/30'}`}>
                       <div
-                        className="w-20 h-20 rounded-lg flex-shrink-0"
+                        className="w-14 h-14 sm:w-20 sm:h-20 rounded-md flex-shrink-0"
                         style={{ backgroundColor: COLOR_HEX[previewColor] }}
                       />
                     </div>
-                    <p className="text-toss-text font-medium text-sm mt-2">{COLOR_NAMES[previewColor]}</p>
+                    <p className="text-toss-text font-medium text-[11px] sm:text-sm mt-1 truncate max-w-full">{COLOR_NAMES[previewColor]}</p>
                   </motion.div>
                 )}
               </div>
-              <div className="flex justify-center gap-2 mb-4">
-                <span className="text-toss-sub">제한시간</span>
-                <span className="font-medium text-toss-blue">{timeLeft}초</span>
-              </div>
               {tipMessage && (
-                <p className="text-toss-blue text-sm mb-2 text-center font-medium bg-toss-blue/5 px-4 py-2 rounded-xl">
+                <p className="text-toss-blue text-[11px] sm:text-xs mb-1.5 text-center font-medium bg-toss-blue/5 px-2 py-1.5 rounded-lg leading-snug shrink-0">
                   💡 {tipMessage}
                 </p>
               )}
-              <p className="text-toss-sub text-xs mb-2 text-center">
-                물감 2개를 골라 섞어 목표색을 맞추세요
-              </p>
               {showFormulaHint && targetColor && (
-                <p className="text-amber-600 text-sm mb-2 text-center font-medium bg-amber-50 px-4 py-2 rounded-xl border border-amber-200">
+                <p className="text-amber-700 text-[11px] sm:text-xs mb-1.5 text-center font-medium bg-amber-50 px-2 py-1.5 rounded-lg border border-amber-200 leading-snug shrink-0">
                   {getFormulaHint(targetColor)}
                 </p>
               )}
               {!showFormulaHint && timeLeft <= 10 && timeLeft > 0 && targetColor && (
-                <p className="text-amber-600 text-xs mb-2 text-center bg-amber-50 px-4 py-2 rounded-xl border border-amber-200">
+                <p className="text-amber-700 text-[10px] sm:text-xs mb-1.5 text-center bg-amber-50 px-2 py-1 rounded-lg border border-amber-200 shrink-0">
                   💡 {getHintForColor(targetColor)}
                 </p>
               )}
@@ -472,7 +482,7 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className={`text-center py-2 px-4 rounded-xl text-sm font-medium mb-2 ${
+                  className={`shrink-0 text-center py-1.5 px-3 rounded-xl text-xs sm:text-sm font-medium mb-1.5 ${
                     mergeFeedback === 'correct'
                       ? 'bg-green-100 text-green-700'
                       : mergeFeedback === 'wrong'
@@ -486,8 +496,12 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
                 </motion.div>
               )}
 
-              {/* Falling zone - 모바일 터치 영역 확대 (최소 48px), onPointerDown 즉시 반응 */}
-              <div className="relative h-[380px] bg-slate-100 border border-dashed border-toss-border rounded-lg overflow-hidden" style={{ touchAction: 'manipulation' }}>
+              {/* Falling zone — 남은 세로 공간을 쓰고, 낙하 거리는 풀 높이에 맞춤 */}
+              <div
+                ref={poolRef}
+                className="relative flex-1 min-h-[120px] sm:min-h-[160px] basis-0 max-h-[min(380px,calc(100dvh-13.5rem))] w-full bg-slate-100 border border-dashed border-toss-border rounded-lg overflow-hidden"
+                style={{ touchAction: 'manipulation' }}
+              >
                 <AnimatePresence>
                   {fallingDrops.map((d) => (
                     <motion.div
@@ -498,7 +512,7 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
                       animate={
                         bursting
                           ? { scale: 2.5, opacity: 0 }
-                          : { y: POOL_TOP - 20, scale: params.dropScale, opacity: 1 }
+                          : { y: fallTargetY, scale: params.dropScale, opacity: 1 }
                       }
                       transition={
                         bursting
@@ -563,7 +577,7 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
               </div>
 
               {/* 선택한 물감 표시 */}
-              <div className="mt-4 min-h-[64px] flex items-center justify-center gap-4 p-4 bg-toss-bg rounded-xl">
+              <div className="mt-2 shrink-0 min-h-[52px] sm:min-h-[56px] flex items-center justify-center gap-2 sm:gap-4 p-2 sm:p-3 bg-toss-bg rounded-xl">
                 {selectedDrops.length > 0 ? (
                   <div className="flex items-center gap-3 flex-wrap justify-center">
                     {selectedDrops.map((d) => (
