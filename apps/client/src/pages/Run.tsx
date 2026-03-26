@@ -8,6 +8,7 @@ import {
   ensureUserHash,
 } from '../store/gameStore';
 import StageHeader from '../components/StageHeader';
+import GameFloatingHud from '../components/GameFloatingHud';
 import ReactionGame from '../games/ReactionGame';
 import Tap10Game from '../games/Tap10Game';
 import MemoryGame from '../games/MemoryGame';
@@ -227,7 +228,7 @@ export default function Run() {
       </div>
       <div
         ref={gameScrollRef}
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain touch-pan-y"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden overscroll-none"
       >
       {showDifficultyUpgrade ? (
         <motion.div
@@ -285,7 +286,7 @@ export default function Run() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
-            className="min-h-full flex flex-col min-h-0"
+            className="flex min-h-0 flex-1 flex-col"
           >
             {gameType === 'REACTION' && (
               <ReactionGame level={level} onSuccess={handleSuccess} onFail={handleFail} />
@@ -306,6 +307,12 @@ export default function Run() {
         </AnimatePresence>
       )}
       </div>
+
+      {gameType &&
+        !showPassOverlay &&
+        !showFailOverlay &&
+        !showDifficultyUpgrade &&
+        !showUpperLevelMsg && <GameFloatingHud gameType={gameType} />}
 
       {showPassOverlay && pendingScore !== null && run && (
         <PassOverlay

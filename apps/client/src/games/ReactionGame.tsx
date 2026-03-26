@@ -125,7 +125,7 @@ export default function ReactionGame({ level, onSuccess, onFail }: ReactionGameP
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] sm:min-h-[60vh] p-4 sm:p-6">
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden p-3 sm:p-4">
       <AnimatePresence mode="wait">
         {(phase === 'instruction' || phase === 'playing') && targetColor && (
           <motion.div

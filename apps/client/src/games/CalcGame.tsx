@@ -95,7 +95,7 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] sm:min-h-[60vh] p-4 sm:p-6">
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden p-3 sm:p-4">
       <div className="mb-6 text-toss-sub">제한시간 {timeLeft}초</div>
 
       <AnimatePresence mode="wait">
