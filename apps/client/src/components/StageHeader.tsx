@@ -82,7 +82,7 @@ export default function StageHeader({
     <header
       className={
         inToss
-          ? 'bg-white border-b border-toss-border pt-11 pr-[4.25rem] sm:pr-16'
+          ? 'bg-white border-b border-toss-border pr-[4.25rem] sm:pr-16'
           : 'bg-white border-b border-toss-border'
       }
     >
@@ -125,8 +125,14 @@ export default function StageHeader({
             </button>
           </div>
         </div>
-        {/* 2행: 배지 — flex-wrap으로 모바일에서 자연스럽게 줄바꿈 */}
-        <div className="flex flex-wrap items-center gap-1.5 mt-1.5 justify-between">
+        {/* 2행: 부활·점수 등 — 앱인토스에서는 상단 ⋯/닫기 아래로만 내림 */}
+        <div
+          className={
+            inToss
+              ? 'flex flex-wrap items-center gap-1.5 mt-10 justify-between'
+              : 'flex flex-wrap items-center gap-1.5 mt-1.5 justify-between'
+          }
+        >
           <div className="flex flex-wrap gap-1.5 min-w-0">
             {remainingRevives > 0 && (
               <span className="px-1.5 py-0.5 rounded-md bg-green-50 text-green-700 text-[11px] font-medium border border-green-200 whitespace-nowrap">
