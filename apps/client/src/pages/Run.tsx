@@ -228,7 +228,11 @@ export default function Run() {
       </div>
       <div
         ref={gameScrollRef}
-        className="flex min-h-0 flex-1 flex-col overflow-hidden overscroll-none"
+        className={
+          gameType === 'CALCULATION'
+            ? 'flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain'
+            : 'flex min-h-0 flex-1 flex-col overflow-hidden overscroll-none'
+        }
       >
       {showDifficultyUpgrade ? (
         <motion.div
@@ -286,7 +290,11 @@ export default function Run() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
-            className="flex min-h-0 flex-1 flex-col pt-5 pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))]"
+            className={
+              gameType === 'PAINT'
+                ? 'flex min-h-0 flex-1 flex-col pt-5 pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))]'
+                : 'flex min-h-0 flex-1 flex-col pt-1.5 pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))]'
+            }
           >
             {gameType === 'REACTION' && (
               <ReactionGame level={level} onSuccess={handleSuccess} onFail={handleFail} />

@@ -31,6 +31,30 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
   const [oxStatement, setOxStatement] = useState('');
   const [oxCorrect, setOxCorrect] = useState(false);
   const questionStartRef = useRef<number>(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const numberBlockRef = useRef<HTMLDivElement>(null);
+
+  const scrollNumberBlockIntoView = useCallback(() => {
+    const el = numberBlockRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        el.scrollIntoView({ block: 'center', behavior: 'smooth', inline: 'nearest' });
+      }, 80);
+    });
+  }, []);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      if (document.activeElement === inputRef.current) {
+        scrollNumberBlockIntoView();
+      }
+    };
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, [scrollNumberBlockIntoView]);
 
   const nextQuestion = useCallback(() => {
     questionStartRef.current = Date.now();
@@ -95,8 +119,8 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-start overflow-hidden pt-0 pb-3 px-3 touch-manipulation select-none sm:pb-4 sm:px-4">
-      <div className="mb-3 text-toss-sub">제한시간 {timeLeft}초</div>
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-start overflow-x-hidden overflow-y-visible pt-0 pb-3 px-3 touch-manipulation select-none sm:pb-4 sm:px-4">
+      <div className="mb-2 shrink-0 text-toss-sub">제한시간 {timeLeft}초</div>
 
       <AnimatePresence mode="wait">
         {oxMode ? (
@@ -146,20 +170,26 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
           expr && (
             <motion.div
               key="calc"
+              ref={numberBlockRef}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="w-full max-w-md"
+              className="w-full max-w-md pb-28 sm:pb-20"
             >
-              <p className="text-2xl font-medium text-center text-toss-text mb-6">
+              <p className="mb-4 text-center text-2xl font-medium text-toss-text">
                 {expr.expr} = ?
               </p>
               <input
+                ref={inputRef}
                 type="number"
+                inputMode="numeric"
+                enterKeyHint="done"
+                autoComplete="off"
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                className="w-full px-4 py-3 rounded-2xl border border-toss-border text-toss-text text-xl text-center"
+                onFocus={scrollNumberBlockIntoView}
+                className="w-full rounded-2xl border border-toss-border px-4 py-3 text-center text-xl text-toss-text"
                 autoFocus
               />
               <button
