@@ -21,6 +21,37 @@ function randomExpr(maxNum: number, ops: ('+' | '-')[]): { expr: string; result:
   return { expr: `${big} - ${small}`, result: big - small };
 }
 
+/** 키보드·주소창 등으로 시각 뷰포트가 줄었는지 (논리력 전용 레이아웃 전환) */
+function useKeyboardNarrowViewport(): boolean {
+  const [narrow, setNarrow] = useState(false);
+  const prevRef = useRef(false);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const sync = () => {
+      const overlap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      const next = overlap > 72;
+      setNarrow(next);
+      if (next && !prevRef.current) {
+        document.getElementById('run-game-scroll')?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }
+      prevRef.current = next;
+    };
+
+    vv.addEventListener('resize', sync);
+    vv.addEventListener('scroll', sync);
+    sync();
+    return () => {
+      vv.removeEventListener('resize', sync);
+      vv.removeEventListener('scroll', sync);
+    };
+  }, []);
+
+  return narrow;
+}
+
 export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
   const params = getCalcParams(level);
   const [expr, setExpr] = useState<{ expr: string; result: number } | null>(null);
@@ -33,28 +64,47 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
   const questionStartRef = useRef<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const numberBlockRef = useRef<HTMLDivElement>(null);
+  const keyboardNarrow = useKeyboardNarrowViewport();
+
+  const scrollPanelTop = useCallback(() => {
+    document.getElementById('run-game-scroll')?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
 
   const scrollNumberBlockIntoView = useCallback(() => {
     const el = numberBlockRef.current;
     if (!el) return;
     requestAnimationFrame(() => {
       setTimeout(() => {
-        el.scrollIntoView({ block: 'start', behavior: 'smooth', inline: 'nearest' });
-      }, 80);
+        el.scrollIntoView({
+          block: 'start',
+          behavior: keyboardNarrow ? 'instant' : 'smooth',
+          inline: 'nearest',
+        });
+      }, keyboardNarrow ? 24 : 80);
     });
-  }, []);
+  }, [keyboardNarrow]);
+
+  useEffect(() => {
+    if (!keyboardNarrow) return;
+    scrollPanelTop();
+    const t = window.setTimeout(() => {
+      numberBlockRef.current?.scrollIntoView({ block: 'start', behavior: 'instant', inline: 'nearest' });
+    }, 40);
+    return () => window.clearTimeout(t);
+  }, [keyboardNarrow, scrollPanelTop]);
 
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     const onResize = () => {
       if (document.activeElement === inputRef.current) {
-        scrollNumberBlockIntoView();
+        scrollPanelTop();
+        numberBlockRef.current?.scrollIntoView({ block: 'start', behavior: 'instant', inline: 'nearest' });
       }
     };
     vv.addEventListener('resize', onResize);
     return () => vv.removeEventListener('resize', onResize);
-  }, [scrollNumberBlockIntoView]);
+  }, [scrollPanelTop]);
 
   const nextQuestion = useCallback(() => {
     questionStartRef.current = Date.now();
@@ -118,8 +168,19 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
     }
   };
 
+  const handleInputFocus = () => {
+    scrollPanelTop();
+    scrollNumberBlockIntoView();
+  };
+
+  const rootClass = keyboardNarrow
+    ? 'flex min-h-0 flex-1 flex-col items-center justify-start overflow-x-hidden overflow-y-auto px-3 pb-1 pt-0 touch-manipulation select-none sm:px-4'
+    : 'flex min-h-0 flex-1 flex-col items-center justify-center overflow-x-hidden overflow-y-auto px-3 pb-3 pt-0 touch-manipulation select-none sm:pb-4 sm:px-4 -translate-y-3 sm:-translate-y-2';
+
+  const numberBlockPad = keyboardNarrow ? 'pb-4' : 'pb-28 sm:pb-20';
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-x-hidden overflow-y-auto pt-0 pb-3 px-3 touch-manipulation select-none sm:pb-4 sm:px-4 -translate-y-3 sm:-translate-y-2">
+    <div className={rootClass}>
       <div className="mb-2 shrink-0 text-toss-sub">제한시간 {timeLeft}초</div>
 
       <AnimatePresence mode="wait">
@@ -174,7 +235,7 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="w-full max-w-md pb-28 sm:pb-20"
+              className={`w-full max-w-md scroll-mt-2 ${numberBlockPad}`}
             >
               <p className="mb-4 text-center text-2xl font-medium text-toss-text">
                 {expr.expr} = ?
@@ -188,7 +249,7 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                onFocus={scrollNumberBlockIntoView}
+                onFocus={handleInputFocus}
                 className="w-full rounded-2xl border border-toss-border px-4 py-3 text-center text-xl text-toss-text"
                 autoFocus
               />

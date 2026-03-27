@@ -227,6 +227,7 @@ export default function Run() {
         />
       </div>
       <div
+        id="run-game-scroll"
         ref={gameScrollRef}
         className={
           gameType === 'CALCULATION'
