@@ -43,6 +43,13 @@ export default function RecordAndRank() {
   const shareCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
+  useEffect(() => {
     ensureUserHash().then((hash) => setMyUserHash(hash));
   }, []);
 
@@ -109,7 +116,7 @@ export default function RecordAndRank() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white p-4 sm:p-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <div className="max-w-md mx-auto w-full">
-        <h1 className="text-xl sm:text-2xl font-bold text-toss-text mb-4 sm:mb-6">기록 & 순위</h1>
+        <h1 className="text-center text-xl sm:text-2xl font-bold text-toss-text mb-4 sm:mb-6">기록 & 순위</h1>
 
         {loading ? (
           <div className="py-12 flex flex-col items-center justify-center gap-4">
