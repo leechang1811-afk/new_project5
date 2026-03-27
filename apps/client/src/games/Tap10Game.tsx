@@ -84,7 +84,7 @@ export default function Tap10Game({ level, onSuccess, onFail }: Tap10GameProps) 
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-start overflow-hidden pt-0 pb-3 px-3 touch-manipulation select-none sm:pb-4 sm:px-4">
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto overflow-x-hidden pt-0 pb-3 px-3 touch-manipulation select-none sm:pb-4 sm:px-4">
       <div className="mb-2 text-center space-y-1">
         <p className="text-lg font-medium text-toss-text">
           {!started ? '탭하면 시작 → 목표 ' : '목표 '}
