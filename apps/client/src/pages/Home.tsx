@@ -70,7 +70,7 @@ export default function Home() {
         alt="내 두뇌 몇 등? 로고"
         width={52}
         height={52}
-        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 rounded-xl border border-toss-border/70 shadow-sm bg-white object-cover"
+        className="absolute top-4 left-4 sm:top-6 sm:left-6 w-12 h-12 sm:w-14 sm:h-14 rounded-xl border border-toss-border/70 shadow-sm bg-white object-cover"
         loading="eager"
         decoding="async"
       />
@@ -80,7 +80,7 @@ export default function Home() {
         className="text-center max-w-md w-full mx-auto"
       >
         <h1 className="text-2xl md:text-3xl font-bold text-toss-text mb-3 leading-tight">
-          내 두뇌 몇 등?
+          내두뇌몇등?
         </h1>
         <p className="text-toss-text text-base mb-2 font-medium">
           대한민국에서 내 두뇌 순위 확인

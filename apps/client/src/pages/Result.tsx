@@ -159,8 +159,17 @@ export default function Result() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-[calc(7rem+env(safe-area-inset-bottom))]"
+      className="relative min-h-screen bg-gradient-to-b from-slate-50 to-white pb-[calc(7rem+env(safe-area-inset-bottom))]"
     >
+      <img
+        src="/brand-logo.png"
+        alt="내 두뇌 몇 등? 로고"
+        width={52}
+        height={52}
+        className="absolute top-4 left-4 sm:top-6 sm:left-6 w-12 h-12 sm:w-14 sm:h-14 rounded-xl border border-toss-border/70 shadow-sm bg-white object-cover"
+        loading="eager"
+        decoding="async"
+      />
       <div className="max-w-md mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
         {loading ? (
           <div className="py-20 text-center">
