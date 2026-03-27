@@ -64,21 +64,24 @@ export default function Home() {
   const streakBadge = streakCount >= 30 ? '🏆' : streakCount >= 14 ? '⭐' : streakCount >= 7 ? '🎖️' : null;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(7rem+env(safe-area-inset-bottom))] relative">
+      <img
+        src="/brand-logo.png"
+        alt="내 두뇌 몇 등? 로고"
+        width={52}
+        height={52}
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 rounded-xl border border-toss-border/70 shadow-sm bg-white object-cover"
+        loading="eager"
+        decoding="async"
+      />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center max-w-md w-full mx-auto"
       >
-        <img
-          src="/brand-logo.png"
-          alt="내 두뇌 몇 등?"
-          width={110}
-          height={110}
-          className="mx-auto mb-3 w-[min(110px,29vw)] h-auto max-h-[100px] object-contain"
-          loading="eager"
-          decoding="async"
-        />
+        <h1 className="text-2xl md:text-3xl font-bold text-toss-text mb-3 leading-tight">
+          내 두뇌 몇 등?
+        </h1>
         <p className="text-toss-text text-base mb-2 font-medium">
           대한민국에서 내 두뇌 순위 확인
         </p>
