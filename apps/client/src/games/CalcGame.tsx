@@ -32,7 +32,8 @@ function useKeyboardNarrowViewport(): boolean {
 
     const sync = () => {
       const overlap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      const next = overlap > 72;
+      // 주소창·UI만 줄어든 경우와 실제 키보드 구분 (시작 시 잘못 좁은 레이아웃 방지)
+      const next = overlap > 130;
       setNarrow(next);
       if (next && !prevRef.current) {
         document.getElementById('run-game-scroll')?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -175,7 +176,7 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
 
   const rootClass = keyboardNarrow
     ? 'flex min-h-0 flex-1 flex-col items-center justify-start overflow-x-hidden overflow-y-auto px-3 pb-1 pt-0 touch-manipulation select-none sm:px-4'
-    : 'flex min-h-0 flex-1 flex-col items-center justify-center overflow-x-hidden overflow-y-auto px-3 pb-3 pt-0 touch-manipulation select-none sm:pb-4 sm:px-4 -translate-y-3 sm:-translate-y-2';
+    : 'flex min-h-0 flex-1 flex-col items-center justify-center overflow-x-hidden overflow-y-auto px-3 pb-3 pt-2 touch-manipulation select-none sm:pb-4 sm:px-4 sm:pt-3';
 
   const numberBlockPad = keyboardNarrow ? 'pb-4' : 'pb-28 sm:pb-20';
 
