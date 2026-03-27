@@ -284,6 +284,7 @@ export default function Run() {
         </div>
       ) : (
         <AnimatePresence mode="wait">
+          {/* 헤더 하단 → 게임 첫 텍스트까지 (유형 5만 pt-5) */}
           <motion.div
             key={`${gameType ?? 'loading'}-${level}`}
             initial={{ opacity: 0, x: 20 }}
@@ -293,7 +294,7 @@ export default function Run() {
             className={
               gameType === 'PAINT'
                 ? 'flex min-h-0 flex-1 flex-col pt-5 pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))]'
-                : 'flex min-h-0 flex-1 flex-col pt-1.5 pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))]'
+                : 'flex min-h-0 flex-1 flex-col pt-2.5 pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))]'
             }
           >
             {gameType === 'REACTION' && (
