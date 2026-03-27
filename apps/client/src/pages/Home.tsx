@@ -70,6 +70,15 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center max-w-md w-full mx-auto"
       >
+        <img
+          src="/brand-logo.png"
+          alt="내 두뇌 몇 등?"
+          width={220}
+          height={220}
+          className="mx-auto mb-4 w-[min(220px,58vw)] h-auto max-h-[200px] object-contain"
+          loading="eager"
+          decoding="async"
+        />
         <h1 className="text-2xl md:text-3xl font-bold text-toss-text mb-3 leading-tight">
           내 두뇌 몇 등?
         </h1>
