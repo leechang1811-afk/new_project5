@@ -95,8 +95,8 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden p-3 sm:p-4">
-      <div className="mb-6 text-toss-sub">제한시간 {timeLeft}초</div>
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-start overflow-hidden pt-0 pb-3 px-3 touch-manipulation select-none sm:pb-4 sm:px-4">
+      <div className="mb-3 text-toss-sub">제한시간 {timeLeft}초</div>
 
       <AnimatePresence mode="wait">
         {oxMode ? (
@@ -121,7 +121,7 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
                     onFail();
                   }
                 }}
-                className="px-6 sm:px-8 py-4 min-w-[64px] rounded-2xl border-2 border-toss-border hover:border-toss-blue transition touch-manipulation"
+                className="min-h-[44px] min-w-[64px] touch-manipulation rounded-2xl border-2 border-toss-border px-6 py-3 transition hover:border-toss-blue sm:px-8"
               >
                 O
               </button>
@@ -136,7 +136,7 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
                     onFail();
                   }
                 }}
-                className="px-6 sm:px-8 py-4 min-w-[64px] rounded-2xl border-2 border-toss-border hover:border-toss-blue transition touch-manipulation"
+                className="min-h-[44px] min-w-[64px] touch-manipulation rounded-2xl border-2 border-toss-border px-6 py-3 transition hover:border-toss-blue sm:px-8"
               >
                 X
               </button>
@@ -168,7 +168,7 @@ export default function CalcGame({ level, onSuccess, onFail }: CalcGameProps) {
                   e.preventDefault();
                   handleSubmit();
                 }}
-                className="mt-4 w-full py-3 rounded-2xl bg-toss-blue text-white font-semibold"
+                className="mt-4 min-h-[48px] w-full touch-manipulation rounded-2xl bg-toss-blue py-3 font-semibold text-white active:opacity-90"
               >
                 확인
               </button>

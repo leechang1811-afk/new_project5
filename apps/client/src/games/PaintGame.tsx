@@ -413,7 +413,7 @@ export default function PaintGame({ level, onSuccess, onFail }: PaintGameProps) 
         : null;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 w-full max-w-md mx-auto px-2 sm:px-4 py-1 sm:py-2">
+    <div className="flex flex-col flex-1 min-h-0 w-full max-w-md mx-auto px-2 sm:px-4 pt-0 pb-1 touch-manipulation select-none sm:pb-2">
       <div className="w-full flex flex-col flex-1 min-h-0 relative">
         <AnimatePresence mode="wait">
           {(phase === 'instruction' || phase === 'playing') && targetColor && (

@@ -183,7 +183,7 @@ export default function Run() {
   if (!run) {
     if (lastCompletedRun) return null;
     return (
-      <div className="min-h-[100dvh] min-h-screen bg-white flex flex-col items-center justify-center gap-4 p-4">
+      <div className="flex min-h-[100svh] flex-col items-center justify-center gap-4 bg-white p-4">
         <div className="w-10 h-10 border-2 border-toss-blue border-t-transparent rounded-full animate-spin" />
         <p className="text-toss-sub">게임을 준비하고 있어요</p>
       </div>
@@ -193,7 +193,7 @@ export default function Run() {
   const gameProps = { level, onSuccess: handleSuccess, onFail: handleFail };
 
   return (
-    <div className="flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden bg-white relative">
+    <div className="relative flex min-h-0 h-[100svh] max-h-[100dvh] flex-col overflow-hidden bg-white touch-manipulation select-none">
       {showOnboarding && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -286,7 +286,7 @@ export default function Run() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
-            className="flex min-h-0 flex-1 flex-col"
+            className="flex min-h-0 flex-1 flex-col pt-5 pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))]"
           >
             {gameType === 'REACTION' && (
               <ReactionGame level={level} onSuccess={handleSuccess} onFail={handleFail} />

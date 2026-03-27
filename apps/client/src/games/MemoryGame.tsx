@@ -122,8 +122,8 @@ export default function MemoryGame({ level, onSuccess, onFail }: MemoryGameProps
   if (!target) return null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden p-3 sm:p-4">
-      <div className="mb-4 text-toss-sub">
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-start overflow-hidden pt-0 pb-3 px-3 touch-manipulation select-none sm:pb-4 sm:px-4">
+      <div className="mb-2 text-toss-sub">
         제한시간 {phase === 'show' ? timeLimit : timeLeft}초
       </div>
 

@@ -125,7 +125,7 @@ export default function ReactionGame({ level, onSuccess, onFail }: ReactionGameP
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden p-3 sm:p-4">
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-start overflow-hidden pt-0 pb-3 px-3 touch-manipulation select-none sm:pb-4 sm:px-4">
       <AnimatePresence mode="wait">
         {(phase === 'instruction' || phase === 'playing') && targetColor && (
           <motion.div
@@ -135,13 +135,13 @@ export default function ReactionGame({ level, onSuccess, onFail }: ReactionGameP
             exit={{ opacity: 0 }}
             className="w-full max-w-md text-center"
           >
-            <p className="text-lg font-medium text-toss-text mb-6">
+            <p className="text-lg font-medium text-toss-text mb-3">
               {targetColor && COLOR_LABELS_KO[targetColor]}일 때 탭하세요
             </p>
-            <p className="text-toss-sub text-sm mb-4">
+            <p className="text-toss-sub text-sm mb-2">
               도형이 {targetColor && COLOR_LABELS_KO[targetColor]}색으로 바뀌면 탭하세요
             </p>
-            <div className="flex justify-center gap-2 mb-6">
+            <div className="flex justify-center gap-2 mb-3">
               <span className="text-toss-sub">제한시간</span>
               <span className="font-medium text-toss-blue">{timeLeft}초</span>
             </div>
