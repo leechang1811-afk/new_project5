@@ -4,7 +4,7 @@ export default defineConfig({
   // apps/client/granite.config.ts 와 동일 (콘솔 앱 ID: brain-rank)
   appName: "brain-rank",
   brand: {
-    displayName: "내 두뇌 몇 등?",
+    displayName: "내두뇌몇등?",
     primaryColor: "#3182F6",
     icon: "https://korea-quiz-client.vercel.app/brand-logo.png",
   },

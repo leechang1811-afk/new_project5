@@ -4,7 +4,7 @@ export default defineConfig({
   appName: "brain-rank", // 앱인토스 콘솔에 등록한 앱 ID와 동일
   brand: {
     // 앱 정보 등록 시 표시 이름과 동일해야 함 (반려: 이름 불일치 방지)
-    displayName: "내 두뇌 몇 등?",
+    displayName: "내두뇌몇등?",
     primaryColor: "#3182F6",
     // 공통 내비게이션 바 브랜드 로고 — public/brand-logo.png (배포 도메인 기준 절대 URL)
     icon: "https://korea-quiz-client.vercel.app/brand-logo.png",
