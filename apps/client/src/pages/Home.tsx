@@ -73,15 +73,12 @@ export default function Home() {
         <img
           src="/brand-logo.png"
           alt="내 두뇌 몇 등?"
-          width={220}
-          height={220}
-          className="mx-auto mb-4 w-[min(220px,58vw)] h-auto max-h-[200px] object-contain"
+          width={110}
+          height={110}
+          className="mx-auto mb-3 w-[min(110px,29vw)] h-auto max-h-[100px] object-contain"
           loading="eager"
           decoding="async"
         />
-        <h1 className="text-2xl md:text-3xl font-bold text-toss-text mb-3 leading-tight">
-          내 두뇌 몇 등?
-        </h1>
         <p className="text-toss-text text-base mb-2 font-medium">
           대한민국에서 내 두뇌 순위 확인
         </p>
