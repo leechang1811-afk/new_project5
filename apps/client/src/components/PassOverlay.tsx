@@ -113,7 +113,7 @@ export default function PassOverlay({
           ? '🎉 15단계 통과! 상위 구간 돌입!'
           : null;
 
-  const championMsg = passedLevel === 20 ? '👑 챔피언! 상위 0.1% · 정말 잘했어요!' : null;
+  const championMsg = passedLevel === 20 ? '👑 챔피언 · 상위 0.1%' : null;
 
   const milestoneMsg =
     passedLevel === 5

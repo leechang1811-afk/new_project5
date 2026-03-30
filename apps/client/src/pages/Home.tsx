@@ -113,29 +113,29 @@ function getLevelStyle(level: 'BRONZE' | 'SILVER' | 'GOLD') {
     return {
       chip: 'bg-yellow-100 border-yellow-300 text-yellow-800',
       title: 'text-yellow-700',
-      next: '금빛 루틴! 지금 흐름을 유지해요.',
+      next: '골드 구간입니다. 같은 패턴으로 이어가면 됩니다.',
     };
   }
   if (level === 'SILVER') {
     return {
       chip: 'bg-slate-100 border-slate-300 text-slate-700',
       title: 'text-slate-700',
-      next: '좋아요. 골드까지 한 걸음 남았어요.',
+      next: '다음 단계는 골드입니다.',
     };
   }
   return {
     chip: 'bg-amber-50 border-amber-200 text-amber-800',
     title: 'text-amber-700',
-    next: '시작이 반이에요. 내일도 1개만 완료해요.',
+    next: '내일도 미션 1개만 저장하면 점수에 반영됩니다.',
   };
 }
 
 function getDailyRewardCopy(dayKey: string) {
   const seeds = [
-    '깜짝 보상: 내일 시작 마찰 -20%',
-    '깜짝 보상: 오늘의 집중력 +1',
-    '깜짝 보상: 루틴 유지 확률 +12%',
-    '깜짝 보상: 내일 실행 저항 -1',
+    '내일도 같은 시간에 알림만 켜 두면 기억하기 쉬워요.',
+    '미션 문장은 설정에서 언제든 바꿀 수 있어요.',
+    '주간 실행률이 점수의 큰 비중을 차지합니다.',
+    '연속일은 하루에 한 번 저장으로만 올라갑니다.',
   ];
   const n = Number(dayKey.split('-').join(''));
   return seeds[n % seeds.length];
@@ -146,10 +146,12 @@ function daySeed(dayKey: string) {
 }
 
 function getWowHeadline(level: 'BRONZE' | 'SILVER' | 'GOLD', weeklyRate: number, celebName: string) {
-  if (level === 'GOLD' && weeklyRate >= 85) return '오늘 1개 완료! 전설 페이스예요 👑';
-  if (level === 'GOLD') return `오늘 1개 완료! ${celebName} 루틴에 더 닮아가요 ✨`;
-  if (level === 'SILVER') return `오늘 1개 완료! ${celebName} 페이스에 가까워지는 중 🚀`;
-  return `오늘 1개 완료! ${celebName} 루틴, 한 걸음 더 🌱`;
+  if (level === 'GOLD' && weeklyRate >= 85) {
+    return `오늘 미션 완료 · ${celebName} 루틴 · 주간 ${weeklyRate}%`;
+  }
+  if (level === 'GOLD') return `오늘 미션 완료 · ${celebName} 루틴`;
+  if (level === 'SILVER') return `오늘 미션 완료 · ${celebName} 루틴`;
+  return `오늘 미션 완료 · ${celebName} 루틴`;
 }
 
 export default function Home() {
@@ -410,9 +412,8 @@ export default function Home() {
   }, [activeProfile, todayKey]);
   const resemblanceHint = useMemo(() => {
     const n = activeProfile.name;
-    if (streakDays <= 0) return `${n}의 하루를 닮아가는 첫 걸음이에요.`;
-    if (streakDays < 3) return `조금씩 ${n}의 페이스에 가까워지고 있어요 · 연속 ${streakDays}일`;
-    return `오늘의 한 걸음이 ${n} 루틴과 더 닮아가고 있어요 · 연속 ${streakDays}일`;
+    if (streakDays <= 0) return `${n} 루틴 · 연속 기록 시작 전`;
+    return `${n} 루틴 · 연속 ${streakDays}일`;
   }, [activeProfile.name, streakDays]);
   const activeRoutineText = useMemo(() => {
     const t = morningTask.trim();
@@ -454,7 +455,7 @@ export default function Home() {
 
   const primaryCTA = useMemo(() => {
     if (!morningConfirmed) return `${activeProfile.name} 루틴 1개 정하기`;
-    return isMorningSlot ? '저녁에 완료 저장하면 점수가 올라요' : '오늘 루틴 결과 저장하기';
+    return isMorningSlot ? '저녁에 완료 저장' : '오늘 루틴 결과 저장하기';
   }, [isMorningSlot, morningConfirmed, activeProfile.name]);
 
   const statusPill = useMemo(() => {
@@ -466,16 +467,16 @@ export default function Home() {
 
   const morningTaskSummary = useMemo(() => {
     const t = morningTask.trim();
-    if (!t) return '아직 비어 있어요. (오늘 딱 1개만)';
+    if (!t) return '미입력';
     return t.length > 48 ? `${t.slice(0, 48)}…` : t;
   }, [morningTask]);
 
   const nextSuggestion = useMemo(() => {
-    if (failureReason === '시간 부족') return '내일은 더 짧게, 10분만 해요.';
-    if (failureReason === '피곤함') return '내일은 3분만 시작해도 좋아요.';
-    if (failureReason === '우선순위 밀림') return '내일은 가장 먼저 1개부터 해요.';
-    if (failureReason === '생각보다 어려움') return '내일은 더 쉬운 1개로 바꿔요.';
-    return '조금만 해도 성공이에요.';
+    if (failureReason === '시간 부족') return '내일은 10분 안에 끝나는 한 줄로 줄여 보세요.';
+    if (failureReason === '피곤함') return '내일은 3분만 시작하는 것부터 적어 보세요.';
+    if (failureReason === '우선순위 밀림') return '내일은 아침에 미션부터 고정해 두세요.';
+    if (failureReason === '생각보다 어려움') return '내일은 더 쉬운 문장으로 바꿔 보세요.';
+    return '';
   }, [failureReason]);
 
   const suggestedNextTask = useMemo(() => {
@@ -542,7 +543,7 @@ export default function Home() {
       // 저녁 결과 저장 전 전면광고: 당일 첫 체크아웃은 생략(이탈 방지)
       const skip = isFirstCheckoutToday();
       if (!skip) {
-        setToast('잠시 후 결과를 보여드릴게요.');
+        setToast('광고 후 결과 화면이 열립니다.');
         await adsService.showInterstitial();
       }
     } catch {
@@ -582,7 +583,7 @@ export default function Home() {
       celebrityName: celebNameSnap,
       missionText: missionSnap,
     });
-    setToast('저장 완료! 오늘 성공이 기록됐어요.');
+    setToast('저장됐어요.');
     window.setTimeout(() => setToast(null), 2200);
   };
 
@@ -727,7 +728,7 @@ export default function Home() {
     setCheckoutResult(null);
     setFailureReason('');
     closeIntro();
-    setToast(`${profile.name} 루틴으로 시작했어요. 오늘 1미션만 하면 성공!`);
+    setToast(`${profile.name} 루틴으로 시작했어요.`);
     window.setTimeout(() => setToast(null), 2200);
   };
 
@@ -952,7 +953,7 @@ export default function Home() {
             <div className="mt-4 p-3 rounded-xl bg-toss-bg border border-toss-border">
               <p className="text-xs text-toss-sub">문구 실험 리포트 (최근 로그)</p>
               <p className="text-sm font-semibold text-toss-text mt-1">A안 노출 {abSummary.A}회 · B안 노출 {abSummary.B}회</p>
-              <p className="text-xs text-toss-sub mt-1">어떤 문구가 더 유지율이 높은지 다음 버전에서 최적화합니다.</p>
+              <p className="text-xs text-toss-sub mt-1">A/B 문구 노출 로그(내부 실험용)입니다.</p>
             </div>
           </section>
         )}
@@ -961,7 +962,7 @@ export default function Home() {
           <section className="mb-4 p-4 rounded-2xl bg-toss-bg border border-toss-border">
             <p className="text-sm font-semibold text-toss-text">이번 주 리포트</p>
             <p className="text-xs text-toss-sub mt-1">
-              {activeProfile.name} 루틴을 얼마나 챙겼는지 볼 수 있어요. 완료한 날만 파랗게 쌓입니다.
+              완료 저장한 날은 파란 칸으로 표시됩니다.
             </p>
             <div className="mt-3">
               <p className="text-xs text-toss-sub mb-2">최근 7일</p>
@@ -1028,7 +1029,7 @@ export default function Home() {
               <div className="mt-3 p-3 rounded-xl bg-yellow-50 border border-yellow-200">
                 <p className="text-xs text-yellow-700">보상 카드</p>
                 <p className="text-sm font-bold text-yellow-800 mt-1">7일 연속 달성! 유지 보상 +10</p>
-                <p className="text-xs text-yellow-700 mt-1">내일도 성공하면 연속 기록이 이어집니다.</p>
+                <p className="text-xs text-yellow-700 mt-1">내일도 저장하면 연속일이 이어집니다.</p>
               </div>
             )}
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -1223,7 +1224,7 @@ export default function Home() {
                           type="button"
                           onClick={() => {
                             setMorningTask((t) => clampText(t ? `${t} · ${suggestedNextTask}` : suggestedNextTask, 80));
-                            setToast('내일용 “더 쉬운 1개”를 준비했어요.');
+                            setToast('미션 끝에 추천 문구를 붙였어요.');
                             window.setTimeout(() => setToast(null), 2000);
                           }}
                           className="mt-3 w-full py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
@@ -1271,9 +1272,9 @@ export default function Home() {
               <p className="mt-3 text-[11px] text-toss-sub leading-relaxed">
                 점수 = 주간 실행률×0.8 + 연속일×4 (최대 100). 하루 한 번 저장이면 반영돼요.
               </p>
-              <p className="mt-2 text-xs text-toss-sub">
-                {failureReason ? nextSuggestion : `${activeProfile.name} 루틴, 오늘도 한 걸음이에요.`}
-              </p>
+              {failureReason && nextSuggestion && (
+                <p className="mt-2 text-xs text-toss-sub">{nextSuggestion}</p>
+              )}
             </section>
 
           </>
@@ -1492,7 +1493,7 @@ export default function Home() {
                   >
                     {wow.completed
                       ? getWowHeadline(wow.level, wow.weeklyRate, wow.celebrityName)
-                      : '오늘은 쉬어도 괜찮아요'}
+                      : '오늘은 미완료로 저장됐어요'}
                   </p>
                   {wow.completed && (
                     <div className="text-sm font-medium text-toss-text text-center text-pretty break-keep leading-relaxed max-w-[95%] mx-auto mt-2 space-y-1.5">
@@ -1504,7 +1505,7 @@ export default function Home() {
                     </div>
                   )}
                   <p className="text-sm text-toss-sub mt-3 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
-                    {wow.completed ? style.next : '내일 다시 가볍게 이어가요.'}
+                    {wow.completed ? style.next : '내일 다시 미션을 정하면 됩니다.'}
                   </p>
                   {wow.completed && celebrityPhotos[selectedCelebrity] && (
                     <div className="mt-3 flex items-center justify-center gap-3 p-2.5 rounded-xl bg-white border border-toss-border">
@@ -1537,8 +1538,8 @@ export default function Home() {
                   </div>
                   {wow.completed && (
                     <div className="mt-3 p-3 rounded-xl bg-white border border-yellow-200">
-                      <p className="text-xs text-yellow-700">오늘의 깜짝 리워드</p>
-                      <p className="text-sm font-bold text-yellow-800 mt-1">{getDailyRewardCopy(todayKey)}</p>
+                      <p className="text-xs text-yellow-700">오늘의 팁</p>
+                      <p className="text-sm font-medium text-yellow-900 mt-1 leading-snug">{getDailyRewardCopy(todayKey)}</p>
                     </div>
                   )}
                 </>
@@ -1548,13 +1549,13 @@ export default function Home() {
             <div className="mt-4 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20 text-center">
               <p className="text-sm font-semibold text-toss-text text-pretty break-keep max-w-[95%] mx-auto">
                 {wow.completed
-                  ? `내일도 ${wow.celebrityName} 루틴 1개만 이어가요.`
-                  : '내일은 3분짜리로 가볍게 시작해요.'}
+                  ? `내일도 ${wow.celebrityName} 루틴 미션 1개를 저장하면 됩니다.`
+                  : '내일은 3분짜리 미션으로 바꿔 보세요.'}
               </p>
               {wow.completed && (
                 <p className="text-xs text-toss-sub mt-2 text-pretty break-keep max-w-[95%] mx-auto">
                   {streakDays >= 7
-                    ? '7일 루프 유지 중이에요.'
+                    ? '7일 연속 달성 구간입니다.'
                     : `다음 배지까지 ${streakDays < 1 ? 1 : streakDays < 3 ? 3 - streakDays : 7 - streakDays}일`}
                 </p>
               )}
@@ -1575,7 +1576,7 @@ export default function Home() {
                 }}
                 className="py-3 rounded-xl bg-toss-blue text-white font-semibold"
               >
-                성과 문구 복사
+                요약 복사
               </button>
             </div>
             <button
@@ -1595,11 +1596,11 @@ export default function Home() {
           <div className="flex min-h-[100dvh] min-h-[100svh] w-full items-center justify-center py-4">
           <div className="w-full max-w-sm max-h-[min(88dvh,88svh)] overflow-y-auto rounded-2xl bg-white border border-toss-border p-4 sm:p-5 text-center">
             <p className="text-xs text-toss-sub">레벨 업</p>
-            <p className="text-2xl font-extrabold text-toss-text mt-1">승급 성공! 🚀</p>
+            <p className="text-2xl font-extrabold text-toss-text mt-1">레벨 변경</p>
             <p className="text-sm text-toss-sub mt-2">
               {promotion.from} → <span className="font-bold text-toss-blue">{promotion.to}</span>
             </p>
-            <p className="text-xs text-toss-sub mt-2">좋아요. 이 흐름이면 리텐션이 강해집니다.</p>
+            <p className="text-xs text-toss-sub mt-2">점수와 배지는 아래 통계에 반영됩니다.</p>
             <button
               type="button"
               onClick={() => setPromotion(null)}
@@ -1617,14 +1618,14 @@ export default function Home() {
           <div className="flex min-h-[100dvh] min-h-[100svh] w-full items-center justify-center py-4">
           <div className="w-full max-w-sm max-h-[min(88dvh,88svh)] overflow-y-auto rounded-2xl bg-white border border-toss-border p-4 sm:p-5 text-center">
             <p className="text-xs text-toss-sub">신기록 달성</p>
-            <p className="text-2xl font-extrabold text-toss-text mt-1">최고 연속 {newRecord}일 🎯</p>
-            <p className="text-sm text-toss-sub mt-2">지금 이 순간이 핵심 WOW 포인트예요.</p>
+            <p className="text-2xl font-extrabold text-toss-text mt-1">최고 연속 {newRecord}일</p>
+            <p className="text-sm text-toss-sub mt-2">기록이 갱신됐어요.</p>
             <button
               type="button"
               onClick={() => setNewRecord(null)}
               className="mt-4 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold"
             >
-              좋아요, 계속할게요
+              확인
             </button>
           </div>
           </div>
