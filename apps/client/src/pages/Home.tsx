@@ -4,7 +4,7 @@ import BannerAd from '../components/BannerAd';
 import { adsService } from '../services/ads';
 import { fireMilestoneBurst } from '../utils/confetti';
 
-type GoalType = 'work' | 'health' | 'study' | 'relationship';
+type CelebrityId = 'jobs' | 'musk' | 'oprah' | 'son' | 'iu';
 type ResultType = 'done' | 'not_done';
 type WowState = {
   score: number;
@@ -33,18 +33,32 @@ type EventName =
   | 'milestone_badge_unlock'
   | 'new_record';
 
-const GOAL_LABEL: Record<GoalType, string> = {
-  work: '업무',
-  health: '건강',
-  study: '학습',
-  relationship: '관계',
-};
-
-const PRESET_TASKS: Record<GoalType, string> = {
-  work: '오늘 해야 할 일 1개 끝내기',
-  health: '10분 걷기',
-  study: '책 1페이지 읽기',
-  relationship: '고마운 사람에게 문자 1개 보내기',
+const CELEBRITIES: Record<CelebrityId, { name: string; oneLine: string; routines: string[] }> = {
+  jobs: {
+    name: '스티브 잡스',
+    oneLine: '핵심 1개에 집착',
+    routines: ['거울 질문 1개 쓰기', '가장 중요한 일 25분 몰입', '불필요한 할 일 1개 지우기'],
+  },
+  musk: {
+    name: '일론 머스크',
+    oneLine: '짧고 강한 실행',
+    routines: ['오늘 문제 1개 정의하기', '5분 단위 계획 1개 실행', '결과 로그 3줄 남기기'],
+  },
+  oprah: {
+    name: '오프라 윈프리',
+    oneLine: '감사와 자기정리',
+    routines: ['감사한 일 3개 적기', '오늘 감정 1줄 기록', '중요한 사람에게 고마움 1메시지'],
+  },
+  son: {
+    name: '손흥민',
+    oneLine: '기본기 반복',
+    routines: ['몸풀기 7분 실행', '집중 루틴 20분 유지', '오늘 복기 1문장 쓰기'],
+  },
+  iu: {
+    name: '아이유',
+    oneLine: '꾸준한 창작 습관',
+    routines: ['아이디어 1개 메모', '방해 없는 20분 몰입', '오늘 배운 점 1개 정리'],
+  },
 };
 
 const FAILURE_REASONS = ['시간 부족', '피곤함', '우선순위 밀림', '생각보다 어려움'];
@@ -148,15 +162,20 @@ function getDailyRewardCopy(dayKey: string) {
   return seeds[n % seeds.length];
 }
 
-function getWowHeadline(level: 'BRONZE' | 'SILVER' | 'GOLD', weeklyRate: number) {
+function daySeed(dayKey: string) {
+  return Number(dayKey.split('-').join(''));
+}
+
+function getWowHeadline(level: 'BRONZE' | 'SILVER' | 'GOLD', weeklyRate: number, celebName: string) {
   if (level === 'GOLD' && weeklyRate >= 85) return '오늘 1개 완료! 전설 페이스예요 👑';
-  if (level === 'GOLD') return '오늘 1개 완료! GOLD 구간 유지 중 ✨';
-  if (level === 'SILVER') return '오늘 1개 완료! 상승 흐름이에요 🚀';
-  return '오늘 1개 완료! 좋은 시작이에요 🌱';
+  if (level === 'GOLD') return `오늘 1개 완료! ${celebName} 루틴 적응 중 ✨`;
+  if (level === 'SILVER') return `오늘 1개 완료! ${celebName}처럼 상승 중 🚀`;
+  return `오늘 1개 완료! ${celebName} 루틴 시작 🌱`;
 }
 
 export default function Home() {
-  const [goal, setGoal] = useState<GoalType>('work');
+  const [selectedCelebrity, setSelectedCelebrity] = useState<CelebrityId>('jobs');
+  const [celebrityPhotos, setCelebrityPhotos] = useState<Partial<Record<CelebrityId, string>>>({});
   const [morningTask, setMorningTask] = useState('');
   const [morningConfirmed, setMorningConfirmed] = useState(false);
   const [editingMorningTask, setEditingMorningTask] = useState(true);
@@ -179,7 +198,7 @@ export default function Home() {
   const [newRecord, setNewRecord] = useState<number | null>(null);
 
   useEffect(() => {
-    const storedGoal = localStorage.getItem('commute-goal') as GoalType | null;
+    const storedCelebrity = localStorage.getItem('commute-celebrity') as CelebrityId | null;
     const storedTask = localStorage.getItem('commute-task');
     const storedHistory = localStorage.getItem('commute-history');
     const storedConfirmed = localStorage.getItem('commute-morning-confirmed');
@@ -187,7 +206,8 @@ export default function Home() {
     const storedLastSavedDay = localStorage.getItem('commute-last-saved-day') as DayKey | null;
     const storedLastCheckoutSavedDay = localStorage.getItem('commute-last-checkout-saved-day') as DayKey | null;
     const storedBestStreak = localStorage.getItem('commute-best-streak');
-    if (storedGoal) setGoal(storedGoal);
+    const storedCelebrityPhotos = localStorage.getItem('commute-celebrity-photos');
+    if (storedCelebrity && CELEBRITIES[storedCelebrity]) setSelectedCelebrity(storedCelebrity);
     if (storedTask) setMorningTask(storedTask);
     if (storedHistory) {
       try {
@@ -209,6 +229,14 @@ export default function Home() {
     if (storedLastSavedDay) setLastSavedDay(storedLastSavedDay);
     if (storedLastCheckoutSavedDay) setLastCheckoutSavedDay(storedLastCheckoutSavedDay);
     if (storedBestStreak && Number.isFinite(Number(storedBestStreak))) setBestStreak(Number(storedBestStreak));
+    if (storedCelebrityPhotos) {
+      try {
+        const parsed = JSON.parse(storedCelebrityPhotos) as Partial<Record<CelebrityId, string>>;
+        if (parsed && typeof parsed === 'object') setCelebrityPhotos(parsed);
+      } catch {
+        // ignore
+      }
+    }
     // 기본은 입력 가능 상태로 두되, 이미 체크인 완료면 요약 모드로 시작
     if (storedConfirmed === 'true') setEditingMorningTask(false);
     if (localStorage.getItem('todayone-intro-seen') !== 'true') {
@@ -236,8 +264,8 @@ export default function Home() {
   }, [showSettings, wow]);
 
   useEffect(() => {
-    localStorage.setItem('commute-goal', goal);
-  }, [goal]);
+    localStorage.setItem('commute-celebrity', selectedCelebrity);
+  }, [selectedCelebrity]);
 
   useEffect(() => {
     localStorage.setItem('commute-task', morningTask);
@@ -268,6 +296,10 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem('commute-best-streak', String(bestStreak));
   }, [bestStreak]);
+
+  useEffect(() => {
+    localStorage.setItem('commute-celebrity-photos', JSON.stringify(celebrityPhotos));
+  }, [celebrityPhotos]);
 
   // Day rollover: if day changed, reset morning confirmation (so user has reason to "check-in" again).
   useEffect(() => {
@@ -313,6 +345,10 @@ export default function Home() {
   const slotLabel = isMorningSlot ? '출근 전 체크인 시간' : '퇴근 후 체크아웃 시간';
 
   const todayKey = kstDayKey();
+  const todayMission = useMemo(() => {
+    const celeb = CELEBRITIES[selectedCelebrity];
+    return celeb.routines[daySeed(todayKey) % celeb.routines.length];
+  }, [selectedCelebrity, todayKey]);
   const copyVariant = useMemo<'A' | 'B'>(() => {
     const dayNum = Number(todayKey.slice(-2));
     return dayNum % 2 === 0 ? 'A' : 'B';
@@ -455,7 +491,7 @@ export default function Home() {
   };
 
   const copyShare = async () => {
-    const text = `오늘 1개만 완료 · 점수 ${score}점 · 연속 ${streakDays}일 · 주간 ${weeklyRate}%\n${window.location.origin}`;
+    const text = `롤모델따라하기 · 점수 ${score}점 · 연속 ${streakDays}일 · 주간 ${weeklyRate}%\n${window.location.origin}`;
     try {
       await navigator.clipboard.writeText(text);
       setToast('공유 문구를 복사했어요.');
@@ -473,19 +509,39 @@ export default function Home() {
   };
 
   const reserveTomorrow = () => {
-    const options: GoalType[] = ['work', 'health', 'study', 'relationship'];
-    const nextIndex = (options.indexOf(goal) + 1) % options.length;
-    const nextGoal = options[nextIndex];
-    setGoal(nextGoal);
-    setMorningTask(PRESET_TASKS[nextGoal]);
+    const options: CelebrityId[] = ['jobs', 'musk', 'oprah', 'son', 'iu'];
+    const nextIndex = (options.indexOf(selectedCelebrity) + 1) % options.length;
+    const nextCelebrity = options[nextIndex];
+    const celeb = CELEBRITIES[nextCelebrity];
+    const nextMission = celeb.routines[daySeed(kstDayKey()) % celeb.routines.length];
+    setSelectedCelebrity(nextCelebrity);
+    setMorningTask(nextMission);
     setMorningConfirmed(false);
     setEditingMorningTask(true);
     setCheckoutResult(null);
     setFailureReason('');
     setWow(null);
-    trackEvent('reserve_tomorrow', { nextGoal });
-    setToast(`내일 1개 예약 완료: ${GOAL_LABEL[nextGoal]}`);
+    trackEvent('reserve_tomorrow', { nextCelebrity });
+    setToast(`내일 1개 예약 완료: ${celeb.name}`);
     window.setTimeout(() => setToast(null), 2200);
+  };
+
+  const onUploadCelebrityPhoto = (celebrity: CelebrityId, file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setToast('이미지 파일만 업로드할 수 있어요.');
+      window.setTimeout(() => setToast(null), 2200);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = String(reader.result || '');
+      if (!url) return;
+      setCelebrityPhotos((prev) => ({ ...prev, [celebrity]: url }));
+      setToast(`${CELEBRITIES[celebrity].name} 사진을 저장했어요.`);
+      window.setTimeout(() => setToast(null), 2000);
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -502,7 +558,7 @@ export default function Home() {
               ) : (
                 <img
                   src="/app-icon-600x600.png"
-                  alt="오늘 1개만 완료 로고"
+                  alt="롤모델따라하기 로고"
                   width={28}
                   height={28}
                   onError={() => setLogoError(true)}
@@ -511,7 +567,7 @@ export default function Home() {
                   decoding="async"
                 />
               )}
-              <span className="text-sm font-semibold text-toss-text truncate">오늘 1개만 완료</span>
+              <span className="text-sm font-semibold text-toss-text truncate">롤모델따라하기</span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
@@ -605,27 +661,31 @@ export default function Home() {
               </button>
             </div>
             <div className="mt-3">
-              <p className="text-xs text-toss-sub mb-1">무슨 종류의 할 일인지 고르기</p>
-              <p className="text-[11px] text-toss-sub mb-2">선택 사항: 안 바꿔도 바로 사용 가능해요.</p>
-              <div className="grid grid-cols-2 gap-2">
-                {(Object.keys(GOAL_LABEL) as GoalType[]).map((item) => (
+              <p className="text-xs text-toss-sub mb-1">닮고 싶은 인물 선택</p>
+              <p className="text-[11px] text-toss-sub mb-2">한 명을 고르면 오늘의 1미션이 자동 추천돼요.</p>
+              <div className="grid grid-cols-1 gap-2">
+                {(Object.keys(CELEBRITIES) as CelebrityId[]).map((item) => (
                   <button
                     key={item}
                     type="button"
                     onClick={() => {
-                      setGoal(item);
-                      setMorningTask(PRESET_TASKS[item]);
+                      const celeb = CELEBRITIES[item];
+                      setSelectedCelebrity(item);
+                      setMorningTask(celeb.routines[daySeed(todayKey) % celeb.routines.length]);
                       setEditingMorningTask(true);
-                      setToast(`목표가 “${GOAL_LABEL[item]}”로 바뀌었어요.`);
+                      setToast(`${celeb.name} 루틴으로 전환했어요.`);
                       window.setTimeout(() => setToast(null), 1800);
                     }}
-                    className={`py-2.5 rounded-xl border text-sm font-medium transition ${
-                      goal === item
+                    className={`p-3 rounded-xl border text-sm font-medium transition text-left ${
+                      selectedCelebrity === item
                         ? 'bg-toss-blue text-white border-toss-blue'
                         : 'bg-white text-toss-text border-toss-border'
                     }`}
                   >
-                    {GOAL_LABEL[item]}
+                    <p className="font-semibold">{CELEBRITIES[item].name}</p>
+                    <p className={`text-xs mt-0.5 ${selectedCelebrity === item ? 'text-blue-50' : 'text-toss-sub'}`}>
+                      {CELEBRITIES[item].oneLine}
+                    </p>
                   </button>
                 ))}
               </div>
@@ -662,6 +722,33 @@ export default function Home() {
                 <p className="text-xs text-toss-sub mt-1">오늘은 1번만 성공하면 끝!</p>
               </div>
               <p className="text-xs text-toss-sub mt-2">한 줄 요약: 시간은 선택, 핵심은 "오늘 1개 저장".</p>
+            </div>
+
+            <div className="mt-4 p-3 rounded-xl bg-white border border-toss-border">
+              <p className="text-xs text-toss-sub">선택 인물 사진 (축하 모달 표시용)</p>
+              <div className="mt-2 flex items-center gap-3">
+                {celebrityPhotos[selectedCelebrity] ? (
+                  <img
+                    src={celebrityPhotos[selectedCelebrity]}
+                    alt={`${CELEBRITIES[selectedCelebrity].name} 사진`}
+                    className="w-14 h-14 rounded-xl object-cover border border-toss-border"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-xl border border-dashed border-toss-border text-[11px] text-toss-sub flex items-center justify-center">
+                    사진 없음
+                  </div>
+                )}
+                <label className="inline-flex items-center px-3 py-2 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text cursor-pointer">
+                  사진 업로드
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onUploadCelebrityPhoto(selectedCelebrity, e.target.files?.[0] ?? null)}
+                  />
+                </label>
+              </div>
+              <p className="text-[11px] text-toss-sub mt-2">완료 저장 후 축하 화면에 이 사진이 함께 나와요.</p>
             </div>
 
             <div className="mt-4 p-3 rounded-xl bg-toss-bg border border-toss-border">
@@ -769,8 +856,19 @@ export default function Home() {
                 {!morningConfirmed ? '1) 먼저 적기 (30초)' : '2) 끝났는지 누르기 (60초)'}
               </p>
               <p className="text-xs text-toss-sub mb-3">
-                {!morningConfirmed ? '오늘 할 일 1개를 적고 시작해요.' : '완료/미완료를 누르고 저장해요.'}
+                {!morningConfirmed
+                  ? `${CELEBRITIES[selectedCelebrity].name} 루틴 미션 1개를 적고 시작해요.`
+                  : '완료/미완료를 누르고 저장해요.'}
               </p>
+              {!morningConfirmed && (
+                <div className="mb-3 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20">
+                  <p className="text-xs text-toss-sub">오늘의 인물</p>
+                  <p className="text-sm font-semibold text-toss-text mt-1">
+                    {CELEBRITIES[selectedCelebrity].name} · {CELEBRITIES[selectedCelebrity].oneLine}
+                  </p>
+                  <p className="text-sm text-toss-text mt-1">추천 1미션: {todayMission}</p>
+                </div>
+              )}
 
               {!morningConfirmed ? (
                 <>
@@ -784,10 +882,10 @@ export default function Home() {
                   <div className="mt-2 flex justify-between items-center">
                     <button
                       type="button"
-                      onClick={() => setMorningTask(PRESET_TASKS[goal])}
+                      onClick={() => setMorningTask(todayMission)}
                       className="text-sm text-toss-blue font-medium"
                     >
-                      예시 넣기
+                      오늘 미션 불러오기
                     </button>
                     <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
                   </div>
@@ -796,7 +894,7 @@ export default function Home() {
                     onClick={() => {
                       setMorningConfirmed(true);
                       setEditingMorningTask(false);
-                      trackEvent('checkin_confirm', { goal });
+                      trackEvent('checkin_confirm', { celebrity: selectedCelebrity });
                       setToast('시작했어요! 저녁에 저장하면 점수가 올라요.');
                       window.setTimeout(() => setToast(null), 2200);
                     }}
@@ -846,10 +944,10 @@ export default function Home() {
                       <div className="mt-2 flex justify-between items-center">
                         <button
                           type="button"
-                          onClick={() => setMorningTask(PRESET_TASKS[goal])}
+                          onClick={() => setMorningTask(todayMission)}
                           className="text-sm text-toss-blue font-medium"
                         >
-                          예시 넣기
+                          오늘 미션 불러오기
                         </button>
                         <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
                       </div>
@@ -1048,11 +1146,28 @@ export default function Home() {
                 <>
                   <p className="text-xs text-toss-sub">오늘 결과</p>
                   <p className={`text-2xl font-extrabold mt-1 ${style.title}`}>
-                    {wow.completed ? getWowHeadline(wow.level, wow.weeklyRate) : '오늘은 쉬어도 괜찮아요'}
+                    {wow.completed
+                      ? getWowHeadline(wow.level, wow.weeklyRate, CELEBRITIES[selectedCelebrity].name)
+                      : '오늘은 쉬어도 괜찮아요'}
                   </p>
                   <p className="text-sm text-toss-sub mt-2">
                     {wow.completed ? style.next : '내일은 더 쉬운 1개로 다시 시작해요.'}
                   </p>
+                  {wow.completed && celebrityPhotos[selectedCelebrity] && (
+                    <div className="mt-3 p-2.5 rounded-xl bg-white border border-toss-border">
+                      <p className="text-xs text-toss-sub mb-2">오늘 내가 따라한 롤모델</p>
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={celebrityPhotos[selectedCelebrity]}
+                          alt={`${CELEBRITIES[selectedCelebrity].name} 축하 이미지`}
+                          className="w-16 h-16 rounded-xl object-cover border border-toss-border"
+                        />
+                        <p className="text-sm font-semibold text-toss-text">
+                          {CELEBRITIES[selectedCelebrity].name} 루틴 성공! 👏
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                     <div className={`rounded-xl border p-2.5 ${style.chip}`}>
@@ -1085,7 +1200,9 @@ export default function Home() {
             <div className="mt-4 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20">
               <p className="text-xs text-toss-sub">내일 한 줄</p>
               <p className="text-sm font-semibold text-toss-text mt-1">
-                {wow.completed ? '내일도 같은 시간에 1개만 끝내요.' : '내일은 3분짜리 쉬운 1개부터 시작해요.'}
+                {wow.completed
+                  ? `내일도 ${CELEBRITIES[selectedCelebrity].name} 루틴 1개만 따라가요.`
+                  : '내일은 3분짜리 쉬운 1개부터 시작해요.'}
               </p>
             </div>
             {wow.completed && (
