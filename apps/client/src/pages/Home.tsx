@@ -87,6 +87,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [view, setView] = useState<'today' | 'weekly'>('today');
 
   useEffect(() => {
     const storedGoal = localStorage.getItem('commute-goal') as GoalType | null;
@@ -121,6 +122,11 @@ export default function Home() {
       setShowIntro(true);
     }
   }, []);
+
+  useEffect(() => {
+    // "오늘/주간" 탭 대신 명확한 화면 상태로 유지
+    if (showWeekly) setView('weekly');
+  }, [showWeekly]);
 
   useEffect(() => {
     localStorage.setItem('commute-goal', goal);
@@ -264,9 +270,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center p-4 sm:p-6 pt-[calc(4.5rem+env(safe-area-inset-top))] pb-[calc(7rem+env(safe-area-inset-bottom))]">
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur border-b border-toss-border">
-        <div className="mx-auto max-w-md px-4 sm:px-6 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
+    <div className="min-h-screen bg-white flex flex-col items-center p-4 sm:p-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
+      {/* Sticky header: prevents content being cut off by fixed bar */}
+      <div className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur border-b border-toss-border">
+        <div className="mx-auto max-w-md px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               {logoError ? (
@@ -291,30 +298,20 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setShowSettings((v) => !v)}
-                aria-label="설정 열기"
+                aria-label="목표와 알림 바꾸기"
                 className="px-3 py-1.5 rounded-full border text-xs font-semibold bg-white text-toss-text border-toss-border"
               >
-                설정
+                바꾸기
               </button>
               <button
                 type="button"
-                onClick={() => setShowWeekly(false)}
-                aria-label="오늘 루프 보기"
+                onClick={() => setShowIntro(true)}
+                aria-label="도움말 보기"
                 className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${
-                  !showWeekly ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white text-toss-text border-toss-border'
+                  'bg-white text-toss-text border-toss-border'
                 }`}
               >
-                오늘
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowWeekly(true)}
-                aria-label="주간 리포트 보기"
-                className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${
-                  showWeekly ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white text-toss-text border-toss-border'
-                }`}
-              >
-                주간
+                도움말
               </button>
             </div>
           </div>
@@ -341,10 +338,38 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Primary navigation: explicit and child-friendly */}
+        <div className="mb-4 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setShowWeekly(false);
+              setView('today');
+            }}
+            className={`py-2.5 rounded-xl border text-sm font-semibold ${
+              view === 'today' ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white text-toss-text border-toss-border'
+            }`}
+          >
+            오늘 하기
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowWeekly(true);
+              setView('weekly');
+            }}
+            className={`py-2.5 rounded-xl border text-sm font-semibold ${
+              view === 'weekly' ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white text-toss-text border-toss-border'
+            }`}
+          >
+            내 기록 보기
+          </button>
+        </div>
+
         {showSettings && (
           <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-toss-text">바꾸기</p>
+              <p className="text-sm font-semibold text-toss-text">바꾸기 (목표/알림)</p>
               <button
                 type="button"
                 onClick={() => setShowSettings(false)}
