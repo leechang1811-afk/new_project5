@@ -67,6 +67,7 @@ export default function Home() {
   const [goal, setGoal] = useState<GoalType>('work');
   const [morningTask, setMorningTask] = useState('');
   const [morningConfirmed, setMorningConfirmed] = useState(false);
+  const [editingMorningTask, setEditingMorningTask] = useState(true);
   const [checkoutResult, setCheckoutResult] = useState<ResultType | null>(null);
   const [failureReason, setFailureReason] = useState('');
   const [history, setHistory] = useState<boolean[]>([]); // last 14 days completion
@@ -102,6 +103,8 @@ export default function Home() {
       }
     }
     if (storedLastSavedDay) setLastSavedDay(storedLastSavedDay);
+    // 기본은 입력 가능 상태로 두되, 이미 체크인 완료면 요약 모드로 시작
+    if (storedConfirmed === 'true') setEditingMorningTask(false);
   }, []);
 
   useEffect(() => {
@@ -135,6 +138,7 @@ export default function Home() {
       if (today !== lastSavedDay) {
         setLastSavedDay(today);
         setMorningConfirmed(false);
+        setEditingMorningTask(true);
         setCheckoutResult(null);
         setFailureReason('');
       }
@@ -168,6 +172,18 @@ export default function Home() {
     if (!morningConfirmed) return '오늘의 1개 확정하기';
     return isMorningSlot ? '저녁에 체크아웃하면 점수가 올라요' : '오늘 결과 저장하고 점수 받기';
   }, [isMorningSlot, morningConfirmed]);
+
+  const statusPill = useMemo(() => {
+    if (!morningConfirmed) return { label: '체크인 필요', tone: 'bg-amber-50 text-amber-700 border-amber-200' };
+    if (morningConfirmed && isMorningSlot) return { label: '체크인 완료', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    return { label: '체크아웃 시간', tone: 'bg-toss-blue/5 text-toss-blue border-toss-blue/20' };
+  }, [isMorningSlot, morningConfirmed]);
+
+  const morningTaskSummary = useMemo(() => {
+    const t = morningTask.trim();
+    if (!t) return '아직 “오늘의 1개”가 없어요.';
+    return t.length > 48 ? `${t.slice(0, 48)}…` : t;
+  }, [morningTask]);
 
   const nextSuggestion = useMemo(() => {
     if (failureReason === '시간 부족') return '내일은 “10분만”으로 줄여서 시작해요.';
@@ -203,7 +219,10 @@ export default function Home() {
     try {
       // 저녁 결과 저장 전 전면광고: 당일 첫 체크아웃은 생략(이탈 방지)
       const skip = isFirstCheckoutToday();
-      if (!skip) await adsService.showInterstitial();
+      if (!skip) {
+        setToast('잠시 후 결과를 저장할게요.');
+        await adsService.showInterstitial();
+      }
     } catch {
       // ignore
     }
@@ -269,19 +288,18 @@ export default function Home() {
 
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full mx-auto">
         <div className="mt-2 mb-4 p-4 rounded-2xl bg-toss-bg border border-toss-border">
-          <p className="text-sm font-semibold text-toss-text">오늘의 목표는 단 하나</p>
-          <p className="text-xs text-toss-sub mt-1">체크인 30초 → 체크아웃 60초로 “오늘 1개 완료”를 만듭니다.</p>
-          <div className="mt-3 flex items-center justify-between gap-3">
+          <div className="flex items-start justify-between gap-3">
             <div className="text-left">
-              <p className="text-xs text-toss-sub">오늘</p>
-              <p className="text-sm font-semibold text-toss-text">{todayKey}</p>
+              <p className="text-sm font-semibold text-toss-text">오늘 1개 완료 루프</p>
+              <p className="text-xs text-toss-sub mt-1">{todayKey} · {reminders.morning}/{reminders.evening}</p>
             </div>
-            <div className="text-right">
-              <p className="text-xs text-toss-sub">리마인드</p>
-              <p className="text-sm font-semibold text-toss-text">
-                {reminders.morning} / {reminders.evening}
-              </p>
-            </div>
+            <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-semibold ${statusPill.tone}`}>
+              {statusPill.label}
+            </span>
+          </div>
+          <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
+            <p className="text-xs text-toss-sub">오늘의 1개</p>
+            <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
           </div>
         </div>
 
@@ -366,6 +384,7 @@ export default function Home() {
                     onClick={() => {
                       setGoal(item);
                       setMorningTask(PRESET_TASKS[item]);
+                      setEditingMorningTask(true);
                     }}
                     className={`py-2.5 rounded-xl border text-sm font-medium transition ${
                       goal === item
@@ -381,31 +400,64 @@ export default function Home() {
 
             <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
               <p className="text-sm font-semibold text-toss-text mb-2">2) 아침 체크인 (30초)</p>
-              <textarea
-                value={morningTask}
-                onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
-                className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
-                placeholder="오늘 꼭 끝낼 1개를 적어보세요."
-                aria-label="오늘의 1개 입력"
-              />
-              <div className="mt-2 flex justify-between items-center">
-                <button
-                  type="button"
-                  onClick={() => setMorningTask(PRESET_TASKS[goal])}
-                  className="text-sm text-toss-blue font-medium"
-                >
-                  추천 문구 사용
-                </button>
-                <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMorningConfirmed(true)}
-                disabled={!morningTask.trim()}
-                className="mt-3 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
-              >
-                {primaryCTA}
-              </button>
+              {!editingMorningTask && morningConfirmed ? (
+                <div className="p-3 rounded-xl bg-toss-bg border border-toss-border">
+                  <p className="text-xs text-toss-sub">확정된 오늘의 1개</p>
+                  <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingMorningTask(true)}
+                      className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                    >
+                      수정하기
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMorningConfirmed(false);
+                        setEditingMorningTask(true);
+                      }}
+                      className="py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700"
+                    >
+                      오늘 취소
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <textarea
+                    value={morningTask}
+                    onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
+                    className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
+                    placeholder="오늘 꼭 끝낼 1개를 적어보세요."
+                    aria-label="오늘의 1개 입력"
+                  />
+                  <div className="mt-2 flex justify-between items-center">
+                    <button
+                      type="button"
+                      onClick={() => setMorningTask(PRESET_TASKS[goal])}
+                      className="text-sm text-toss-blue font-medium"
+                    >
+                      추천 문구 사용
+                    </button>
+                    <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMorningConfirmed(true);
+                      setEditingMorningTask(false);
+                      setToast('체크인 완료! 저녁에 결과 저장하면 점수가 올라요.');
+                      window.setTimeout(() => setToast(null), 2200);
+                    }}
+                    disabled={!morningTask.trim()}
+                    className="mt-3 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
+                  >
+                    오늘의 1개 확정하기
+                  </button>
+                </>
+              )}
               <p className="mt-2 text-xs text-toss-sub">
                 체크인을 확정하면, 저녁에 “결과 저장”으로 점수가 계산돼요.
               </p>
@@ -420,6 +472,10 @@ export default function Home() {
                 </div>
               ) : (
                 <>
+                  <div className="mb-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
+                    <p className="text-xs text-toss-sub">오늘의 1개</p>
+                    <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
+                  </div>
                   <p className="text-sm text-toss-sub mb-2">오늘의 1개를 완료했나요?</p>
                   <div className="grid grid-cols-2 gap-2">
                     <button
