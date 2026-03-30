@@ -189,6 +189,10 @@ export default function Home() {
   const [toast, setToast] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
+  const [pickerCelebrity, setPickerCelebrity] = useState<CelebrityId>('jobs');
+  const [pickerRoutine, setPickerRoutine] = useState('');
+  const [pickerCustomRoutine, setPickerCustomRoutine] = useState('');
+  const [pickerSearch, setPickerSearch] = useState('');
   const [logoError, setLogoError] = useState(false);
   const [view, setView] = useState<'today' | 'weekly'>('today');
   const [wow, setWow] = useState<WowState | null>(null);
@@ -207,7 +211,10 @@ export default function Home() {
     const storedLastCheckoutSavedDay = localStorage.getItem('commute-last-checkout-saved-day') as DayKey | null;
     const storedBestStreak = localStorage.getItem('commute-best-streak');
     const storedCelebrityPhotos = localStorage.getItem('commute-celebrity-photos');
-    if (storedCelebrity && CELEBRITIES[storedCelebrity]) setSelectedCelebrity(storedCelebrity);
+    if (storedCelebrity && CELEBRITIES[storedCelebrity]) {
+      setSelectedCelebrity(storedCelebrity);
+      setPickerCelebrity(storedCelebrity);
+    }
     if (storedTask) setMorningTask(storedTask);
     if (storedHistory) {
       try {
@@ -239,7 +246,7 @@ export default function Home() {
     }
     // 기본은 입력 가능 상태로 두되, 이미 체크인 완료면 요약 모드로 시작
     if (storedConfirmed === 'true') setEditingMorningTask(false);
-    if (localStorage.getItem('todayone-intro-seen') !== 'true') {
+    if (localStorage.getItem('rolemodel-picker-seen') !== 'true') {
       setShowIntro(true);
     }
   }, []);
@@ -349,6 +356,15 @@ export default function Home() {
     const celeb = CELEBRITIES[selectedCelebrity];
     return celeb.routines[daySeed(todayKey) % celeb.routines.length];
   }, [selectedCelebrity, todayKey]);
+  const pickerList = useMemo(() => {
+    const q = pickerSearch.trim().toLowerCase();
+    const all = Object.keys(CELEBRITIES) as CelebrityId[];
+    if (!q) return all;
+    return all.filter((id) => {
+      const c = CELEBRITIES[id];
+      return c.name.toLowerCase().includes(q) || c.oneLine.toLowerCase().includes(q);
+    });
+  }, [pickerSearch]);
   const copyVariant = useMemo<'A' | 'B'>(() => {
     const dayNum = Number(todayKey.slice(-2));
     return dayNum % 2 === 0 ? 'A' : 'B';
@@ -357,6 +373,11 @@ export default function Home() {
   useEffect(() => {
     trackEvent('copy_variant_exposed', { variant: copyVariant });
   }, [copyVariant]);
+
+  useEffect(() => {
+    const first = CELEBRITIES[pickerCelebrity].routines[0];
+    setPickerRoutine(first);
+  }, [pickerCelebrity]);
 
   const primaryCTA = useMemo(() => {
     if (!morningConfirmed) return '오늘의 1개 확정하기';
@@ -503,9 +524,23 @@ export default function Home() {
   };
 
   const closeIntro = () => {
-    localStorage.setItem('todayone-intro-seen', 'true');
+    localStorage.setItem('rolemodel-picker-seen', 'true');
     setShowIntro(false);
     trackEvent('intro_close');
+  };
+
+  const applyPickerStart = () => {
+    const celeb = CELEBRITIES[pickerCelebrity];
+    const routine = pickerCustomRoutine.trim() || pickerRoutine || celeb.routines[0];
+    setSelectedCelebrity(pickerCelebrity);
+    setMorningTask(clampText(routine, 80));
+    setMorningConfirmed(true);
+    setEditingMorningTask(false);
+    setCheckoutResult(null);
+    setFailureReason('');
+    closeIntro();
+    setToast(`${celeb.name} 루틴으로 시작했어요. 오늘 1미션만 하면 성공!`);
+    window.setTimeout(() => setToast(null), 2200);
   };
 
   const reserveTomorrow = () => {
@@ -587,10 +622,10 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setShowIntro(true)}
-                aria-label="도움말 보기"
+                aria-label="롤모델 선택 열기"
                 className="px-3 py-1.5 rounded-full border text-xs font-semibold bg-white text-toss-text border-toss-border"
               >
-                도움말
+                롤모델 선택
               </button>
             </div>
           </div>
@@ -660,35 +695,18 @@ export default function Home() {
                 닫기
               </button>
             </div>
-            <div className="mt-3">
-              <p className="text-xs text-toss-sub mb-1">닮고 싶은 인물 선택</p>
-              <p className="text-[11px] text-toss-sub mb-2">한 명을 고르면 오늘의 1미션이 자동 추천돼요.</p>
-              <div className="grid grid-cols-1 gap-2">
-                {(Object.keys(CELEBRITIES) as CelebrityId[]).map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => {
-                      const celeb = CELEBRITIES[item];
-                      setSelectedCelebrity(item);
-                      setMorningTask(celeb.routines[daySeed(todayKey) % celeb.routines.length]);
-                      setEditingMorningTask(true);
-                      setToast(`${celeb.name} 루틴으로 전환했어요.`);
-                      window.setTimeout(() => setToast(null), 1800);
-                    }}
-                    className={`p-3 rounded-xl border text-sm font-medium transition text-left ${
-                      selectedCelebrity === item
-                        ? 'bg-toss-blue text-white border-toss-blue'
-                        : 'bg-white text-toss-text border-toss-border'
-                    }`}
-                  >
-                    <p className="font-semibold">{CELEBRITIES[item].name}</p>
-                    <p className={`text-xs mt-0.5 ${selectedCelebrity === item ? 'text-blue-50' : 'text-toss-sub'}`}>
-                      {CELEBRITIES[item].oneLine}
-                    </p>
-                  </button>
-                ))}
-              </div>
+            <div className="mt-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
+              <p className="text-xs text-toss-sub">현재 롤모델</p>
+              <p className="text-sm font-semibold text-toss-text mt-1">
+                {CELEBRITIES[selectedCelebrity].name} · {CELEBRITIES[selectedCelebrity].oneLine}
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowIntro(true)}
+                className="mt-2 py-2 px-3 rounded-lg border border-toss-border bg-white text-xs font-semibold text-toss-text"
+              >
+                롤모델/미션 다시 고르기
+              </button>
             </div>
 
             <div className="mt-4">
@@ -1106,31 +1124,111 @@ export default function Home() {
       {showIntro && (
         <div className="fixed inset-0 z-[60] bg-black/45 flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-2xl bg-white border border-toss-border p-5">
-            <p className="text-lg font-bold text-toss-text">3초 사용법</p>
-            <p className="text-sm text-toss-sub mt-2">이것만 기억하면 끝나요.</p>
-            <div className="mt-4 space-y-2 text-sm text-toss-text">
-              <p>1) 아침에 1개 적기</p>
-              <p>2) 저녁에 완료 누르기</p>
-              <p>3) 저장하고 끝내기</p>
+            <p className="text-lg font-bold text-toss-text text-center">롤모델부터 고르고 시작해요</p>
+            <p className="text-sm text-toss-sub mt-1 text-center">초등학생도 쉽게: 사람 고르기 → 1미션 선택 → 시작</p>
+
+            <div className="mt-4">
+              <p className="text-xs text-toss-sub mb-2">1) 닮고 싶은 사람</p>
+              <div className="max-h-40 overflow-auto space-y-2 pr-1">
+                {pickerList.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setPickerCelebrity(id)}
+                    className={`w-full p-3 rounded-xl border text-left ${
+                      pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
+                    }`}
+                  >
+                    <p className="text-sm font-semibold">{CELEBRITIES[id].name}</p>
+                    <p className={`text-xs mt-0.5 ${pickerCelebrity === id ? 'text-blue-50' : 'text-toss-sub'}`}>
+                      {CELEBRITIES[id].oneLine}
+                    </p>
+                  </button>
+                ))}
+              </div>
             </div>
+
+            <div className="mt-4">
+              <p className="text-xs text-toss-sub mb-2">2) 오늘 루틴 1개 선택</p>
+              <div className="space-y-2">
+                {CELEBRITIES[pickerCelebrity].routines.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => {
+                      setPickerRoutine(r);
+                      setPickerCustomRoutine('');
+                    }}
+                    className={`w-full p-2.5 rounded-xl border text-sm text-left ${
+                      pickerRoutine === r && !pickerCustomRoutine
+                        ? 'bg-toss-blue/10 border-toss-blue text-toss-text'
+                        : 'bg-white border-toss-border text-toss-text'
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+                <input
+                  type="text"
+                  value={pickerCustomRoutine}
+                  onChange={(e) => setPickerCustomRoutine(clampText(e.target.value, 80))}
+                  placeholder="기타: 내가 직접 쓰기"
+                  className="w-full border border-toss-border rounded-xl px-3 py-2.5 text-sm"
+                />
+              </div>
+            </div>
+
             <div className="mt-4 p-3 rounded-xl bg-toss-bg border border-toss-border">
-              <p className="text-xs text-toss-sub">핵심만 기억하세요</p>
-              <p className="text-sm font-semibold text-toss-text mt-1">오늘은 1개만 끝내면 성공!</p>
+              <p className="text-xs text-toss-sub">3) 사진 업로드 (선택)</p>
+              <div className="mt-2 flex items-center gap-3">
+                {celebrityPhotos[pickerCelebrity] ? (
+                  <img
+                    src={celebrityPhotos[pickerCelebrity]}
+                    alt={`${CELEBRITIES[pickerCelebrity].name} 미리보기`}
+                    className="w-12 h-12 rounded-lg object-cover border border-toss-border"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg border border-dashed border-toss-border text-[10px] text-toss-sub flex items-center justify-center">
+                    없음
+                  </div>
+                )}
+                <label className="inline-flex items-center px-3 py-2 rounded-xl border border-toss-border bg-white text-xs font-semibold text-toss-text cursor-pointer">
+                  사진 추가
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onUploadCelebrityPhoto(pickerCelebrity, e.target.files?.[0] ?? null)}
+                  />
+                </label>
+              </div>
             </div>
+
+            <div className="mt-4">
+              <p className="text-xs text-toss-sub mb-1">사람 찾기</p>
+              <input
+                type="text"
+                value={pickerSearch}
+                onChange={(e) => setPickerSearch(e.target.value)}
+                placeholder="이름 검색 (예: 손흥민, 아이유)"
+                className="w-full border border-toss-border rounded-xl px-3 py-2.5 text-sm"
+              />
+            </div>
+
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={closeIntro}
                 className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
               >
-                닫기
+                나중에
               </button>
               <button
                 type="button"
-                onClick={closeIntro}
+                onClick={applyPickerStart}
                 className="py-2.5 rounded-xl bg-toss-blue text-white text-sm font-semibold"
               >
-                바로 시작
+                이대로 시작
               </button>
             </div>
           </div>
@@ -1139,7 +1237,7 @@ export default function Home() {
 
       {wow && (
         <div className="fixed inset-0 z-[70] bg-black/55 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl bg-gradient-to-b from-white to-blue-50 border border-toss-border p-5 shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl bg-gradient-to-b from-white to-blue-50 border border-toss-border p-5 shadow-2xl text-center">
             {(() => {
               const style = getLevelStyle(wow.level);
               return (
@@ -1150,13 +1248,15 @@ export default function Home() {
                       ? getWowHeadline(wow.level, wow.weeklyRate, CELEBRITIES[selectedCelebrity].name)
                       : '오늘은 쉬어도 괜찮아요'}
                   </p>
-                  <p className="text-sm text-toss-sub mt-2">
-                    {wow.completed ? style.next : '내일은 더 쉬운 1개로 다시 시작해요.'}
+                  <p className="text-sm text-toss-sub mt-2 leading-relaxed">
+                    {wow.completed
+                      ? `${style.next} 오늘도 충분히 잘했어요. 천천히, 하지만 꾸준히 같이 가요.`
+                      : '오늘은 쉬어도 괜찮아요. 내일 다시 가볍게 시작하면 됩니다.'}
                   </p>
                   {wow.completed && celebrityPhotos[selectedCelebrity] && (
                     <div className="mt-3 p-2.5 rounded-xl bg-white border border-toss-border">
                       <p className="text-xs text-toss-sub mb-2">오늘 내가 따라한 롤모델</p>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center gap-3">
                         <img
                           src={celebrityPhotos[selectedCelebrity]}
                           alt={`${CELEBRITIES[selectedCelebrity].name} 축하 이미지`}
