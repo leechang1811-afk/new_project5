@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import BannerAd from '../components/BannerAd';
+import {
+  CELEBRITIES,
+  type CelebrityId,
+  getProfile,
+  PRESET_CELEBRITY_IDS,
+  type PresetCelebrityId,
+} from '../data/celebrities';
 import { adsService } from '../services/ads';
 import { fireMilestoneBurst } from '../utils/confetti';
-
-type CelebrityId = 'jobs' | 'musk' | 'oprah' | 'son' | 'iu';
 type ResultType = 'done' | 'not_done';
 type WowState = {
   score: number;
@@ -34,34 +39,6 @@ type EventName =
   | 'reserve_tomorrow'
   | 'milestone_badge_unlock'
   | 'new_record';
-
-const CELEBRITIES: Record<CelebrityId, { name: string; oneLine: string; routines: string[] }> = {
-  jobs: {
-    name: '스티브 잡스',
-    oneLine: '핵심 1개에 집착',
-    routines: ['거울 질문 1개 쓰기', '가장 중요한 일 25분 몰입', '불필요한 할 일 1개 지우기'],
-  },
-  musk: {
-    name: '일론 머스크',
-    oneLine: '짧고 강한 실행',
-    routines: ['오늘 문제 1개 정의하기', '5분 단위 계획 1개 실행', '결과 로그 3줄 남기기'],
-  },
-  oprah: {
-    name: '오프라 윈프리',
-    oneLine: '감사와 자기정리',
-    routines: ['감사한 일 3개 적기', '오늘 감정 1줄 기록', '중요한 사람에게 고마움 1메시지'],
-  },
-  son: {
-    name: '손흥민',
-    oneLine: '기본기 반복',
-    routines: ['몸풀기 7분 실행', '집중 루틴 20분 유지', '오늘 복기 1문장 쓰기'],
-  },
-  iu: {
-    name: '아이유',
-    oneLine: '꾸준한 창작 습관',
-    routines: ['아이디어 1개 메모', '방해 없는 20분 몰입', '오늘 배운 점 1개 정리'],
-  },
-};
 
 const FAILURE_REASONS = ['시간 부족', '피곤함', '우선순위 밀림', '생각보다 어려움'];
 
@@ -170,13 +147,14 @@ function daySeed(dayKey: string) {
 
 function getWowHeadline(level: 'BRONZE' | 'SILVER' | 'GOLD', weeklyRate: number, celebName: string) {
   if (level === 'GOLD' && weeklyRate >= 85) return '오늘 1개 완료! 전설 페이스예요 👑';
-  if (level === 'GOLD') return `오늘 1개 완료! ${celebName} 루틴 적응 중 ✨`;
-  if (level === 'SILVER') return `오늘 1개 완료! ${celebName}처럼 상승 중 🚀`;
-  return `오늘 1개 완료! ${celebName} 루틴 시작 🌱`;
+  if (level === 'GOLD') return `오늘 1개 완료! ${celebName} 루틴에 더 닮아가요 ✨`;
+  if (level === 'SILVER') return `오늘 1개 완료! ${celebName} 페이스에 가까워지는 중 🚀`;
+  return `오늘 1개 완료! ${celebName} 루틴, 한 걸음 더 🌱`;
 }
 
 export default function Home() {
-  const [selectedCelebrity, setSelectedCelebrity] = useState<CelebrityId>('jobs');
+  const [selectedCelebrity, setSelectedCelebrity] = useState<CelebrityId>('yoo_jae_suk');
+  const [customRoleModelName, setCustomRoleModelName] = useState('');
   const [celebrityPhotos, setCelebrityPhotos] = useState<Partial<Record<CelebrityId, string>>>({});
   const [morningTask, setMorningTask] = useState('');
   const [morningConfirmed, setMorningConfirmed] = useState(false);
@@ -191,7 +169,8 @@ export default function Home() {
   const [toast, setToast] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
-  const [pickerCelebrity, setPickerCelebrity] = useState<CelebrityId>('jobs');
+  const [pickerCelebrity, setPickerCelebrity] = useState<CelebrityId>('yoo_jae_suk');
+  const [pickerOtherName, setPickerOtherName] = useState('');
   const [pickerRoutine, setPickerRoutine] = useState('');
   const [pickerCustomRoutine, setPickerCustomRoutine] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
@@ -205,6 +184,7 @@ export default function Home() {
 
   useEffect(() => {
     const storedCelebrity = localStorage.getItem('commute-celebrity') as CelebrityId | null;
+    const storedCustomRole = localStorage.getItem('commute-custom-role-name');
     const storedTask = localStorage.getItem('commute-task');
     const storedHistory = localStorage.getItem('commute-history');
     const storedConfirmed = localStorage.getItem('commute-morning-confirmed');
@@ -213,10 +193,13 @@ export default function Home() {
     const storedLastCheckoutSavedDay = localStorage.getItem('commute-last-checkout-saved-day') as DayKey | null;
     const storedBestStreak = localStorage.getItem('commute-best-streak');
     const storedCelebrityPhotos = localStorage.getItem('commute-celebrity-photos');
-    if (storedCelebrity && CELEBRITIES[storedCelebrity]) {
-      setSelectedCelebrity(storedCelebrity);
-      setPickerCelebrity(storedCelebrity);
+    const presetOk =
+      storedCelebrity && storedCelebrity !== 'other' && storedCelebrity in CELEBRITIES;
+    if (storedCelebrity === 'other' || presetOk) {
+      setSelectedCelebrity(storedCelebrity as CelebrityId);
+      setPickerCelebrity(storedCelebrity as CelebrityId);
     }
+    if (storedCustomRole) setCustomRoleModelName(storedCustomRole);
     if (storedTask) setMorningTask(storedTask);
     if (storedHistory) {
       try {
@@ -275,6 +258,16 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem('commute-celebrity', selectedCelebrity);
   }, [selectedCelebrity]);
+
+  useEffect(() => {
+    if (selectedCelebrity === 'other') {
+      const t = customRoleModelName.trim();
+      if (t) localStorage.setItem('commute-custom-role-name', t);
+      else localStorage.removeItem('commute-custom-role-name');
+    } else {
+      localStorage.removeItem('commute-custom-role-name');
+    }
+  }, [selectedCelebrity, customRoleModelName]);
 
   useEffect(() => {
     localStorage.setItem('commute-task', morningTask);
@@ -354,24 +347,37 @@ export default function Home() {
   const slotLabel = isMorningSlot ? '출근 전 체크인 시간' : '퇴근 후 체크아웃 시간';
 
   const todayKey = kstDayKey();
+  const activeProfile = useMemo(
+    () => getProfile(selectedCelebrity, customRoleModelName),
+    [selectedCelebrity, customRoleModelName],
+  );
   const todayMission = useMemo(() => {
-    const celeb = CELEBRITIES[selectedCelebrity];
-    return celeb.routines[daySeed(todayKey) % celeb.routines.length];
-  }, [selectedCelebrity, todayKey]);
-  const activeCeleb = CELEBRITIES[selectedCelebrity];
+    const r = activeProfile.routines;
+    return r[daySeed(todayKey) % r.length];
+  }, [activeProfile, todayKey]);
+  const resemblanceHint = useMemo(() => {
+    const n = activeProfile.name;
+    if (streakDays <= 0) return `${n}의 하루를 닮아가는 첫 걸음이에요.`;
+    if (streakDays < 3) return `조금씩 ${n}의 페이스에 가까워지고 있어요 · 연속 ${streakDays}일`;
+    return `오늘의 한 걸음이 ${n} 루틴과 더 닮아가고 있어요 · 연속 ${streakDays}일`;
+  }, [activeProfile.name, streakDays]);
   const activeRoutineText = useMemo(() => {
     const t = morningTask.trim();
     return t || todayMission;
   }, [morningTask, todayMission]);
   const pickerList = useMemo(() => {
     const q = pickerSearch.trim().toLowerCase();
-    const all = Object.keys(CELEBRITIES) as CelebrityId[];
+    const all = PRESET_CELEBRITY_IDS;
     if (!q) return all;
     return all.filter((id) => {
       const c = CELEBRITIES[id];
       return c.name.toLowerCase().includes(q) || c.oneLine.toLowerCase().includes(q);
     });
   }, [pickerSearch]);
+  const pickerProfile = useMemo(
+    () => getProfile(pickerCelebrity, pickerOtherName),
+    [pickerCelebrity, pickerOtherName],
+  );
   const copyVariant = useMemo<'A' | 'B'>(() => {
     const dayNum = Number(todayKey.slice(-2));
     return dayNum % 2 === 0 ? 'A' : 'B';
@@ -382,20 +388,21 @@ export default function Home() {
   }, [copyVariant]);
 
   useEffect(() => {
-    const first = CELEBRITIES[pickerCelebrity].routines[0];
-    setPickerRoutine(first);
-  }, [pickerCelebrity]);
+    const profile = getProfile(pickerCelebrity, pickerOtherName);
+    setPickerRoutine(profile.routines[0] ?? '');
+  }, [pickerCelebrity, pickerOtherName]);
 
   const primaryCTA = useMemo(() => {
-    if (!morningConfirmed) return `${activeCeleb.name} 루틴 1개 정하기`;
+    if (!morningConfirmed) return `${activeProfile.name} 루틴 1개 정하기`;
     return isMorningSlot ? '저녁에 완료 저장하면 점수가 올라요' : '오늘 루틴 결과 저장하기';
-  }, [isMorningSlot, morningConfirmed, activeCeleb.name]);
+  }, [isMorningSlot, morningConfirmed, activeProfile.name]);
 
   const statusPill = useMemo(() => {
     if (!morningConfirmed) return { label: '지금: 루틴 정하기', tone: 'bg-amber-50 text-amber-700 border-amber-200' };
-    if (morningConfirmed && isMorningSlot) return { label: `오늘: ${activeCeleb.name} 루틴 중`, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    if (morningConfirmed && isMorningSlot)
+      return { label: `오늘: ${activeProfile.name} 루틴 중`, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
     return { label: '지금: 완료 저장', tone: 'bg-toss-blue/5 text-toss-blue border-toss-blue/20' };
-  }, [isMorningSlot, morningConfirmed, activeCeleb.name]);
+  }, [isMorningSlot, morningConfirmed, activeProfile.name]);
 
   const morningTaskSummary = useMemo(() => {
     const t = morningTask.trim();
@@ -485,7 +492,7 @@ export default function Home() {
       // ignore
     }
     const missionSnap = morningTask.trim() || todayMission;
-    const celebNameSnap = CELEBRITIES[selectedCelebrity].name;
+    const celebNameSnap = getProfile(selectedCelebrity, customRoleModelName).name;
     onSubmitCheckout();
     trackEvent(completed ? 'checkout_done_quicksave' : 'checkout_not_done_save', {
       streak: nextStreak,
@@ -524,7 +531,7 @@ export default function Home() {
 
   const copyShare = async () => {
     const missionLine = activeRoutineText.trim();
-    const text = `롤모델따라하기 · ${activeCeleb.name} 루틴 · ${missionLine}\n점수 ${score}점 · 연속 ${streakDays}일 · 주간 ${weeklyRate}%\n${window.location.origin}`;
+    const text = `롤모델따라하기 · ${activeProfile.name} 루틴 · ${missionLine}\n점수 ${score}점 · 연속 ${streakDays}일 · 주간 ${weeklyRate}%\n${window.location.origin}`;
     try {
       await navigator.clipboard.writeText(text);
       setToast('공유 문구를 복사했어요.');
@@ -542,8 +549,19 @@ export default function Home() {
   };
 
   const applyPickerStart = () => {
-    const celeb = CELEBRITIES[pickerCelebrity];
-    const routine = pickerCustomRoutine.trim() || pickerRoutine || celeb.routines[0];
+    if (pickerCelebrity === 'other') {
+      const name = pickerOtherName.trim();
+      if (!name) {
+        setToast('기타 선택 시 롤모델 이름을 적어 주세요.');
+        window.setTimeout(() => setToast(null), 2200);
+        return;
+      }
+      setCustomRoleModelName(name);
+    } else {
+      setCustomRoleModelName('');
+    }
+    const profile = getProfile(pickerCelebrity, pickerOtherName.trim());
+    const routine = pickerCustomRoutine.trim() || pickerRoutine || profile.routines[0];
     setSelectedCelebrity(pickerCelebrity);
     setMorningTask(clampText(routine, 80));
     setMorningConfirmed(true);
@@ -551,15 +569,20 @@ export default function Home() {
     setCheckoutResult(null);
     setFailureReason('');
     closeIntro();
-    setToast(`${celeb.name} 루틴으로 시작했어요. 오늘 1미션만 하면 성공!`);
+    setToast(`${profile.name} 루틴으로 시작했어요. 오늘 1미션만 하면 성공!`);
     window.setTimeout(() => setToast(null), 2200);
   };
 
   const reserveTomorrow = () => {
-    const options: CelebrityId[] = ['jobs', 'musk', 'oprah', 'son', 'iu'];
-    const nextIndex = (options.indexOf(selectedCelebrity) + 1) % options.length;
+    const options = PRESET_CELEBRITY_IDS;
+    const cur =
+      selectedCelebrity === 'other'
+        ? -1
+        : options.indexOf(selectedCelebrity as PresetCelebrityId);
+    const nextIndex = (cur + 1 + options.length) % options.length;
     const nextCelebrity = options[nextIndex];
-    const celeb = CELEBRITIES[nextCelebrity];
+    setCustomRoleModelName('');
+    const celeb = getProfile(nextCelebrity, '');
     const nextMission = celeb.routines[daySeed(kstDayKey()) % celeb.routines.length];
     setSelectedCelebrity(nextCelebrity);
     setMorningTask(nextMission);
@@ -575,22 +598,31 @@ export default function Home() {
 
   const openRoleModelPicker = () => {
     setPickerCelebrity(selectedCelebrity);
-    const routines = CELEBRITIES[selectedCelebrity].routines;
+    if (selectedCelebrity === 'other') {
+      setPickerOtherName(customRoleModelName);
+    } else {
+      setPickerOtherName('');
+    }
+    const routines = getProfile(selectedCelebrity, customRoleModelName).routines;
     const mt = morningTask.trim();
     if (mt && routines.includes(mt)) {
       setPickerRoutine(mt);
       setPickerCustomRoutine('');
     } else if (mt) {
       setPickerCustomRoutine(mt);
-      setPickerRoutine(routines[0]);
+      setPickerRoutine(routines[0] ?? '');
     } else {
       setPickerCustomRoutine('');
-      setPickerRoutine(routines[0]);
+      setPickerRoutine(routines[0] ?? '');
     }
     setShowIntro(true);
   };
 
-  const onUploadCelebrityPhoto = (celebrity: CelebrityId, file: File | null) => {
+  const onUploadCelebrityPhoto = (
+    celebrity: CelebrityId,
+    file: File | null,
+    customNameForOther?: string,
+  ) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       setToast('이미지 파일만 업로드할 수 있어요.');
@@ -602,7 +634,8 @@ export default function Home() {
       const url = String(reader.result || '');
       if (!url) return;
       setCelebrityPhotos((prev) => ({ ...prev, [celebrity]: url }));
-      setToast(`${CELEBRITIES[celebrity].name} 사진을 저장했어요.`);
+      const label = getProfile(celebrity, customNameForOther ?? '').name;
+      setToast(`${label} 사진을 저장했어요.`);
       window.setTimeout(() => setToast(null), 2000);
     };
     reader.readAsDataURL(file);
@@ -668,7 +701,7 @@ export default function Home() {
             <div className="text-left min-w-0">
               <p className="text-xs text-toss-sub">{todayKey}</p>
               <p className="text-xl sm:text-2xl font-bold text-toss-text mt-1 leading-snug">
-                {activeCeleb.name} 루틴 · 오늘 1미션
+                {activeProfile.name} 루틴 · 오늘 1미션
               </p>
             </div>
             <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-semibold ${statusPill.tone}`}>
@@ -677,9 +710,10 @@ export default function Home() {
           </div>
           <p className="text-sm text-toss-sub mt-2 leading-relaxed">
             {!morningConfirmed
-              ? `${activeCeleb.name} 루틴을 하나 골라 적고 시작하면 돼요.`
+              ? `${activeProfile.name} 루틴을 하나 골라 적고 시작하면 돼요.`
               : `오늘 미션: “${activeRoutineText.length > 36 ? `${activeRoutineText.slice(0, 36)}…` : activeRoutineText}” · 끝났으면 완료를 눌러 저장해요.`}
           </p>
+          <p className="text-xs text-toss-blue/90 mt-2 font-medium leading-relaxed">{resemblanceHint}</p>
         </div>
 
         {/* Primary navigation: explicit and child-friendly */}
@@ -725,7 +759,7 @@ export default function Home() {
             <div className="mt-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
               <p className="text-xs text-toss-sub">현재 롤모델</p>
               <p className="text-sm font-semibold text-toss-text mt-1">
-                {activeCeleb.name} · {activeCeleb.oneLine}
+                {activeProfile.name} · {activeProfile.oneLine}
               </p>
               <button
                 type="button"
@@ -775,7 +809,7 @@ export default function Home() {
                 {celebrityPhotos[selectedCelebrity] ? (
                   <img
                     src={celebrityPhotos[selectedCelebrity]}
-                    alt={`${activeCeleb.name} 사진`}
+                    alt={`${activeProfile.name} 사진`}
                     className="w-14 h-14 rounded-xl object-cover border border-toss-border"
                   />
                 ) : (
@@ -789,7 +823,9 @@ export default function Home() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => onUploadCelebrityPhoto(selectedCelebrity, e.target.files?.[0] ?? null)}
+                    onChange={(e) =>
+                      onUploadCelebrityPhoto(selectedCelebrity, e.target.files?.[0] ?? null, customRoleModelName)
+                    }
                   />
                 </label>
               </div>
@@ -808,7 +844,7 @@ export default function Home() {
           <section className="mb-4 p-4 rounded-2xl bg-toss-bg border border-toss-border">
             <p className="text-sm font-semibold text-toss-text">이번 주 리포트</p>
             <p className="text-xs text-toss-sub mt-1">
-              {activeCeleb.name} 루틴을 얼마나 챙겼는지 볼 수 있어요. 완료한 날만 파랗게 쌓입니다.
+              {activeProfile.name} 루틴을 얼마나 챙겼는지 볼 수 있어요. 완료한 날만 파랗게 쌓입니다.
             </p>
             <div className="mt-3">
               <p className="text-xs text-toss-sub mb-2">최근 7일</p>
@@ -902,25 +938,25 @@ export default function Home() {
               {morningConfirmed && (
                 <div className="mb-3 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20">
                   <p className="text-xs text-toss-sub">팝업에서 고른 오늘 루틴</p>
-                  <p className="text-sm font-semibold text-toss-text mt-1">{activeCeleb.name}</p>
+                  <p className="text-sm font-semibold text-toss-text mt-1">{activeProfile.name}</p>
                   <p className="text-sm text-toss-text mt-1 leading-snug">“{activeRoutineText}”</p>
                 </div>
               )}
               <p className="text-sm font-semibold text-toss-text mb-1">
                 {!morningConfirmed
-                  ? `1) ${activeCeleb.name} 루틴 1개 정하기`
-                  : `2) ${activeCeleb.name} 루틴, 끝났나요?`}
+                  ? `1) ${activeProfile.name} 루틴 1개 정하기`
+                  : `2) ${activeProfile.name} 루틴, 끝났나요?`}
               </p>
               <p className="text-xs text-toss-sub mb-3">
                 {!morningConfirmed
-                  ? `${activeCeleb.name} 루틴 미션을 적거나, 아래 추천을 불러와 시작해요.`
+                  ? `${activeProfile.name} 루틴 미션을 적거나, 아래 추천을 불러와 시작해요.`
                   : `“${activeRoutineText}” 를 해냈다면 완료를 눌러 저장해요.`}
               </p>
               {!morningConfirmed && (
                 <div className="mb-3 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20">
                   <p className="text-xs text-toss-sub">선택 중인 롤모델</p>
                   <p className="text-sm font-semibold text-toss-text mt-1">
-                    {activeCeleb.name} · {activeCeleb.oneLine}
+                    {activeProfile.name} · {activeProfile.oneLine}
                   </p>
                   <p className="text-sm text-toss-text mt-1">추천 1미션: {todayMission}</p>
                 </div>
@@ -932,7 +968,7 @@ export default function Home() {
                     value={morningTask}
                     onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
                     className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
-                    placeholder={`${activeCeleb.name} 루틴 예: ${todayMission}`}
+                    placeholder={`${activeProfile.name} 루틴 예: ${todayMission}`}
                     aria-label="오늘의 1개 입력"
                   />
                   <div className="mt-2 flex justify-between items-center">
@@ -951,7 +987,7 @@ export default function Home() {
                       setMorningConfirmed(true);
                       setEditingMorningTask(false);
                       trackEvent('checkin_confirm', { celebrity: selectedCelebrity });
-                      setToast(`${activeCeleb.name} 루틴 시작! 저녁에 완료 저장하면 점수가 올라요.`);
+                      setToast(`${activeProfile.name} 루틴 시작! 저녁에 완료 저장하면 점수가 올라요.`);
                       window.setTimeout(() => setToast(null), 2200);
                     }}
                     disabled={!morningTask.trim()}
@@ -994,7 +1030,7 @@ export default function Home() {
                         value={morningTask}
                         onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
                         className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
-                        placeholder={`${activeCeleb.name} 루틴 예: ${todayMission}`}
+                        placeholder={`${activeProfile.name} 루틴 예: ${todayMission}`}
                         aria-label="오늘의 1개 다시 입력"
                       />
                       <div className="mt-2 flex justify-between items-center">
@@ -1114,7 +1150,7 @@ export default function Home() {
             <section className="mb-5 p-4 rounded-2xl bg-toss-bg border border-toss-border">
               <p className="text-sm font-semibold text-toss-text mb-1">오늘 결과</p>
               <p className="text-xs text-toss-sub mb-3">
-                {activeCeleb.name} 루틴 · “{activeRoutineText.length > 40 ? `${activeRoutineText.slice(0, 40)}…` : activeRoutineText}”
+                {activeProfile.name} 루틴 · “{activeRoutineText.length > 40 ? `${activeRoutineText.slice(0, 40)}…` : activeRoutineText}”
               </p>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="bg-white rounded-xl p-2.5 border border-toss-border">
@@ -1138,13 +1174,13 @@ export default function Home() {
               <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
                 <p className="text-xs text-toss-sub">왜 이 앱을 쓰나요?</p>
                 <p className="text-sm font-semibold text-toss-text mt-1">
-                  닮고 싶은 사람의 하루를 조금씩 따라 하며, 오늘 1미션만 끝내는 습관을 만들어요.
+                  미션을 채울수록 닮고 싶은 사람의 하루를 조금씩 닮아가는 느낌을 만들어요. 오늘은 1미션만.
                 </p>
               </div>
               <p className="mt-3 text-xs text-toss-sub">
                 {failureReason
-                  ? `${activeCeleb.name} 루틴은 내일 다시 가볍게 이어가요. ${nextSuggestion}`
-                  : `${activeCeleb.name} 루틴, 오늘도 한 걸음이에요.`}
+                  ? `${activeProfile.name} 루틴은 내일 다시 가볍게 이어가요. ${nextSuggestion}`
+                  : `${activeProfile.name} 루틴, 오늘도 한 걸음이에요.`}
               </p>
             </section>
 
@@ -1178,20 +1214,23 @@ export default function Home() {
                 type="text"
                 value={pickerSearch}
                 onChange={(e) => setPickerSearch(e.target.value)}
-                placeholder="이름 검색 (예: 손흥민, 아이유)"
+                placeholder="이름 검색 (예: 테일러 스위프트, 손흥민)"
                 className="w-full border border-toss-border rounded-xl px-3 py-2.5 text-sm"
               />
             </div>
 
             <div className="mt-4">
               <p className="text-xs text-toss-sub mb-2">나의 롤모델 선택하기</p>
-              <div className="max-h-44 overflow-auto pr-1">
+              <div className="max-h-44 overflow-auto pr-1 [contain:layout] [content-visibility:auto]">
                 <div className="grid grid-cols-3 gap-2">
                   {pickerList.map((id) => (
                     <button
                       key={id}
                       type="button"
-                      onClick={() => setPickerCelebrity(id)}
+                      onClick={() => {
+                        setPickerCelebrity(id);
+                        setPickerOtherName('');
+                      }}
                       className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
                         pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                       }`}
@@ -1206,16 +1245,38 @@ export default function Home() {
                       </p>
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    onClick={() => setPickerCelebrity('other')}
+                    className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
+                      pickerCelebrity === 'other'
+                        ? 'bg-toss-blue text-white border-toss-blue'
+                        : 'bg-white border-toss-border text-toss-text'
+                    }`}
+                  >
+                    <p className="text-sm font-semibold leading-tight">기타</p>
+                    <p className={`text-[10px] mt-1 leading-snug ${pickerCelebrity === 'other' ? 'text-blue-50' : 'text-toss-sub'}`}>
+                      직접 이름 입력
+                    </p>
+                  </button>
                 </div>
               </div>
             </div>
 
             <div className="mt-4">
-              <p className="text-xs text-toss-sub mb-2">
-                {CELEBRITIES[pickerCelebrity].name}의 루틴 1개 선택하기
-              </p>
+              <p className="text-xs text-toss-sub mb-2">{pickerProfile.name}의 루틴 1개 선택하기</p>
+              {pickerCelebrity === 'other' && (
+                <input
+                  type="text"
+                  value={pickerOtherName}
+                  onChange={(e) => setPickerOtherName(e.target.value.slice(0, 40))}
+                  placeholder="롤모델 이름을 적어 주세요 (필수)"
+                  className="w-full border border-toss-border rounded-xl px-3 py-2.5 text-sm mb-2"
+                />
+              )}
+              <p className="text-[10px] text-toss-sub leading-relaxed mb-2">{pickerProfile.mediaNote}</p>
               <div className="space-y-2">
-                {CELEBRITIES[pickerCelebrity].routines.map((r) => (
+                {pickerProfile.routines.map((r) => (
                   <button
                     key={r}
                     type="button"
@@ -1236,7 +1297,7 @@ export default function Home() {
                   type="text"
                   value={pickerCustomRoutine}
                   onChange={(e) => setPickerCustomRoutine(clampText(e.target.value, 80))}
-                  placeholder="기타: 내가 직접 쓰기"
+                  placeholder="기타: 미션을 내 말로 직접 쓰기"
                   className="w-full border border-toss-border rounded-xl px-3 py-2.5 text-sm"
                 />
               </div>
@@ -1251,7 +1312,7 @@ export default function Home() {
                 {celebrityPhotos[pickerCelebrity] ? (
                   <img
                     src={celebrityPhotos[pickerCelebrity]}
-                    alt={`${CELEBRITIES[pickerCelebrity].name} 미리보기`}
+                    alt={`${pickerProfile.name} 미리보기`}
                     className="w-12 h-12 rounded-lg object-cover border border-toss-border"
                   />
                 ) : (
@@ -1265,7 +1326,9 @@ export default function Home() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => onUploadCelebrityPhoto(pickerCelebrity, e.target.files?.[0] ?? null)}
+                    onChange={(e) =>
+                      onUploadCelebrityPhoto(pickerCelebrity, e.target.files?.[0] ?? null, pickerOtherName)
+                    }
                   />
                 </label>
               </div>
@@ -1307,6 +1370,11 @@ export default function Home() {
                   {wow.completed && (
                     <p className="text-sm font-medium text-toss-text mt-2 leading-relaxed">
                       오늘 미션 “{wow.missionText.length > 42 ? `${wow.missionText.slice(0, 42)}…` : wow.missionText}”
+                    </p>
+                  )}
+                  {wow.completed && (
+                    <p className="text-sm font-semibold text-toss-text mt-2 leading-relaxed">
+                      조금씩 {wow.celebrityName}의 페이스에 가까워지고 있어요.
                     </p>
                   )}
                   <p className="text-sm text-toss-sub mt-2 leading-relaxed">
