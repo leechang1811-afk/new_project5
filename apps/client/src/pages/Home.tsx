@@ -603,6 +603,7 @@ export default function Home() {
   };
 
   const openRoleModelPicker = (mode: 'start_today' | 'reserve_tomorrow' = 'start_today') => {
+    setShowSettings(false);
     setPickerMode(mode);
     if (mode === 'start_today') {
       missionForReserveRef.current = '';
@@ -873,9 +874,21 @@ export default function Home() {
               </button>
               <button
                 type="button"
-                onClick={() => openRoleModelPicker()}
+                onClick={() => {
+                  if (checkoutResult !== null) {
+                    setToast('내일부터 체크할 수 있어요.');
+                    window.setTimeout(() => setToast(null), 2200);
+                    return;
+                  }
+                  openRoleModelPicker();
+                }}
                 aria-label="롤모델 선택 열기"
-                className="px-3 py-1.5 rounded-full border text-xs font-semibold bg-white text-toss-text border-toss-border"
+                aria-disabled={checkoutResult !== null}
+                className={`px-3 py-1.5 rounded-full border text-xs font-semibold border-toss-border ${
+                  checkoutResult !== null
+                    ? 'bg-toss-bg text-toss-sub cursor-not-allowed opacity-60'
+                    : 'bg-white text-toss-text'
+                }`}
               >
                 롤모델 선택
               </button>
@@ -912,6 +925,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => {
+              setShowSettings(false);
               setShowWeekly(false);
               setView('today');
             }}
@@ -924,6 +938,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => {
+              setShowSettings(false);
               setShowWeekly(true);
               setView('weekly');
             }}
@@ -1113,7 +1128,7 @@ export default function Home() {
           </section>
         ) : (
           <>
-            {/* 상태 기반: 체크인/체크아웃 2개 화면만 남김 */}
+            {!showSettings && (
             <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
               <p className="text-sm font-semibold text-toss-text mb-1">
                 {!morningConfirmed
@@ -1348,6 +1363,7 @@ export default function Home() {
                 </>
               )}
             </section>
+            )}
 
             {!showSettings && (
               <section className="mb-5 p-4 rounded-2xl bg-toss-bg border border-toss-border">
