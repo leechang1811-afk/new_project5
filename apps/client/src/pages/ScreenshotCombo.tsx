@@ -14,15 +14,9 @@ export default function ScreenshotCombo() {
         className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden"
         style={{ height: 524 }}
       >
-        <h1 className="text-xl font-bold text-toss-text mb-2 leading-tight">
-          내 두뇌 몇 등?
-        </h1>
-        <p className="text-toss-text text-sm mb-1 font-medium">
-          대한민국에서 내 두뇌 순위 확인
-        </p>
-        <p className="text-toss-sub text-xs mb-3 leading-relaxed">
-          5가지 게임으로 5분 만에 결과 확인 · 한국인 평균과 비교해 드려요
-        </p>
+        <h1 className="text-xl font-bold text-toss-text mb-2 leading-tight">오늘1개완료</h1>
+        <p className="text-toss-text text-sm mb-1 font-medium">하루 1개 완료를 돕는 실행 루틴</p>
+        <p className="text-toss-sub text-xs mb-3 leading-relaxed">아침 체크인 30초 · 저녁 체크아웃 60초</p>
 
         <div className="mb-3 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20 text-left w-full">
           <p className="text-toss-text font-semibold text-xs">

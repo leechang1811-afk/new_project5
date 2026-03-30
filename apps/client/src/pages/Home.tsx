@@ -213,7 +213,7 @@ export default function Home() {
   };
 
   const copyShare = async () => {
-    const text = `오늘1개 오늘의 실행력 점수 ${score}점 · 연속 ${streakDays}일 · 주간 실행률 ${weeklyRate}%\n${window.location.origin}`;
+    const text = `오늘1개완료 오늘의 실행력 점수 ${score}점 · 연속 ${streakDays}일 · 주간 실행률 ${weeklyRate}%\n${window.location.origin}`;
     try {
       await navigator.clipboard.writeText(text);
       setToast('공유 문구를 복사했어요.');
@@ -227,7 +227,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white flex flex-col items-center p-4 sm:p-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold text-toss-text mt-4 mb-2 text-center">오늘1개</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-toss-text mt-4 mb-2 text-center">오늘1개완료</h1>
         <p className="text-toss-text text-base font-medium text-center">오늘 “1개”를 끝내는 확률을 올려요</p>
         <p className="text-toss-sub text-sm mt-1 mb-3 text-center">
           {todayKey} · {reminders.morning}/{reminders.evening} 리마인드

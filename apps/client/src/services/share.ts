@@ -10,17 +10,17 @@ export interface ShareResultData {
 }
 
 const APP_URL = typeof window !== 'undefined' ? window.location.origin : '';
-const APP_TITLE = '내 두뇌 몇 등?';
+const APP_TITLE = '오늘1개완료';
 
 function getShareText(data: ShareResultData): string {
   if (data.isChampion) {
-    return `👑 내 두뇌 상위 0.1%! 20단계 올클리어 달성 · 총점 ${data.runScore.toLocaleString()}점`;
+    return `👑 오늘 실행력 상위 0.1% · 실행 점수 ${data.runScore.toLocaleString()}점`;
   }
-  return `내 두뇌 점수는 상위 ${data.percentileTop}%! 총점 ${data.runScore.toLocaleString()}점, ${data.maxLevel}단계 도전`;
+  return `오늘1개완료 실행 점수 상위 ${data.percentileTop}% · ${data.runScore.toLocaleString()}점`;
 }
 
 export function getShareUrl(percentile?: number): string {
-  const base = APP_URL || 'https://korean-percentile.vercel.app';
+  const base = APP_URL || 'https://new-project5-six.vercel.app';
   if (percentile != null) {
     return `${base}?p=${percentile}`;
   }
@@ -29,7 +29,7 @@ export function getShareUrl(percentile?: number): string {
 
 /** 상위 N% 공유용 - 친구가 링크 클릭 시 ?p=N으로 유입 */
 export function getShareTextPercentile(percentileTop: number): string {
-  return `내 두뇌 점수는 상위 ${percentileTop}%! 🏆 너도 해봐!`;
+  return `오늘1개완료 실행 점수 상위 ${percentileTop}%! 🏆 너도 해봐!`;
 }
 
 /** Load Kakao SDK script */
@@ -134,7 +134,7 @@ export async function shareToInstagram(
         0.95
       );
     });
-    const file = new File([blob], 'korean-percentile-result.png', { type: 'image/png' });
+    const file = new File([blob], 'today-one-complete-result.png', { type: 'image/png' });
 
     if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
       await navigator.share({
@@ -145,7 +145,7 @@ export async function shareToInstagram(
     } else {
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = 'korean-percentile-result.png';
+      link.download = 'today-one-complete-result.png';
       link.click();
       URL.revokeObjectURL(link.href);
     }
