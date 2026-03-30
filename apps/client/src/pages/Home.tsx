@@ -270,10 +270,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center p-4 sm:p-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
+    <div className="min-h-[100svh] bg-white flex flex-col items-center px-4 sm:px-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
       {/* Sticky header: prevents content being cut off by fixed bar */}
       <div className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur border-b border-toss-border">
-        <div className="mx-auto max-w-md px-4 sm:px-6 py-3">
+        <div className="mx-auto max-w-lg py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               {logoError ? (
@@ -307,9 +307,7 @@ export default function Home() {
                 type="button"
                 onClick={() => setShowIntro(true)}
                 aria-label="도움말 보기"
-                className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${
-                  'bg-white text-toss-text border-toss-border'
-                }`}
+                className="px-3 py-1.5 rounded-full border text-xs font-semibold bg-white text-toss-text border-toss-border"
               >
                 도움말
               </button>
@@ -318,24 +316,21 @@ export default function Home() {
         </div>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full mx-auto">
-        <div className="mt-2 mb-4 p-4 rounded-2xl bg-toss-bg border border-toss-border">
-          <div className="flex items-start justify-between gap-3">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-lg w-full mx-auto pt-4">
+        {/* Minimal hero */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between gap-3">
             <div className="text-left">
-              <p className="text-sm font-semibold text-toss-text">오늘 할 일 1개만 끝내요</p>
-              <p className="text-xs text-toss-sub mt-1">{todayKey} · 알림 {reminders.morning}/{reminders.evening}</p>
+              <p className="text-xs text-toss-sub">{todayKey}</p>
+              <p className="text-xl sm:text-2xl font-bold text-toss-text mt-1">오늘 할 일 1개</p>
             </div>
             <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-semibold ${statusPill.tone}`}>
               {statusPill.label}
             </span>
           </div>
-          <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
-            <p className="text-xs text-toss-sub">오늘 할 일</p>
-            <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
-            {!morningConfirmed && (
-              <p className="text-xs text-toss-sub mt-2">30초만 적고 시작해요.</p>
-            )}
-          </div>
+          <p className="text-sm text-toss-sub mt-2">
+            {!morningConfirmed ? '적고, 시작해요.' : '다 했는지 누르고, 저장해요.'}
+          </p>
         </div>
 
         {/* Primary navigation: explicit and child-friendly */}
