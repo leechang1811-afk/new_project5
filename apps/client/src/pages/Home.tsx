@@ -30,7 +30,8 @@ type EventName =
   | 'copy_variant_exposed'
   | 'level_promoted'
   | 'reserve_tomorrow'
-  | 'milestone_badge_unlock';
+  | 'milestone_badge_unlock'
+  | 'new_record';
 
 const GOAL_LABEL: Record<GoalType, string> = {
   work: '업무',
@@ -147,6 +148,13 @@ function getDailyRewardCopy(dayKey: string) {
   return seeds[n % seeds.length];
 }
 
+function getWowHeadline(level: 'BRONZE' | 'SILVER' | 'GOLD', weeklyRate: number) {
+  if (level === 'GOLD' && weeklyRate >= 85) return '오늘 1개 완료! 전설 페이스예요 👑';
+  if (level === 'GOLD') return '오늘 1개 완료! GOLD 구간 유지 중 ✨';
+  if (level === 'SILVER') return '오늘 1개 완료! 상승 흐름이에요 🚀';
+  return '오늘 1개 완료! 좋은 시작이에요 🌱';
+}
+
 export default function Home() {
   const [goal, setGoal] = useState<GoalType>('work');
   const [morningTask, setMorningTask] = useState('');
@@ -167,6 +175,8 @@ export default function Home() {
   const [wow, setWow] = useState<WowState | null>(null);
   const [promotion, setPromotion] = useState<PromotionState | null>(null);
   const [abSummary, setAbSummary] = useState<{ A: number; B: number }>({ A: 0, B: 0 });
+  const [bestStreak, setBestStreak] = useState(0);
+  const [newRecord, setNewRecord] = useState<number | null>(null);
 
   useEffect(() => {
     const storedGoal = localStorage.getItem('commute-goal') as GoalType | null;
@@ -176,6 +186,7 @@ export default function Home() {
     const storedReminders = localStorage.getItem('commute-reminders');
     const storedLastSavedDay = localStorage.getItem('commute-last-saved-day') as DayKey | null;
     const storedLastCheckoutSavedDay = localStorage.getItem('commute-last-checkout-saved-day') as DayKey | null;
+    const storedBestStreak = localStorage.getItem('commute-best-streak');
     if (storedGoal) setGoal(storedGoal);
     if (storedTask) setMorningTask(storedTask);
     if (storedHistory) {
@@ -197,6 +208,7 @@ export default function Home() {
     }
     if (storedLastSavedDay) setLastSavedDay(storedLastSavedDay);
     if (storedLastCheckoutSavedDay) setLastCheckoutSavedDay(storedLastCheckoutSavedDay);
+    if (storedBestStreak && Number.isFinite(Number(storedBestStreak))) setBestStreak(Number(storedBestStreak));
     // 기본은 입력 가능 상태로 두되, 이미 체크인 완료면 요약 모드로 시작
     if (storedConfirmed === 'true') setEditingMorningTask(false);
     if (localStorage.getItem('todayone-intro-seen') !== 'true') {
@@ -252,6 +264,10 @@ export default function Home() {
       localStorage.setItem('commute-last-checkout-saved-day', lastCheckoutSavedDay);
     }
   }, [lastCheckoutSavedDay]);
+
+  useEffect(() => {
+    localStorage.setItem('commute-best-streak', String(bestStreak));
+  }, [bestStreak]);
 
   // Day rollover: if day changed, reset morning confirmation (so user has reason to "check-in" again).
   useEffect(() => {
@@ -417,6 +433,12 @@ export default function Home() {
     if (completed && prevLevel !== nextLevel) {
       setPromotion({ from: prevLevel, to: nextLevel });
       trackEvent('level_promoted', { from: prevLevel, to: nextLevel });
+    }
+    if (completed && nextStreak > bestStreak) {
+      setBestStreak(nextStreak);
+      setNewRecord(nextStreak);
+      fireMilestoneBurst(Math.max(22, Math.min(40, nextStreak + 20)));
+      trackEvent('new_record', { streak: nextStreak });
     }
     if (completed && (nextStreak === 1 || nextStreak === 3 || nextStreak === 7)) {
       trackEvent('milestone_badge_unlock', { streak: nextStreak });
@@ -713,6 +735,7 @@ export default function Home() {
                   );
                 })}
               </div>
+              <p className="mt-2 text-xs text-toss-sub">내 최고 연속 기록: {bestStreak}일</p>
             </div>
             {streakDays >= 7 && (
               <div className="mt-3 p-3 rounded-xl bg-yellow-50 border border-yellow-200">
@@ -1025,7 +1048,7 @@ export default function Home() {
                 <>
                   <p className="text-xs text-toss-sub">오늘 결과</p>
                   <p className={`text-2xl font-extrabold mt-1 ${style.title}`}>
-                    {wow.completed ? '오늘 1개 완료! 🎉' : '오늘은 쉬어도 괜찮아요'}
+                    {wow.completed ? getWowHeadline(wow.level, wow.weeklyRate) : '오늘은 쉬어도 괜찮아요'}
                   </p>
                   <p className="text-sm text-toss-sub mt-2">
                     {wow.completed ? style.next : '내일은 더 쉬운 1개로 다시 시작해요.'}
@@ -1081,12 +1104,21 @@ export default function Home() {
               </button>
               <button
                 type="button"
-                onClick={() => setWow(null)}
+                onClick={() => {
+                  void copyShare();
+                }}
                 className="py-3 rounded-xl bg-toss-blue text-white font-semibold"
               >
-                확인했어요
+                성과 문구 복사
               </button>
             </div>
+            <button
+              type="button"
+              onClick={() => setWow(null)}
+              className="mt-2 w-full py-2.5 rounded-xl border border-toss-border bg-white text-toss-text font-semibold"
+            >
+              닫기
+            </button>
           </div>
         </div>
       )}
@@ -1106,6 +1138,23 @@ export default function Home() {
               className="mt-4 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold"
             >
               계속하기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {newRecord && (
+        <div className="fixed inset-0 z-[90] bg-black/60 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white border border-toss-border p-5 text-center">
+            <p className="text-xs text-toss-sub">신기록 달성</p>
+            <p className="text-2xl font-extrabold text-toss-text mt-1">최고 연속 {newRecord}일 🎯</p>
+            <p className="text-sm text-toss-sub mt-2">지금 이 순간이 핵심 WOW 포인트예요.</p>
+            <button
+              type="button"
+              onClick={() => setNewRecord(null)}
+              className="mt-4 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold"
+            >
+              좋아요, 계속할게요
             </button>
           </div>
         </div>
