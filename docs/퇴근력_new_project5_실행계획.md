@@ -4,6 +4,12 @@
 - GitHub Repo: `leechang1811-afk/new_project5`
 - Vercel Project: [new-project5](https://vercel.com/leechang1811-afks-projects/new-project5)
 
+## Git 고정 규칙 (필수)
+- 이 작업에서는 `leechang1811-afk/new_project5` 원격만 사용한다.
+- 다른 원격(repo)에는 커밋/푸시/배포를 절대 수행하지 않는다.
+- 모든 배포 소스 브랜치는 `new_project5`의 `main` 기준으로만 운영한다.
+- 커밋 전 `git remote -v`로 대상 원격을 재확인한다.
+
 ## 1) 즉시 해야 할 일 (우선순위)
 1. Git 연결 상태 확인 (Vercel에서 Production 브랜치 매핑)
 2. MVP 화면 5개 구현
