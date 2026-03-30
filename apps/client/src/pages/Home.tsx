@@ -22,7 +22,8 @@ type EventName =
   | 'checkout_duplicate_block'
   | 'open_settings'
   | 'close_settings'
-  | 'intro_close';
+  | 'intro_close'
+  | 'copy_variant_exposed';
 
 const GOAL_LABEL: Record<GoalType, string> = {
   work: '업무',
@@ -104,6 +105,28 @@ function getLevel(score: number, streak: number): 'BRONZE' | 'SILVER' | 'GOLD' {
   if (score >= 80 || streak >= 7) return 'GOLD';
   if (score >= 50 || streak >= 3) return 'SILVER';
   return 'BRONZE';
+}
+
+function getLevelStyle(level: 'BRONZE' | 'SILVER' | 'GOLD') {
+  if (level === 'GOLD') {
+    return {
+      chip: 'bg-yellow-100 border-yellow-300 text-yellow-800',
+      title: 'text-yellow-700',
+      next: '금빛 루틴! 지금 흐름을 유지해요.',
+    };
+  }
+  if (level === 'SILVER') {
+    return {
+      chip: 'bg-slate-100 border-slate-300 text-slate-700',
+      title: 'text-slate-700',
+      next: '좋아요. 골드까지 한 걸음 남았어요.',
+    };
+  }
+  return {
+    chip: 'bg-amber-50 border-amber-200 text-amber-800',
+    title: 'text-amber-700',
+    next: '시작이 반이에요. 내일도 1개만 완료해요.',
+  };
 }
 
 export default function Home() {
@@ -233,6 +256,15 @@ export default function Home() {
   const slotLabel = isMorningSlot ? '출근 전 체크인 시간' : '퇴근 후 체크아웃 시간';
 
   const todayKey = kstDayKey();
+  const copyVariant = useMemo<'A' | 'B'>(() => {
+    const dayNum = Number(todayKey.slice(-2));
+    return dayNum % 2 === 0 ? 'A' : 'B';
+  }, [todayKey]);
+
+  useEffect(() => {
+    trackEvent('copy_variant_exposed', { variant: copyVariant });
+  }, [copyVariant]);
+
   const primaryCTA = useMemo(() => {
     if (!morningConfirmed) return '오늘의 1개 확정하기';
     return isMorningSlot ? '저녁에 체크아웃하면 점수가 올라요' : '오늘 결과 저장하고 점수 받기';
@@ -336,7 +368,10 @@ export default function Home() {
       weeklyRate: nextWeekly,
       score: nextScore,
     });
-    if (completed) fireMilestoneBurst(Math.max(10, Math.min(28, nextStreak + 12)));
+    if (completed) {
+      const burst = nextLevel === 'GOLD' ? 34 : nextLevel === 'SILVER' ? 26 : 18;
+      fireMilestoneBurst(burst);
+    }
     setWow({
       score: nextScore,
       streak: nextStreak,
@@ -432,7 +467,13 @@ export default function Home() {
             </span>
           </div>
           <p className="text-sm text-toss-sub mt-2">
-            {!morningConfirmed ? '적고 시작하면 끝이에요.' : '다 했는지 누르고 저장하면 끝이에요.'}
+            {!morningConfirmed
+              ? copyVariant === 'A'
+                ? '적고 시작하면 끝이에요.'
+                : '30초만 쓰면 오늘 준비가 끝나요.'
+              : copyVariant === 'A'
+                ? '다 했는지 누르고 저장하면 끝이에요.'
+                : '완료만 누르면 오늘 루프가 닫혀요.'}
           </p>
         </div>
 
@@ -583,6 +624,13 @@ export default function Home() {
               </div>
               <p className="text-xs text-toss-sub mt-2">현재 {Math.min(7, streakDays)}/7일</p>
             </div>
+            {streakDays >= 7 && (
+              <div className="mt-3 p-3 rounded-xl bg-yellow-50 border border-yellow-200">
+                <p className="text-xs text-yellow-700">보상 카드</p>
+                <p className="text-sm font-bold text-yellow-800 mt-1">7일 연속 달성! 유지 보상 +10</p>
+                <p className="text-xs text-yellow-700 mt-1">내일도 성공하면 연속 기록이 이어집니다.</p>
+              </div>
+            )}
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -881,34 +929,39 @@ export default function Home() {
       {wow && (
         <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-2xl bg-white border border-toss-border p-5">
-            <p className="text-xs text-toss-sub">오늘 결과</p>
-            <p className="text-2xl font-extrabold text-toss-text mt-1">
-              {wow.completed ? '오늘 1개 완료! 🎉' : '오늘은 쉬어도 괜찮아요'}
-            </p>
-            <p className="text-sm text-toss-sub mt-2">
-              {wow.completed
-                ? '좋아요. 내일도 1개만 끝내면 됩니다.'
-                : '내일은 더 쉬운 1개로 다시 시작해요.'}
-            </p>
+            {(() => {
+              const style = getLevelStyle(wow.level);
+              return (
+                <>
+                  <p className="text-xs text-toss-sub">오늘 결과</p>
+                  <p className={`text-2xl font-extrabold mt-1 ${style.title}`}>
+                    {wow.completed ? '오늘 1개 완료! 🎉' : '오늘은 쉬어도 괜찮아요'}
+                  </p>
+                  <p className="text-sm text-toss-sub mt-2">
+                    {wow.completed ? style.next : '내일은 더 쉬운 1개로 다시 시작해요.'}
+                  </p>
 
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5">
-                <p className="text-[11px] text-amber-700">레벨</p>
-                <p className="text-lg font-bold text-amber-800">{wow.level}</p>
-              </div>
-              <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
-                <p className="text-[11px] text-toss-sub">점수</p>
-                <p className="text-lg font-bold text-toss-text">{wow.score}</p>
-              </div>
-              <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
-                <p className="text-[11px] text-toss-sub">연속일</p>
-                <p className="text-lg font-bold text-toss-text">{wow.streak}일</p>
-              </div>
-              <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5 col-span-3 sm:col-span-1">
-                <p className="text-[11px] text-toss-sub">주간</p>
-                <p className="text-lg font-bold text-toss-text">{wow.weeklyRate}%</p>
-              </div>
-            </div>
+                  <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                    <div className={`rounded-xl border p-2.5 ${style.chip}`}>
+                      <p className="text-[11px]">레벨</p>
+                      <p className="text-lg font-bold">{wow.level}</p>
+                    </div>
+                    <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
+                      <p className="text-[11px] text-toss-sub">점수</p>
+                      <p className="text-lg font-bold text-toss-text">{wow.score}</p>
+                    </div>
+                    <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
+                      <p className="text-[11px] text-toss-sub">연속일</p>
+                      <p className="text-lg font-bold text-toss-text">{wow.streak}일</p>
+                    </div>
+                    <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5 col-span-3 sm:col-span-1">
+                      <p className="text-[11px] text-toss-sub">주간</p>
+                      <p className="text-lg font-bold text-toss-text">{wow.weeklyRate}%</p>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
 
             <div className="mt-4 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20">
               <p className="text-xs text-toss-sub">내일 한 줄</p>
