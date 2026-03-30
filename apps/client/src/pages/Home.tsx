@@ -722,6 +722,35 @@ export default function Home() {
     openRoleModelPicker('reserve_tomorrow');
   };
 
+  /** 축하 모달: 오늘과 동일 롤모델·미션으로 내일 예약만 저장하고 메인으로 */
+  const reserveTomorrowKeepSame = () => {
+    if (!wow) return;
+    const prof = getProfile(selectedCelebrity, customRoleModelName);
+    const rList = prof.routines;
+    const fallbackMission = rList[daySeed(kstDayKey()) % rList.length];
+    const routineSnap =
+      wow.missionText.trim() || morningTask.trim() || fallbackMission;
+    const nextDay = kstNextDayKey();
+    try {
+      localStorage.setItem(
+        'commute-tomorrow-reservation',
+        JSON.stringify({
+          forDay: nextDay,
+          celebrityId: selectedCelebrity,
+          customRoleModelName: selectedCelebrity === 'other' ? customRoleModelName.trim() : '',
+          morningTask: clampText(routineSnap, 80),
+        }),
+      );
+    } catch {
+      // ignore
+    }
+    setMorningTask('');
+    setWow(null);
+    setToast(`${prof.name} 루틴으로 내일(${nextDay}) 미션을 예약했어요.`);
+    window.setTimeout(() => setToast(null), 2200);
+    trackEvent('reserve_tomorrow', { keepSame: true });
+  };
+
   const onUploadCelebrityPhoto = (
     celebrity: CelebrityId,
     file: File | null,
@@ -1579,12 +1608,10 @@ export default function Home() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  void copyShare();
-                }}
-                className="py-3 rounded-xl bg-toss-blue text-white font-semibold"
+                onClick={reserveTomorrowKeepSame}
+                className="py-3 px-2 rounded-xl bg-toss-blue text-white text-sm font-semibold leading-snug"
               >
-                요약 복사
+                지금 미션 그대로 유지하기
               </button>
             </div>
             <button
