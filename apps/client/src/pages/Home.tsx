@@ -298,10 +298,10 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setShowSettings((v) => !v)}
-                aria-label="목표와 알림 바꾸기"
+                aria-label="설정 바꾸기"
                 className="px-3 py-1.5 rounded-full border text-xs font-semibold bg-white text-toss-text border-toss-border"
               >
-                바꾸기
+                설정 바꾸기
               </button>
               <button
                 type="button"
@@ -329,7 +329,7 @@ export default function Home() {
             </span>
           </div>
           <p className="text-sm text-toss-sub mt-2">
-            {!morningConfirmed ? '적고, 시작해요.' : '다 했는지 누르고, 저장해요.'}
+            {!morningConfirmed ? '적고 시작하면 끝이에요.' : '다 했는지 누르고 저장하면 끝이에요.'}
           </p>
         </div>
 
@@ -364,7 +364,7 @@ export default function Home() {
         {showSettings && (
           <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-toss-text">바꾸기 (목표/알림)</p>
+              <p className="text-sm font-semibold text-toss-text">설정 바꾸기</p>
               <button
                 type="button"
                 onClick={() => setShowSettings(false)}
@@ -428,6 +428,9 @@ export default function Home() {
                 </p>
                 <p className="text-xs text-toss-sub mt-1">오늘은 1번만 성공하면 끝!</p>
               </div>
+              <p className="text-xs text-toss-sub mt-2">
+                왜 시간 설정이 필요할까요? 이 시간은 "앱을 다시 열 타이밍"을 알려줘서 깜빡하지 않게 도와줍니다.
+              </p>
             </div>
           </section>
         )}
@@ -683,7 +686,7 @@ export default function Home() {
               <p className="text-sm font-semibold text-toss-text mb-2">오늘 결과</p>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                  <p className="text-xs text-toss-sub">점수</p>
+                  <p className="text-xs text-toss-sub">오늘 점수</p>
                   <p className="text-lg font-bold text-toss-text">{score}</p>
                 </div>
                 <div className="bg-white rounded-xl p-2.5 border border-toss-border">
@@ -699,6 +702,10 @@ export default function Home() {
                 <p className="text-xs text-toss-sub">점수는 이렇게 계산해요</p>
                 <p className="text-sm font-semibold text-toss-text mt-1">주간 실행률 x 0.8 + 연속일 x 4 (최대 100점)</p>
                 <p className="text-xs text-toss-sub mt-1">쉬운 말로: 자주 하면 점수가 올라가요.</p>
+              </div>
+              <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
+                <p className="text-xs text-toss-sub">왜 이 앱을 쓰나요?</p>
+                <p className="text-sm font-semibold text-toss-text mt-1">큰 목표 대신, 오늘 1개를 끝내는 습관을 만듭니다.</p>
               </div>
               <p className="mt-3 text-xs text-toss-sub">
                 {failureReason ? nextSuggestion : '조금만 해도 성공이에요.'}
