@@ -6,7 +6,6 @@ import {
   type CelebrityId,
   getProfile,
   PRESET_CELEBRITY_IDS,
-  type PresetCelebrityId,
 } from '../data/celebrities';
 import { adsService } from '../services/ads';
 import { fireMilestoneBurst } from '../utils/confetti';
@@ -52,6 +51,27 @@ function kstDayKey(d = new Date()): DayKey {
   const mm = String(kst.getMonth() + 1).padStart(2, '0');
   const dd = String(kst.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function kstNextDayKey(d = new Date()): DayKey {
+  const utc = d.getTime() + d.getTimezoneOffset() * 60_000;
+  const kst = new Date(utc + 9 * 60 * 60_000);
+  kst.setDate(kst.getDate() + 1);
+  const yyyy = kst.getFullYear();
+  const mm = String(kst.getMonth() + 1).padStart(2, '0');
+  const dd = String(kst.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/** 축하 모달 미션 문구: 한 줄이 아닌 문장 단위로 내려가도록 분할 */
+function splitMissionForDisplay(text: string): string[] {
+  const t = text.trim();
+  if (!t) return [];
+  const bySentence = t.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean);
+  if (bySentence.length > 1) return bySentence;
+  const byMiddleDot = t.split(/\s*·\s*/).map((s) => s.trim()).filter(Boolean);
+  if (byMiddleDot.length > 1) return byMiddleDot;
+  return [t];
 }
 
 function clampText(s: string, max = 80) {
@@ -169,6 +189,7 @@ export default function Home() {
   const [toast, setToast] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'start_today' | 'reserve_tomorrow'>('start_today');
   const [pickerCelebrity, setPickerCelebrity] = useState<CelebrityId>('yoo_jae_suk');
   const [pickerOtherName, setPickerOtherName] = useState('');
   const [pickerRoutine, setPickerRoutine] = useState('');
@@ -193,6 +214,9 @@ export default function Home() {
     const storedLastCheckoutSavedDay = localStorage.getItem('commute-last-checkout-saved-day') as DayKey | null;
     const storedBestStreak = localStorage.getItem('commute-best-streak');
     const storedCelebrityPhotos = localStorage.getItem('commute-celebrity-photos');
+    if (storedCelebrity && storedCelebrity !== 'other' && !(storedCelebrity in CELEBRITIES)) {
+      localStorage.removeItem('commute-celebrity');
+    }
     const presetOk =
       storedCelebrity && storedCelebrity !== 'other' && storedCelebrity in CELEBRITIES;
     if (storedCelebrity === 'other' || presetOk) {
@@ -200,7 +224,31 @@ export default function Home() {
       setPickerCelebrity(storedCelebrity as CelebrityId);
     }
     if (storedCustomRole) setCustomRoleModelName(storedCustomRole);
-    if (storedTask) setMorningTask(storedTask);
+    let appliedTomorrowReservation = false;
+    try {
+      const tr = localStorage.getItem('commute-tomorrow-reservation');
+      if (tr) {
+        const data = JSON.parse(tr) as {
+          forDay: string;
+          celebrityId: CelebrityId;
+          customRoleModelName: string;
+          morningTask: string;
+        };
+        if (data.forDay === kstDayKey()) {
+          setSelectedCelebrity(data.celebrityId);
+          setPickerCelebrity(data.celebrityId);
+          setCustomRoleModelName(data.customRoleModelName ?? '');
+          setMorningTask(data.morningTask);
+          setMorningConfirmed(false);
+          setEditingMorningTask(true);
+          localStorage.removeItem('commute-tomorrow-reservation');
+          appliedTomorrowReservation = true;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    if (!appliedTomorrowReservation && storedTask) setMorningTask(storedTask);
     if (storedHistory) {
       try {
         const parsed = JSON.parse(storedHistory) as boolean[];
@@ -209,7 +257,7 @@ export default function Home() {
         // Ignore invalid stored history.
       }
     }
-    if (storedConfirmed === 'true') setMorningConfirmed(true);
+    if (!appliedTomorrowReservation && storedConfirmed === 'true') setMorningConfirmed(true);
     if (storedReminders) {
       try {
         const parsed = JSON.parse(storedReminders) as { morning: string; evening: string };
@@ -230,7 +278,7 @@ export default function Home() {
       }
     }
     // 기본은 입력 가능 상태로 두되, 이미 체크인 완료면 요약 모드로 시작
-    if (storedConfirmed === 'true') setEditingMorningTask(false);
+    if (!appliedTomorrowReservation && storedConfirmed === 'true') setEditingMorningTask(false);
     if (localStorage.getItem('rolemodel-picker-seen') !== 'true') {
       setShowIntro(true);
     }
@@ -313,6 +361,26 @@ export default function Home() {
         setEditingMorningTask(true);
         setCheckoutResult(null);
         setFailureReason('');
+        try {
+          const tr = localStorage.getItem('commute-tomorrow-reservation');
+          if (tr) {
+            const data = JSON.parse(tr) as {
+              forDay: string;
+              celebrityId: CelebrityId;
+              customRoleModelName: string;
+              morningTask: string;
+            };
+            if (data.forDay === today) {
+              setSelectedCelebrity(data.celebrityId);
+              setPickerCelebrity(data.celebrityId);
+              setCustomRoleModelName(data.customRoleModelName ?? '');
+              setMorningTask(data.morningTask);
+              localStorage.removeItem('commute-tomorrow-reservation');
+            }
+          }
+        } catch {
+          // ignore
+        }
       }
     }, 15_000);
     return () => window.clearInterval(t);
@@ -545,7 +613,38 @@ export default function Home() {
   const closeIntro = () => {
     localStorage.setItem('rolemodel-picker-seen', 'true');
     setShowIntro(false);
+    setPickerMode('start_today');
     trackEvent('intro_close');
+  };
+
+  const openRoleModelPicker = (mode: 'start_today' | 'reserve_tomorrow' = 'start_today') => {
+    setPickerMode(mode);
+    setPickerCelebrity(selectedCelebrity);
+    if (selectedCelebrity === 'other') {
+      setPickerOtherName(customRoleModelName);
+    } else {
+      setPickerOtherName('');
+    }
+    const profile = getProfile(selectedCelebrity, customRoleModelName);
+    const routines = profile.routines;
+    const dayKeyForSuggestion = mode === 'reserve_tomorrow' ? kstNextDayKey() : kstDayKey();
+    const suggested = routines[daySeed(dayKeyForSuggestion) % routines.length];
+    const mt = morningTask.trim();
+    if (mode === 'reserve_tomorrow') {
+      setPickerRoutine(suggested);
+      setPickerCustomRoutine('');
+    } else if (mt && routines.includes(mt)) {
+      setPickerRoutine(mt);
+      setPickerCustomRoutine('');
+    } else if (mt) {
+      setPickerCustomRoutine(mt);
+      setPickerRoutine(routines[0] ?? '');
+    } else {
+      setPickerCustomRoutine('');
+      setPickerRoutine(routines[0] ?? '');
+    }
+    setPickerSearch('');
+    setShowIntro(true);
   };
 
   const applyPickerStart = () => {
@@ -556,12 +655,44 @@ export default function Home() {
         window.setTimeout(() => setToast(null), 2200);
         return;
       }
-      setCustomRoleModelName(name);
-    } else {
-      setCustomRoleModelName('');
     }
     const profile = getProfile(pickerCelebrity, pickerOtherName.trim());
     const routine = pickerCustomRoutine.trim() || pickerRoutine || profile.routines[0];
+    const nextDay = kstNextDayKey();
+
+    if (pickerMode === 'reserve_tomorrow') {
+      if (pickerCelebrity === 'other') {
+        setCustomRoleModelName(pickerOtherName.trim());
+      } else {
+        setCustomRoleModelName('');
+      }
+      setSelectedCelebrity(pickerCelebrity);
+      try {
+        localStorage.setItem(
+          'commute-tomorrow-reservation',
+          JSON.stringify({
+            forDay: nextDay,
+            celebrityId: pickerCelebrity,
+            customRoleModelName: pickerCelebrity === 'other' ? pickerOtherName.trim() : '',
+            morningTask: clampText(routine, 80),
+          }),
+        );
+      } catch {
+        // ignore
+      }
+      setMorningTask('');
+      closeIntro();
+      setToast(`${profile.name} 루틴으로 내일(${nextDay}) 미션을 예약했어요.`);
+      window.setTimeout(() => setToast(null), 2200);
+      trackEvent('reserve_tomorrow', { nextCelebrity: pickerCelebrity });
+      return;
+    }
+
+    if (pickerCelebrity === 'other') {
+      setCustomRoleModelName(pickerOtherName.trim());
+    } else {
+      setCustomRoleModelName('');
+    }
     setSelectedCelebrity(pickerCelebrity);
     setMorningTask(clampText(routine, 80));
     setMorningConfirmed(true);
@@ -574,48 +705,8 @@ export default function Home() {
   };
 
   const reserveTomorrow = () => {
-    const options = PRESET_CELEBRITY_IDS;
-    const cur =
-      selectedCelebrity === 'other'
-        ? -1
-        : options.indexOf(selectedCelebrity as PresetCelebrityId);
-    const nextIndex = (cur + 1 + options.length) % options.length;
-    const nextCelebrity = options[nextIndex];
-    setCustomRoleModelName('');
-    const celeb = getProfile(nextCelebrity, '');
-    const nextMission = celeb.routines[daySeed(kstDayKey()) % celeb.routines.length];
-    setSelectedCelebrity(nextCelebrity);
-    setMorningTask(nextMission);
-    setMorningConfirmed(false);
-    setEditingMorningTask(true);
-    setCheckoutResult(null);
-    setFailureReason('');
     setWow(null);
-    trackEvent('reserve_tomorrow', { nextCelebrity });
-    setToast(`내일 1개 예약 완료: ${celeb.name}`);
-    window.setTimeout(() => setToast(null), 2200);
-  };
-
-  const openRoleModelPicker = () => {
-    setPickerCelebrity(selectedCelebrity);
-    if (selectedCelebrity === 'other') {
-      setPickerOtherName(customRoleModelName);
-    } else {
-      setPickerOtherName('');
-    }
-    const routines = getProfile(selectedCelebrity, customRoleModelName).routines;
-    const mt = morningTask.trim();
-    if (mt && routines.includes(mt)) {
-      setPickerRoutine(mt);
-      setPickerCustomRoutine('');
-    } else if (mt) {
-      setPickerCustomRoutine(mt);
-      setPickerRoutine(routines[0] ?? '');
-    } else {
-      setPickerCustomRoutine('');
-      setPickerRoutine(routines[0] ?? '');
-    }
-    setShowIntro(true);
+    openRoleModelPicker('reserve_tomorrow');
   };
 
   const onUploadCelebrityPhoto = (
@@ -642,11 +733,11 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-white flex flex-col items-center px-4 sm:px-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
-      {/* Sticky header: prevents content being cut off by fixed bar */}
-      <div className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur border-b border-toss-border">
-        <div className="mx-auto max-w-lg py-3">
-          <div className="flex items-center justify-between gap-3">
+    <div className="flex h-[100svh] max-h-[100dvh] min-h-0 w-full max-w-lg mx-auto flex-col overflow-hidden bg-white">
+      {/* 헤더: 스크롤 영역 밖, 짧은 화면에서도 상단 고정 */}
+      <div className="sticky top-0 z-50 shrink-0 w-full bg-white/90 backdrop-blur border-b border-toss-border px-4 sm:px-6">
+        <div className="py-2.5 sm:py-3">
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               {logoError ? (
                 <div className="w-7 h-7 rounded-lg border border-toss-border bg-toss-blue/10 flex items-center justify-center text-[12px]">
@@ -683,7 +774,7 @@ export default function Home() {
               </button>
               <button
                 type="button"
-                onClick={openRoleModelPicker}
+                onClick={() => openRoleModelPicker()}
                 aria-label="롤모델 선택 열기"
                 className="px-3 py-1.5 rounded-full border text-xs font-semibold bg-white text-toss-text border-toss-border"
               >
@@ -694,7 +785,8 @@ export default function Home() {
         </div>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-lg w-full mx-auto pt-4">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain [scrollbar-gutter:stable] px-4 sm:px-6">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full pt-3 sm:pt-4 pb-2 sm:pb-3">
         {/* Minimal hero */}
         <div className="mb-4">
           <div className="flex items-center justify-between gap-3">
@@ -763,7 +855,7 @@ export default function Home() {
               </p>
               <button
                 type="button"
-                onClick={openRoleModelPicker}
+                onClick={() => openRoleModelPicker()}
                 className="mt-2 py-2 px-3 rounded-lg border border-toss-border bg-white text-xs font-semibold text-toss-text"
               >
                 롤모델/미션 다시 고르기
@@ -971,14 +1063,7 @@ export default function Home() {
                     placeholder={`${activeProfile.name} 루틴 예: ${todayMission}`}
                     aria-label="오늘의 1개 입력"
                   />
-                  <div className="mt-2 flex justify-between items-center">
-                    <button
-                      type="button"
-                      onClick={() => setMorningTask(todayMission)}
-                      className="text-sm text-toss-blue font-medium"
-                    >
-                      오늘 미션 불러오기
-                    </button>
+                  <div className="mt-2 flex justify-end">
                     <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
                   </div>
                   <button
@@ -1033,14 +1118,7 @@ export default function Home() {
                         placeholder={`${activeProfile.name} 루틴 예: ${todayMission}`}
                         aria-label="오늘의 1개 다시 입력"
                       />
-                      <div className="mt-2 flex justify-between items-center">
-                        <button
-                          type="button"
-                          onClick={() => setMorningTask(todayMission)}
-                          className="text-sm text-toss-blue font-medium"
-                        >
-                          오늘 미션 불러오기
-                        </button>
+                      <div className="mt-2 flex justify-end">
                         <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
                       </div>
                       <button
@@ -1187,13 +1265,14 @@ export default function Home() {
           </>
         )}
       </motion.div>
+      </div>
 
-      <div className="w-full max-w-md mx-auto mt-auto">
+      <div className="shrink-0 w-full px-4 sm:px-6 pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-toss-border/40 bg-white">
         <BannerAd />
       </div>
 
       {toast && (
-        <div className="fixed left-0 right-0 bottom-[calc(96px+env(safe-area-inset-bottom)+12px)] z-50 px-4 sm:px-6">
+        <div className="fixed left-0 right-0 z-50 px-4 sm:px-6 bottom-[calc(96px+12px+env(safe-area-inset-bottom))]">
           <div className="mx-auto max-w-md">
             <div className="rounded-xl bg-toss-text text-white text-sm px-4 py-3 shadow-lg">
               {toast}
@@ -1203,10 +1282,17 @@ export default function Home() {
       )}
 
       {showIntro && (
-        <div className="fixed inset-0 z-[60] bg-black/45 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white border border-toss-border p-5">
-            <p className="text-lg font-bold text-toss-text text-center">롤모델부터 고르고 시작해요</p>
-            <p className="text-sm text-toss-sub mt-1 text-center">초등학생도 쉽게: 사람 고르기 → 1미션 선택 → 시작</p>
+        <div className="fixed inset-0 z-[60] overflow-y-auto overscroll-contain bg-black/45 [padding-top:max(1rem,env(safe-area-inset-top))] [padding-bottom:max(1rem,env(safe-area-inset-bottom))] px-4">
+          <div className="flex min-h-[100dvh] min-h-[100svh] w-full items-center justify-center py-4">
+          <div className="w-full max-w-md max-h-[min(88dvh,88svh)] overflow-y-auto rounded-2xl bg-white border border-toss-border p-4 sm:p-5 shadow-xl">
+            <p className="text-lg font-bold text-toss-text text-center">
+              {pickerMode === 'reserve_tomorrow' ? '내일 미션 예약하기' : '롤모델부터 고르고 시작해요'}
+            </p>
+            <p className="text-sm text-toss-sub mt-1 text-center leading-relaxed">
+              {pickerMode === 'reserve_tomorrow'
+                ? '지금 쓰던 롤모델이 기본으로 선택돼 있어요. 루틴을 눌러 고르거나, 아래에 직접 적을 수 있어요.'
+                : '초등학생도 쉽게: 사람 고르기 → 1미션 선택 → 시작'}
+            </p>
 
             <div className="mt-4">
               <p className="text-xs text-toss-sub mb-2">사람 찾기</p>
@@ -1221,7 +1307,7 @@ export default function Home() {
 
             <div className="mt-4">
               <p className="text-xs text-toss-sub mb-2">나의 롤모델 선택하기</p>
-              <div className="max-h-44 overflow-auto pr-1 [contain:layout] [content-visibility:auto]">
+              <div className="max-h-[min(11rem,38dvh)] overflow-auto pr-1 [contain:layout] [content-visibility:auto]">
                 <div className="grid grid-cols-3 gap-2">
                   {pickerList.map((id) => (
                     <button
@@ -1347,58 +1433,69 @@ export default function Home() {
                 onClick={applyPickerStart}
                 className="py-2.5 rounded-xl bg-toss-blue text-white text-sm font-semibold"
               >
-                이대로 시작
+                {pickerMode === 'reserve_tomorrow' ? '내일 미션으로 저장' : '이대로 시작'}
               </button>
             </div>
+          </div>
           </div>
         </div>
       )}
 
       {wow && (
-        <div className="fixed inset-0 z-[70] bg-black/55 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl bg-gradient-to-b from-white to-blue-50 border border-toss-border p-5 shadow-2xl text-center">
+        <div className="fixed inset-0 z-[70] overflow-y-auto overscroll-contain bg-black/55 [padding-top:max(1rem,env(safe-area-inset-top))] [padding-bottom:max(1rem,env(safe-area-inset-bottom))] px-4">
+          <div className="flex min-h-[100dvh] min-h-[100svh] w-full items-center justify-center py-4">
+          <div className="w-full max-w-md max-h-[min(92dvh,92svh)] overflow-y-auto rounded-2xl bg-gradient-to-b from-white to-blue-50 border border-toss-border p-4 sm:p-5 shadow-2xl text-center">
             {(() => {
               const style = getLevelStyle(wow.level);
               return (
                 <>
-                  <p className="text-xs text-toss-sub">오늘 결과</p>
-                  <p className={`text-2xl font-extrabold mt-1 ${style.title}`}>
+                  <p className="text-xs text-toss-sub text-center">오늘 결과</p>
+                  <p
+                    className={`text-2xl font-extrabold mt-1 text-balance break-keep leading-snug ${style.title} max-w-[95%] mx-auto`}
+                  >
                     {wow.completed
                       ? getWowHeadline(wow.level, wow.weeklyRate, wow.celebrityName)
                       : '오늘은 쉬어도 괜찮아요'}
                   </p>
                   {wow.completed && (
-                    <p className="text-sm font-medium text-toss-text mt-2 leading-relaxed">
-                      오늘 미션 “{wow.missionText.length > 42 ? `${wow.missionText.slice(0, 42)}…` : wow.missionText}”
-                    </p>
+                    <div className="mt-2">
+                      <p className="text-xs text-toss-sub text-center mb-1">오늘 미션</p>
+                      <div className="text-sm font-medium text-toss-text text-center text-pretty break-keep leading-relaxed max-w-[95%] mx-auto space-y-1.5">
+                        {splitMissionForDisplay(wow.missionText).map((line, i) => (
+                          <p key={i} className="block">
+                            “{line}”
+                          </p>
+                        ))}
+                      </div>
+                    </div>
                   )}
                   {wow.completed && (
-                    <p className="text-sm font-semibold text-toss-text mt-2 leading-relaxed">
+                    <p className="text-sm font-semibold text-toss-text mt-3 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
                       조금씩 {wow.celebrityName}의 페이스에 가까워지고 있어요.
                     </p>
                   )}
-                  <p className="text-sm text-toss-sub mt-2 leading-relaxed">
+                  <p className="text-sm text-toss-sub mt-2 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
                     {wow.completed
                       ? `${style.next} 오늘도 충분히 잘했어요. 천천히, 하지만 꾸준히 같이 가요.`
                       : '오늘은 쉬어도 괜찮아요. 내일 다시 가볍게 시작하면 됩니다.'}
                   </p>
                   {wow.completed && celebrityPhotos[selectedCelebrity] && (
-                    <div className="mt-3 p-2.5 rounded-xl bg-white border border-toss-border">
+                    <div className="mt-3 p-2.5 rounded-xl bg-white border border-toss-border text-center">
                       <p className="text-xs text-toss-sub mb-2">오늘 내가 따라한 롤모델</p>
-                      <div className="flex items-center justify-center gap-3">
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                         <img
                           src={celebrityPhotos[selectedCelebrity]}
                           alt={`${wow.celebrityName} 축하 이미지`}
-                          className="w-16 h-16 rounded-xl object-cover border border-toss-border"
+                          className="w-16 h-16 rounded-xl object-cover border border-toss-border shrink-0"
                         />
-                        <p className="text-sm font-semibold text-toss-text">
+                        <p className="text-sm font-semibold text-toss-text text-center text-pretty break-keep">
                           {wow.celebrityName} 루틴 성공! 👏
                         </p>
                       </div>
                     </div>
                   )}
 
-                  <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <div className="mt-4 grid grid-cols-3 gap-2 text-center mx-auto max-w-full">
                     <div className={`rounded-xl border p-2.5 ${style.chip}`}>
                       <p className="text-[11px]">레벨</p>
                       <p className="text-lg font-bold">{wow.level}</p>
@@ -1426,16 +1523,16 @@ export default function Home() {
               );
             })()}
 
-            <div className="mt-4 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20">
+            <div className="mt-4 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20 text-center">
               <p className="text-xs text-toss-sub">내일 한 줄</p>
-              <p className="text-sm font-semibold text-toss-text mt-1">
+              <p className="text-sm font-semibold text-toss-text mt-1 text-pretty break-keep max-w-[95%] mx-auto">
                 {wow.completed
                   ? `내일도 ${wow.celebrityName} 루틴 1개만 따라가요.`
                   : '내일은 3분짜리 쉬운 1개부터 시작해요.'}
               </p>
             </div>
             {wow.completed && (
-              <p className="mt-2 text-xs text-toss-sub">
+              <p className="mt-2 text-xs text-toss-sub text-center text-pretty break-keep max-w-[95%] mx-auto">
                 {streakDays >= 7 ? '지금 최고 구간이에요. 7일 루프를 유지해요.' : `다음 배지까지 ${streakDays < 1 ? 1 : streakDays < 3 ? 3 - streakDays : 7 - streakDays}일`}
               </p>
             )}
@@ -1466,12 +1563,14 @@ export default function Home() {
               닫기
             </button>
           </div>
+          </div>
         </div>
       )}
 
       {promotion && (
-        <div className="fixed inset-0 z-[80] bg-black/55 flex items-center justify-center p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white border border-toss-border p-5 text-center">
+        <div className="fixed inset-0 z-[80] overflow-y-auto overscroll-contain bg-black/55 [padding-top:max(1rem,env(safe-area-inset-top))] [padding-bottom:max(1rem,env(safe-area-inset-bottom))] px-4">
+          <div className="flex min-h-[100dvh] min-h-[100svh] w-full items-center justify-center py-4">
+          <div className="w-full max-w-sm max-h-[min(88dvh,88svh)] overflow-y-auto rounded-2xl bg-white border border-toss-border p-4 sm:p-5 text-center">
             <p className="text-xs text-toss-sub">레벨 업</p>
             <p className="text-2xl font-extrabold text-toss-text mt-1">승급 성공! 🚀</p>
             <p className="text-sm text-toss-sub mt-2">
@@ -1486,12 +1585,14 @@ export default function Home() {
               계속하기
             </button>
           </div>
+          </div>
         </div>
       )}
 
       {newRecord && (
-        <div className="fixed inset-0 z-[90] bg-black/60 flex items-center justify-center p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white border border-toss-border p-5 text-center">
+        <div className="fixed inset-0 z-[90] overflow-y-auto overscroll-contain bg-black/60 [padding-top:max(1rem,env(safe-area-inset-top))] [padding-bottom:max(1rem,env(safe-area-inset-bottom))] px-4">
+          <div className="flex min-h-[100dvh] min-h-[100svh] w-full items-center justify-center py-4">
+          <div className="w-full max-w-sm max-h-[min(88dvh,88svh)] overflow-y-auto rounded-2xl bg-white border border-toss-border p-4 sm:p-5 text-center">
             <p className="text-xs text-toss-sub">신기록 달성</p>
             <p className="text-2xl font-extrabold text-toss-text mt-1">최고 연속 {newRecord}일 🎯</p>
             <p className="text-sm text-toss-sub mt-2">지금 이 순간이 핵심 WOW 포인트예요.</p>
@@ -1502,6 +1603,7 @@ export default function Home() {
             >
               좋아요, 계속할게요
             </button>
+          </div>
           </div>
         </div>
       )}

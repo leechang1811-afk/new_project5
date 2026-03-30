@@ -19,19 +19,21 @@ function RouteFallback() {
 
 export default function App() {
   return (
-    <Suspense fallback={<RouteFallback />}>
-      <AnimatePresence mode="wait">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/screenshot" element={<ScreenshotCombo />} />
-          <Route path="/run" element={<Run />} />
-          <Route path="/result-gate" element={<ResultGate />} />
-          <Route path="/result" element={<Result />} />
-          <Route path="/record" element={<RecordAndRank />} />
-          <Route path="/leaderboard" element={<Navigate to="/record" replace />} />
-          <Route path="/my-stats" element={<Navigate to="/record" replace />} />
-        </Routes>
-      </AnimatePresence>
-    </Suspense>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <Suspense fallback={<RouteFallback />}>
+        <AnimatePresence mode="wait">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/screenshot" element={<ScreenshotCombo />} />
+            <Route path="/run" element={<Run />} />
+            <Route path="/result-gate" element={<ResultGate />} />
+            <Route path="/result" element={<Result />} />
+            <Route path="/record" element={<RecordAndRank />} />
+            <Route path="/leaderboard" element={<Navigate to="/record" replace />} />
+            <Route path="/my-stats" element={<Navigate to="/record" replace />} />
+          </Routes>
+        </AnimatePresence>
+      </Suspense>
+    </div>
   );
 }
