@@ -19,6 +19,8 @@ type WowState = {
   level: 'BRONZE' | 'SILVER' | 'GOLD';
   celebrityName: string;
   missionText: string;
+  /** 미완료 저장 시 내일 더 쉽게 바꾸기에 사용 */
+  failureReason?: string;
 };
 type PromotionState = {
   from: 'BRONZE' | 'SILVER' | 'GOLD';
@@ -40,6 +42,15 @@ type EventName =
   | 'new_record';
 
 const FAILURE_REASONS = ['시간 부족', '피곤함', '우선순위 밀림', '생각보다 어려움'];
+
+function getSuggestedNextTaskForReason(reason: string | undefined): string {
+  if (!reason) return '';
+  if (reason === '시간 부족') return '10분만: 첫 단계만 끝내기';
+  if (reason === '피곤함') return '3분만: 시작 버튼만 누르기';
+  if (reason === '우선순위 밀림') return '가장 먼저 1개: 출근 직후 5분';
+  if (reason === '생각보다 어려움') return '첫 단추 1개: 자료 1개만 열기';
+  return '';
+}
 
 const DEFAULT_REMINDERS = { morning: '08:20', evening: '19:10' };
 
@@ -190,6 +201,11 @@ export default function Home() {
   const [promotion, setPromotion] = useState<PromotionState | null>(null);
   const [bestStreak, setBestStreak] = useState(0);
   const [newRecord, setNewRecord] = useState<number | null>(null);
+
+  const goToTodayTab = () => {
+    setShowWeekly(false);
+    setView('today');
+  };
 
   useEffect(() => {
     const storedCelebrity = localStorage.getItem('commute-celebrity') as CelebrityId | null;
@@ -457,13 +473,10 @@ export default function Home() {
     return '';
   }, [failureReason]);
 
-  const suggestedNextTask = useMemo(() => {
-    if (failureReason === '시간 부족') return '10분만: 첫 단계만 끝내기';
-    if (failureReason === '피곤함') return '3분만: 시작 버튼만 누르기';
-    if (failureReason === '우선순위 밀림') return '가장 먼저 1개: 출근 직후 5분';
-    if (failureReason === '생각보다 어려움') return '첫 단추 1개: 자료 1개만 열기';
-    return '';
-  }, [failureReason]);
+  const suggestedNextTask = useMemo(
+    () => getSuggestedNextTaskForReason(failureReason || undefined),
+    [failureReason],
+  );
 
   const onSubmitCheckout = () => {
     if (!checkoutResult) return;
@@ -529,6 +542,7 @@ export default function Home() {
     }
     const missionSnap = morningTask.trim() || todayMission;
     const celebNameSnap = getProfile(selectedCelebrity, customRoleModelName).name;
+    const failureReasonSnap = !completed && failureReason ? failureReason : undefined;
     onSubmitCheckout();
     trackEvent(completed ? 'checkout_done_quicksave' : 'checkout_not_done_save', {
       streak: nextStreak,
@@ -560,6 +574,7 @@ export default function Home() {
       level: nextLevel,
       celebrityName: celebNameSnap,
       missionText: missionSnap,
+      failureReason: failureReasonSnap,
     });
     setToast('저장됐어요.');
     window.setTimeout(() => setToast(null), 2200);
@@ -583,6 +598,7 @@ export default function Home() {
     setShowIntro(false);
     setPickerMode('start_today');
     setReserveKeepSameTomorrow(false);
+    goToTodayTab();
     trackEvent('intro_close');
   };
 
@@ -719,6 +735,7 @@ export default function Home() {
       wow?.missionText?.trim() || morningTask.trim() || fallbackMission;
     missionForReserveRef.current = routineSnap;
     setWow(null);
+    goToTodayTab();
     openRoleModelPicker('reserve_tomorrow');
   };
 
@@ -746,9 +763,48 @@ export default function Home() {
     }
     setMorningTask('');
     setWow(null);
+    goToTodayTab();
     setToast(`${prof.name} 루틴으로 내일(${nextDay}) 미션을 예약했어요.`);
     window.setTimeout(() => setToast(null), 2200);
     trackEvent('reserve_tomorrow', { keepSame: true });
+  };
+
+  const reserveTomorrowEasier = () => {
+    if (!wow) return;
+    const prof = getProfile(selectedCelebrity, customRoleModelName);
+    const rList = prof.routines;
+    const fallbackMission = rList[daySeed(kstDayKey()) % rList.length];
+    const base = wow.missionText.trim() || morningTask.trim() || fallbackMission;
+    const sug =
+      getSuggestedNextTaskForReason(wow.failureReason) || '3분만: 시작만 하기';
+    const nextLine = clampText(`${base} · ${sug}`, 80);
+    const nextDay = kstNextDayKey();
+    try {
+      localStorage.setItem(
+        'commute-tomorrow-reservation',
+        JSON.stringify({
+          forDay: nextDay,
+          celebrityId: selectedCelebrity,
+          customRoleModelName: selectedCelebrity === 'other' ? customRoleModelName.trim() : '',
+          morningTask: nextLine,
+        }),
+      );
+    } catch {
+      // ignore
+    }
+    setMorningTask('');
+    setWow(null);
+    goToTodayTab();
+    setToast(`${prof.name} 루틴으로 내일(${nextDay}) 더 쉬운 미션을 예약했어요.`);
+    window.setTimeout(() => setToast(null), 2200);
+    trackEvent('reserve_tomorrow', { easier: true });
+  };
+
+  const resetSetupFromWow = () => {
+    setWow(null);
+    goToTodayTab();
+    missionForReserveRef.current = '';
+    openRoleModelPicker('start_today');
   };
 
   const onUploadCelebrityPhoto = (
@@ -806,6 +862,7 @@ export default function Home() {
                   setShowSettings((v) => {
                     const next = !v;
                     trackEvent(next ? 'open_settings' : 'close_settings');
+                    if (!next) goToTodayTab();
                     return next;
                   });
                 }}
@@ -884,7 +941,10 @@ export default function Home() {
               <p className="text-sm font-semibold text-toss-text">설정 바꾸기</p>
               <button
                 type="button"
-                onClick={() => setShowSettings(false)}
+                onClick={() => {
+                  setShowSettings(false);
+                  goToTodayTab();
+                }}
                 className="text-xs font-semibold text-toss-blue"
               >
                 닫기
@@ -1044,7 +1104,7 @@ export default function Home() {
               </button>
               <button
                 type="button"
-                onClick={() => setShowWeekly(false)}
+                onClick={goToTodayTab}
                 className="py-2.5 rounded-xl bg-toss-blue text-white text-sm font-semibold"
               >
                 오늘 루프로 돌아가기
@@ -1204,7 +1264,6 @@ export default function Home() {
                         onClick={() => {
                           setCheckoutResult('done');
                           setFailureReason('');
-                          void onSubmitCheckoutWithAd('done');
                         }}
                         aria-pressed={checkoutResult === 'done'}
                         className={`py-3 rounded-xl border text-base font-bold ${
@@ -1218,8 +1277,9 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setCheckoutResult('not_done')}
+                        disabled={checkoutResult === 'done'}
                         aria-pressed={checkoutResult === 'not_done'}
-                        className={`py-3 rounded-xl border text-base font-bold ${
+                        className={`py-3 rounded-xl border text-base font-bold disabled:opacity-40 disabled:pointer-events-none ${
                           checkoutResult === 'not_done'
                             ? 'bg-rose-500 text-white border-rose-500'
                             : 'border-toss-border text-toss-text bg-white'
@@ -1228,23 +1288,24 @@ export default function Home() {
                         😓 아직 못했어요
                       </button>
                     </div>
-                    <p className="mt-2 text-[11px] text-toss-sub">미완료는 이유를 고른 뒤 저장돼요.</p>
+                    <p className="mt-2 text-[11px] text-toss-sub">
+                      {checkoutResult === 'not_done'
+                        ? '이유를 고른 뒤 아래에서 저장해 주세요.'
+                        : checkoutResult === 'done'
+                          ? '아래에서 저장하면 오늘 결과가 반영돼요.'
+                          : '완료 여부를 고른 뒤 아래에서 저장해 주세요.'}
+                    </p>
                   </div>
 
                   {checkoutResult === 'not_done' && (
                     <div className="mt-3">
-                      <p className="text-xs text-toss-sub mb-2">왜 못했는지 1개 선택 (누르면 바로 저장)</p>
+                      <p className="text-xs text-toss-sub mb-2">왜 못했는지 1개 선택</p>
                       <div className="flex flex-wrap gap-2">
                         {FAILURE_REASONS.map((reason) => (
                           <button
                             key={reason}
                             type="button"
-                            onClick={() => {
-                              setFailureReason(reason);
-                              window.setTimeout(() => {
-                                void onSubmitCheckoutWithAd('not_done');
-                              }, 0);
-                            }}
+                            onClick={() => setFailureReason(reason)}
                             className={`px-3 py-1.5 rounded-full border text-xs ${
                               failureReason === reason ? 'bg-toss-blue text-white border-toss-blue' : 'text-toss-sub border-toss-border'
                             }`}
@@ -1275,7 +1336,10 @@ export default function Home() {
                     onClick={() => {
                       void onSubmitCheckoutWithAd();
                     }}
-                    disabled={!checkoutResult || (checkoutResult === 'not_done' && !failureReason)}
+                    disabled={
+                      !checkoutResult ||
+                      (checkoutResult === 'not_done' && !failureReason.trim())
+                    }
                     className="mt-4 w-full py-4 rounded-xl bg-toss-blue text-white text-base font-extrabold shadow-[0_10px_24px_rgba(49,130,246,0.35)] disabled:opacity-50"
                   >
                     오늘 결과 저장하기
@@ -1532,7 +1596,7 @@ export default function Home() {
                       ? getWowHeadline(wow.level, wow.weeklyRate, wow.celebrityName)
                       : '오늘은 미완료로 저장됐어요'}
                   </p>
-                  {wow.completed && (
+                  {wow.missionText.trim() && (
                     <div className="text-sm font-medium text-toss-text text-center text-pretty break-keep leading-relaxed max-w-[95%] mx-auto mt-2 space-y-1.5">
                       {splitMissionForDisplay(wow.missionText).map((line, i) => (
                         <p key={i} className="block">
@@ -1602,7 +1666,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={reserveTomorrow}
-                className="py-3 rounded-xl border border-toss-blue text-toss-blue font-semibold bg-white"
+                className="py-3 rounded-xl border border-toss-blue text-toss-blue font-semibold bg-white text-sm leading-snug"
               >
                 내일 1개 예약
               </button>
@@ -1613,10 +1677,27 @@ export default function Home() {
               >
                 지금 미션 그대로 유지하기
               </button>
+              <button
+                type="button"
+                onClick={reserveTomorrowEasier}
+                className="py-3 px-2 rounded-xl border border-toss-border bg-white text-toss-text text-sm font-semibold leading-snug"
+              >
+                내일 더 쉽게 바꾸기
+              </button>
+              <button
+                type="button"
+                onClick={resetSetupFromWow}
+                className="py-3 px-2 rounded-xl border border-toss-border bg-toss-bg text-toss-text text-sm font-semibold leading-snug"
+              >
+                다시 세팅하기
+              </button>
             </div>
             <button
               type="button"
-              onClick={() => setWow(null)}
+              onClick={() => {
+                setWow(null);
+                goToTodayTab();
+              }}
               className="mt-2 w-full py-2.5 rounded-xl border border-toss-border bg-white text-toss-text font-semibold"
             >
               닫기
