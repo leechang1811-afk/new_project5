@@ -13,6 +13,10 @@ type WowState = {
   completed: boolean;
   level: 'BRONZE' | 'SILVER' | 'GOLD';
 };
+type PromotionState = {
+  from: 'BRONZE' | 'SILVER' | 'GOLD';
+  to: 'BRONZE' | 'SILVER' | 'GOLD';
+};
 
 type DayKey = string; // YYYY-MM-DD (KST)
 type EventName =
@@ -23,7 +27,9 @@ type EventName =
   | 'open_settings'
   | 'close_settings'
   | 'intro_close'
-  | 'copy_variant_exposed';
+  | 'copy_variant_exposed'
+  | 'level_promoted'
+  | 'reserve_tomorrow';
 
 const GOAL_LABEL: Record<GoalType, string> = {
   work: '업무',
@@ -147,6 +153,8 @@ export default function Home() {
   const [logoError, setLogoError] = useState(false);
   const [view, setView] = useState<'today' | 'weekly'>('today');
   const [wow, setWow] = useState<WowState | null>(null);
+  const [promotion, setPromotion] = useState<PromotionState | null>(null);
+  const [abSummary, setAbSummary] = useState<{ A: number; B: number }>({ A: 0, B: 0 });
 
   useEffect(() => {
     const storedGoal = localStorage.getItem('commute-goal') as GoalType | null;
@@ -188,6 +196,20 @@ export default function Home() {
     // "오늘/주간" 탭 대신 명확한 화면 상태로 유지
     if (showWeekly) setView('weekly');
   }, [showWeekly]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('todayone-event-log');
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Array<{ name?: string; variant?: string }>;
+      const recent = parsed.slice(-200);
+      const A = recent.filter((e) => e.name === 'copy_variant_exposed' && e.variant === 'A').length;
+      const B = recent.filter((e) => e.name === 'copy_variant_exposed' && e.variant === 'B').length;
+      setAbSummary({ A, B });
+    } catch {
+      // ignore
+    }
+  }, [showSettings, wow]);
 
   useEffect(() => {
     localStorage.setItem('commute-goal', goal);
@@ -351,6 +373,7 @@ export default function Home() {
     const nextWeekly = computeWeeklyRate(nextHistory);
     const nextScore = Math.min(100, Math.round(nextWeekly * 0.8 + nextStreak * 4));
     const nextLevel = getLevel(nextScore, nextStreak);
+    const prevLevel = getLevel(score, streakDays);
 
     try {
       // 저녁 결과 저장 전 전면광고: 당일 첫 체크아웃은 생략(이탈 방지)
@@ -371,6 +394,10 @@ export default function Home() {
     if (completed) {
       const burst = nextLevel === 'GOLD' ? 34 : nextLevel === 'SILVER' ? 26 : 18;
       fireMilestoneBurst(burst);
+    }
+    if (completed && prevLevel !== nextLevel) {
+      setPromotion({ from: prevLevel, to: nextLevel });
+      trackEvent('level_promoted', { from: prevLevel, to: nextLevel });
     }
     setWow({
       score: nextScore,
@@ -399,6 +426,22 @@ export default function Home() {
     localStorage.setItem('todayone-intro-seen', 'true');
     setShowIntro(false);
     trackEvent('intro_close');
+  };
+
+  const reserveTomorrow = () => {
+    const options: GoalType[] = ['work', 'health', 'study', 'relationship'];
+    const nextIndex = (options.indexOf(goal) + 1) % options.length;
+    const nextGoal = options[nextIndex];
+    setGoal(nextGoal);
+    setMorningTask(PRESET_TASKS[nextGoal]);
+    setMorningConfirmed(false);
+    setEditingMorningTask(true);
+    setCheckoutResult(null);
+    setFailureReason('');
+    setWow(null);
+    trackEvent('reserve_tomorrow', { nextGoal });
+    setToast(`내일 1개 예약 완료: ${GOAL_LABEL[nextGoal]}`);
+    window.setTimeout(() => setToast(null), 2200);
   };
 
   return (
@@ -575,6 +618,12 @@ export default function Home() {
                 <p className="text-xs text-toss-sub mt-1">오늘은 1번만 성공하면 끝!</p>
               </div>
               <p className="text-xs text-toss-sub mt-2">한 줄 요약: 시간은 선택, 핵심은 "오늘 1개 저장".</p>
+            </div>
+
+            <div className="mt-4 p-3 rounded-xl bg-toss-bg border border-toss-border">
+              <p className="text-xs text-toss-sub">문구 실험 리포트 (최근 로그)</p>
+              <p className="text-sm font-semibold text-toss-text mt-1">A안 노출 {abSummary.A}회 · B안 노출 {abSummary.B}회</p>
+              <p className="text-xs text-toss-sub mt-1">어떤 문구가 더 유지율이 높은지 다음 버전에서 최적화합니다.</p>
             </div>
           </section>
         )}
@@ -970,12 +1019,41 @@ export default function Home() {
               </p>
             </div>
 
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={reserveTomorrow}
+                className="py-3 rounded-xl border border-toss-blue text-toss-blue font-semibold bg-white"
+              >
+                내일 1개 예약
+              </button>
+              <button
+                type="button"
+                onClick={() => setWow(null)}
+                className="py-3 rounded-xl bg-toss-blue text-white font-semibold"
+              >
+                확인했어요
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {promotion && (
+        <div className="fixed inset-0 z-[80] bg-black/55 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white border border-toss-border p-5 text-center">
+            <p className="text-xs text-toss-sub">레벨 업</p>
+            <p className="text-2xl font-extrabold text-toss-text mt-1">승급 성공! 🚀</p>
+            <p className="text-sm text-toss-sub mt-2">
+              {promotion.from} → <span className="font-bold text-toss-blue">{promotion.to}</span>
+            </p>
+            <p className="text-xs text-toss-sub mt-2">좋아요. 이 흐름이면 리텐션이 강해집니다.</p>
             <button
               type="button"
-              onClick={() => setWow(null)}
+              onClick={() => setPromotion(null)}
               className="mt-4 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold"
             >
-              확인했어요
+              계속하기
             </button>
           </div>
         </div>
