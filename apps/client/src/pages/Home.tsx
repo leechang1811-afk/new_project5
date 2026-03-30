@@ -180,6 +180,9 @@ export default function Home() {
   const missionForReserveRef = useRef('');
   /** 미션 수정 화면: 취소 시 복원용 */
   const morningTaskEditSnapshotRef = useRef('');
+  /** 「다시 적기」로 1단계 복귀 시, 2단계로 되돌릴 미션 스냅샷 */
+  const morningTaskBeforeRewriteRef = useRef('');
+  const [showRewriteBack, setShowRewriteBack] = useState(false);
   const [reserveKeepSameTomorrow, setReserveKeepSameTomorrow] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [view, setView] = useState<'today' | 'weekly'>('today');
@@ -700,6 +703,7 @@ export default function Home() {
     setMorningTask(clampText(routine, 80));
     setMorningConfirmed(true);
     setEditingMorningTask(false);
+    setShowRewriteBack(false);
     setCheckoutResult(null);
     setFailureReason('');
     closeIntro();
@@ -1045,20 +1049,51 @@ export default function Home() {
                   <div className="mt-2 flex justify-end">
                     <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMorningConfirmed(true);
-                      setEditingMorningTask(false);
-                      trackEvent('checkin_confirm', { celebrity: selectedCelebrity });
-                      setToast('시작했어요. 저녁에 완료를 저장해 주세요.');
-                      window.setTimeout(() => setToast(null), 2200);
-                    }}
-                    disabled={!morningTask.trim()}
-                    className="mt-3 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
-                  >
-                    시작하기
-                  </button>
+                  {showRewriteBack ? (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMorningTask(morningTaskBeforeRewriteRef.current);
+                          setMorningConfirmed(true);
+                          setShowRewriteBack(false);
+                        }}
+                        className="py-3 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                      >
+                        돌아가기
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMorningConfirmed(true);
+                          setEditingMorningTask(false);
+                          setShowRewriteBack(false);
+                          trackEvent('checkin_confirm', { celebrity: selectedCelebrity });
+                          setToast('시작했어요. 저녁에 완료를 저장해 주세요.');
+                          window.setTimeout(() => setToast(null), 2200);
+                        }}
+                        disabled={!morningTask.trim()}
+                        className="py-3 rounded-xl bg-toss-blue text-white text-sm font-semibold disabled:opacity-50"
+                      >
+                        시작하기
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMorningConfirmed(true);
+                        setEditingMorningTask(false);
+                        trackEvent('checkin_confirm', { celebrity: selectedCelebrity });
+                        setToast('시작했어요. 저녁에 완료를 저장해 주세요.');
+                        window.setTimeout(() => setToast(null), 2200);
+                      }}
+                      disabled={!morningTask.trim()}
+                      className="mt-3 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
+                    >
+                      시작하기
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
@@ -1079,8 +1114,10 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => {
+                          morningTaskBeforeRewriteRef.current = morningTask;
+                          setShowRewriteBack(true);
                           setMorningConfirmed(false);
-                          setEditingMorningTask(true);
+                          setEditingMorningTask(false);
                           setCheckoutResult(null);
                           setFailureReason('');
                         }}
@@ -1219,32 +1256,34 @@ export default function Home() {
               )}
             </section>
 
-            <section className="mb-5 p-4 rounded-2xl bg-toss-bg border border-toss-border">
-              <p className="text-sm font-semibold text-toss-text mb-1">오늘 요약</p>
-              <p className="text-xs text-toss-sub mb-3 line-clamp-2">
-                “{activeRoutineText.length > 40 ? `${activeRoutineText.slice(0, 40)}…` : activeRoutineText}”
-              </p>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                  <p className="text-xs text-toss-sub">점수</p>
-                  <p className="text-lg font-bold text-toss-text">{score}</p>
+            {!showSettings && (
+              <section className="mb-5 p-4 rounded-2xl bg-toss-bg border border-toss-border">
+                <p className="text-sm font-semibold text-toss-text mb-1">오늘 요약</p>
+                <p className="text-xs text-toss-sub mb-3 line-clamp-2">
+                  “{activeRoutineText.length > 40 ? `${activeRoutineText.slice(0, 40)}…` : activeRoutineText}”
+                </p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-white rounded-xl p-2.5 border border-toss-border">
+                    <p className="text-xs text-toss-sub">점수</p>
+                    <p className="text-lg font-bold text-toss-text">{score}</p>
+                  </div>
+                  <div className="bg-white rounded-xl p-2.5 border border-toss-border">
+                    <p className="text-xs text-toss-sub">연속</p>
+                    <p className="text-lg font-bold text-toss-text">{streakDays}일</p>
+                  </div>
+                  <div className="bg-white rounded-xl p-2.5 border border-toss-border">
+                    <p className="text-xs text-toss-sub">주간</p>
+                    <p className="text-lg font-bold text-toss-text">{weeklyRate}%</p>
+                  </div>
                 </div>
-                <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                  <p className="text-xs text-toss-sub">연속</p>
-                  <p className="text-lg font-bold text-toss-text">{streakDays}일</p>
-                </div>
-                <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                  <p className="text-xs text-toss-sub">주간</p>
-                  <p className="text-lg font-bold text-toss-text">{weeklyRate}%</p>
-                </div>
-              </div>
-              <p className="mt-3 text-[11px] text-toss-sub leading-relaxed">
-                점수 = 주간 실행률×0.8 + 연속일×4 (최대 100). 하루 한 번 저장이면 반영돼요.
-              </p>
-              {failureReason && nextSuggestion && (
-                <p className="mt-2 text-xs text-toss-sub">{nextSuggestion}</p>
-              )}
-            </section>
+                <p className="mt-3 text-[11px] text-toss-sub leading-relaxed">
+                  점수 = 주간 실행률×0.8 + 연속일×4 (최대 100). 하루 한 번 저장이면 반영돼요.
+                </p>
+                {failureReason && nextSuggestion && (
+                  <p className="mt-2 text-xs text-toss-sub">{nextSuggestion}</p>
+                )}
+              </section>
+            )}
 
           </>
         )}
