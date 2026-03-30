@@ -16,10 +16,10 @@ const GOAL_LABEL: Record<GoalType, string> = {
 };
 
 const PRESET_TASKS: Record<GoalType, string> = {
-  work: '핵심 업무 1개 25분 집중',
-  health: '저녁에 10분 걷기',
-  study: '출근 전 1페이지 읽기',
-  relationship: '고마운 사람 1명에게 메시지 보내기',
+  work: '오늘 해야 할 일 1개 끝내기',
+  health: '10분 걷기',
+  study: '책 1페이지 읽기',
+  relationship: '고마운 사람에게 문자 1개 보내기',
 };
 
 const FAILURE_REASONS = ['시간 부족', '피곤함', '우선순위 밀림', '생각보다 어려움'];
@@ -200,11 +200,11 @@ export default function Home() {
   }, [morningTask]);
 
   const nextSuggestion = useMemo(() => {
-    if (failureReason === '시간 부족') return '내일은 “10분만”으로 줄여서 시작해요.';
-    if (failureReason === '피곤함') return '내일은 “집 도착 후 3분” 같은 초미니로 바꿔봐요.';
-    if (failureReason === '우선순위 밀림') return '내일은 “가장 먼저 1개”로 예약해두면 확률이 올라요.';
-    if (failureReason === '생각보다 어려움') return '내일은 “첫 단추 1개”만 잠깐 해도 성공이에요.';
-    return '완벽보다 “완료”가 더 강합니다.';
+    if (failureReason === '시간 부족') return '내일은 더 짧게, 10분만 해요.';
+    if (failureReason === '피곤함') return '내일은 3분만 시작해도 좋아요.';
+    if (failureReason === '우선순위 밀림') return '내일은 가장 먼저 1개부터 해요.';
+    if (failureReason === '생각보다 어려움') return '내일은 더 쉬운 1개로 바꿔요.';
+    return '조금만 해도 성공이에요.';
   }, [failureReason]);
 
   const suggestedNextTask = useMemo(() => {
@@ -241,7 +241,7 @@ export default function Home() {
       // ignore
     }
     onSubmitCheckout();
-    setToast('저장 완료. 오늘 기록이 반영됐어요.');
+      setToast('저장 완료! 오늘 성공이 기록됐어요.');
     window.setTimeout(() => setToast(null), 2200);
   };
 
@@ -317,18 +317,18 @@ export default function Home() {
         <div className="mt-2 mb-4 p-4 rounded-2xl bg-toss-bg border border-toss-border">
           <div className="flex items-start justify-between gap-3">
             <div className="text-left">
-              <p className="text-sm font-semibold text-toss-text">오늘 1개만 완료하기</p>
-              <p className="text-xs text-toss-sub mt-1">{todayKey} · 리마인드 {reminders.morning}/{reminders.evening}</p>
+              <p className="text-sm font-semibold text-toss-text">오늘 할 일 1개만 끝내요</p>
+              <p className="text-xs text-toss-sub mt-1">{todayKey} · 알림 {reminders.morning}/{reminders.evening}</p>
             </div>
             <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-semibold ${statusPill.tone}`}>
               {statusPill.label}
             </span>
           </div>
           <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
-            <p className="text-xs text-toss-sub">오늘의 1개</p>
+            <p className="text-xs text-toss-sub">오늘 할 일</p>
             <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
             {!morningConfirmed && (
-              <p className="text-xs text-toss-sub mt-2">지금 30초만 쓰면, 저녁에 점수가 올라요.</p>
+              <p className="text-xs text-toss-sub mt-2">30초만 적고 시작해요.</p>
             )}
           </div>
         </div>
@@ -336,7 +336,7 @@ export default function Home() {
         {showSettings && (
           <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-toss-text">설정</p>
+              <p className="text-sm font-semibold text-toss-text">바꾸기</p>
               <button
                 type="button"
                 onClick={() => setShowSettings(false)}
@@ -346,7 +346,7 @@ export default function Home() {
               </button>
             </div>
             <div className="mt-3">
-              <p className="text-xs text-toss-sub mb-2">목표</p>
+              <p className="text-xs text-toss-sub mb-2">무슨 종류의 할 일인지 고르기</p>
               <div className="grid grid-cols-2 gap-2">
                 {(Object.keys(GOAL_LABEL) as GoalType[]).map((item) => (
                   <button
@@ -372,7 +372,7 @@ export default function Home() {
             </div>
 
             <div className="mt-4">
-              <p className="text-xs text-toss-sub mb-2">리마인드</p>
+              <p className="text-xs text-toss-sub mb-2">알림 시간</p>
               <div className="grid grid-cols-2 gap-3">
                 <label className="text-left">
                   <span className="block text-xs text-toss-sub mb-1">아침</span>
@@ -394,11 +394,11 @@ export default function Home() {
                 </label>
               </div>
               <div className="mt-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
-                <p className="text-xs text-toss-sub">다음 방문 추천</p>
+                <p className="text-xs text-toss-sub">다음에 열어볼 시간</p>
                 <p className="text-sm font-semibold text-toss-text mt-1">
                   다음 아침까지 {formatRemaining(minsToMorning)} · 다음 저녁까지 {formatRemaining(minsToEvening)}
                 </p>
-                <p className="text-xs text-toss-sub mt-1">오늘은 체크인 → 체크아웃 한 번만 완주하면 충분해요.</p>
+                <p className="text-xs text-toss-sub mt-1">오늘은 1번만 성공하면 끝!</p>
               </div>
             </div>
           </section>
@@ -471,15 +471,15 @@ export default function Home() {
             {/* 상태 기반: 체크인/체크아웃 2개 화면만 남김 */}
             <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
               <p className="text-sm font-semibold text-toss-text mb-1">
-                {!morningConfirmed ? '체크인 (30초)' : '체크아웃 (60초)'}
+                {!morningConfirmed ? '1) 먼저 적기 (30초)' : '2) 끝났는지 누르기 (60초)'}
               </p>
               <p className="text-xs text-toss-sub mb-3">
-                {!morningConfirmed ? '오늘의 1개를 확정해 주세요.' : '오늘 결과를 저장하면 점수가 반영돼요.'}
+                {!morningConfirmed ? '오늘 할 일 1개를 적고 시작해요.' : '완료/미완료를 누르고 저장해요.'}
               </p>
 
               {!editingMorningTask && morningConfirmed ? (
                 <div className="p-3 rounded-xl bg-toss-bg border border-toss-border">
-                  <p className="text-xs text-toss-sub">확정됨</p>
+                  <p className="text-xs text-toss-sub">지금 할 일</p>
                   <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <button
@@ -497,7 +497,7 @@ export default function Home() {
                       }}
                       className="py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700"
                     >
-                      오늘 리셋
+                      다시 적기
                     </button>
                   </div>
                 </div>
@@ -509,7 +509,7 @@ export default function Home() {
                         value={morningTask}
                         onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
                         className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
-                        placeholder="예) 결제 서류 1장 제출 / 10분 걷기 / 1페이지 읽기"
+                        placeholder="예) 숙제 1개 끝내기 / 10분 걷기"
                         aria-label="오늘의 1개 입력"
                       />
                       <div className="mt-2 flex justify-between items-center">
@@ -518,7 +518,7 @@ export default function Home() {
                           onClick={() => setMorningTask(PRESET_TASKS[goal])}
                           className="text-sm text-toss-blue font-medium"
                         >
-                          추천 문구
+                          예시 넣기
                         </button>
                         <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
                       </div>
@@ -533,16 +533,16 @@ export default function Home() {
                         disabled={!morningTask.trim()}
                         className="mt-3 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
                       >
-                        체크인 확정
+                        시작하기
                       </button>
                     </>
                   ) : (
                     <>
                       <div className="mb-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
-                        <p className="text-xs text-toss-sub">확정한 1개</p>
+                        <p className="text-xs text-toss-sub">내가 적은 할 일</p>
                         <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
                       </div>
-                      <p className="text-sm text-toss-sub mb-2">완료했나요?</p>
+                      <p className="text-sm text-toss-sub mb-2">다 했나요?</p>
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           type="button"
@@ -554,7 +554,7 @@ export default function Home() {
                               : 'border-toss-border text-toss-text'
                           }`}
                         >
-                          완료
+                          다 했어요
                         </button>
                         <button
                           type="button"
@@ -566,13 +566,13 @@ export default function Home() {
                               : 'border-toss-border text-toss-text'
                           }`}
                         >
-                          미완료
+                          아직 못했어요
                         </button>
                       </div>
 
                       {checkoutResult === 'not_done' && (
                         <div className="mt-3">
-                          <p className="text-xs text-toss-sub mb-2">가장 큰 이유 1개만</p>
+                          <p className="text-xs text-toss-sub mb-2">왜 못했는지 1개만 고르기</p>
                           <div className="flex flex-wrap gap-2">
                             {FAILURE_REASONS.map((reason) => (
                               <button
@@ -600,7 +600,7 @@ export default function Home() {
                               }}
                               className="mt-3 w-full py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
                             >
-                              내일은 더 쉽게
+                              내일은 더 쉽게 바꾸기
                             </button>
                           )}
                         </div>
@@ -612,9 +612,9 @@ export default function Home() {
                         disabled={!checkoutResult || (checkoutResult === 'not_done' && !failureReason)}
                         className="mt-4 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
                       >
-                        저장하고 점수 받기
+                        저장하기
                       </button>
-                      <p className="mt-2 text-xs text-toss-sub">광고가 나올 수 있어요. (저장은 항상 됩니다)</p>
+                      <p className="mt-2 text-xs text-toss-sub">광고가 나와도 저장은 됩니다.</p>
                     </>
                   )}
                 </>
@@ -622,10 +622,10 @@ export default function Home() {
             </section>
 
             <section className="mb-5 p-4 rounded-2xl bg-toss-bg border border-toss-border">
-              <p className="text-sm font-semibold text-toss-text mb-2">오늘의 성취</p>
+              <p className="text-sm font-semibold text-toss-text mb-2">오늘 결과</p>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                  <p className="text-xs text-toss-sub">실행 점수</p>
+                  <p className="text-xs text-toss-sub">점수</p>
                   <p className="text-lg font-bold text-toss-text">{score}</p>
                 </div>
                 <div className="bg-white rounded-xl p-2.5 border border-toss-border">
@@ -637,8 +637,13 @@ export default function Home() {
                   <p className="text-lg font-bold text-toss-text">{weeklyRate}%</p>
                 </div>
               </div>
+              <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
+                <p className="text-xs text-toss-sub">점수는 이렇게 계산해요</p>
+                <p className="text-sm font-semibold text-toss-text mt-1">주간 실행률 x 0.8 + 연속일 x 4 (최대 100점)</p>
+                <p className="text-xs text-toss-sub mt-1">쉬운 말로: 자주 하면 점수가 올라가요.</p>
+              </div>
               <p className="mt-3 text-xs text-toss-sub">
-                {failureReason ? nextSuggestion : '완벽보다 “완료”가 더 강합니다.'}
+                {failureReason ? nextSuggestion : '조금만 해도 성공이에요.'}
               </p>
             </section>
 
@@ -663,16 +668,16 @@ export default function Home() {
       {showIntro && (
         <div className="fixed inset-0 z-[60] bg-black/45 flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-2xl bg-white border border-toss-border p-5">
-            <p className="text-lg font-bold text-toss-text">처음이시군요. 20초만 볼게요</p>
-            <p className="text-sm text-toss-sub mt-2">이 앱은 하루 2번만 하면 됩니다.</p>
+            <p className="text-lg font-bold text-toss-text">처음이죠? 아주 쉬워요</p>
+            <p className="text-sm text-toss-sub mt-2">하루에 2번만 누르면 됩니다.</p>
             <div className="mt-4 space-y-2 text-sm text-toss-text">
-              <p>1) 아침 30초: 오늘 할 1개를 적고 체크인</p>
-              <p>2) 저녁 60초: 완료/미완료를 체크하고 저장</p>
-              <p>3) 저장하면 점수와 연속일이 올라갑니다</p>
+              <p>1) 아침: 오늘 할 일 1개 적기</p>
+              <p>2) 저녁: 다 했는지 누르기</p>
+              <p>3) 저장하면 점수 올라가기</p>
             </div>
             <div className="mt-4 p-3 rounded-xl bg-toss-bg border border-toss-border">
               <p className="text-xs text-toss-sub">핵심만 기억하세요</p>
-              <p className="text-sm font-semibold text-toss-text mt-1">오늘은 딱 1개만 완료하면 성공입니다.</p>
+              <p className="text-sm font-semibold text-toss-text mt-1">오늘은 1개만 끝내면 성공!</p>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
@@ -680,14 +685,14 @@ export default function Home() {
                 onClick={closeIntro}
                 className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
               >
-                다시 안 보기
+                다시 안 볼래요
               </button>
               <button
                 type="button"
                 onClick={closeIntro}
                 className="py-2.5 rounded-xl bg-toss-blue text-white text-sm font-semibold"
               >
-                바로 시작
+                시작할래요
               </button>
             </div>
           </div>
