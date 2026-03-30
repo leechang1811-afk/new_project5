@@ -222,6 +222,12 @@ export default function Home() {
   const [logoError, setLogoError] = useState(false);
   const [view, setView] = useState<'today' | 'weekly'>('today');
   const [wow, setWow] = useState<WowState | null>(null);
+  /** 결과 팝업: 내일 더 쉽게 바꾸기 1회만 */
+  const [wowEasierUsed, setWowEasierUsed] = useState(false);
+  /** 결과 팝업: 다시 세팅 → 루틴 선택 서브화면 */
+  const [wowRoutineResetOpen, setWowRoutineResetOpen] = useState(false);
+  const [wowResetRoutine, setWowResetRoutine] = useState('');
+  const [wowResetCustom, setWowResetCustom] = useState('');
   const [promotion, setPromotion] = useState<PromotionState | null>(null);
   const [bestStreak, setBestStreak] = useState(0);
   const [newRecord, setNewRecord] = useState<number | null>(null);
@@ -366,6 +372,13 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem('commute-best-streak', String(bestStreak));
   }, [bestStreak]);
+
+  useEffect(() => {
+    if (wow) {
+      setWowEasierUsed(false);
+      setWowRoutineResetOpen(false);
+    }
+  }, [wow]);
 
   useEffect(() => {
     if (!morningConfirmed || !checkoutOutcomeToday) return;
@@ -529,11 +542,6 @@ export default function Home() {
     if (failureReason === '생각보다 어려움') return '내일은 더 쉬운 문장으로 바꿔 보세요.';
     return '';
   }, [failureReason]);
-
-  const suggestedNextTask = useMemo(
-    () => getSuggestedNextTaskForReason(failureReason || undefined),
-    [failureReason],
-  );
 
   /** 오늘 이미 저장한 결과가 있으면 반대쪽 완료 체크만 비활성 */
   const checkoutCompletionLocked = checkoutOutcomeToday !== null;
@@ -861,18 +869,54 @@ export default function Home() {
     setToast('오늘 루틴을 초기화했어요.');
     window.setTimeout(() => setToast(null), 2200);
     trackEvent('reset_today_routine');
+    setShowSettings(false);
+    goToTodayTab();
+    openRoleModelPicker('start_today');
   };
 
-  const reserveTomorrow = () => {
-    const prof = getProfile(selectedCelebrity, customRoleModelName);
-    const rList = prof.routines;
-    const fallbackMission = rList[daySeed(kstDayKey()) % rList.length];
-    const routineSnap =
-      wow?.missionText?.trim() || morningTask.trim() || fallbackMission;
-    missionForReserveRef.current = routineSnap;
-    setWow(null);
-    goToTodayTab();
-    openRoleModelPicker('reserve_tomorrow');
+  const openWowRoutineReset = () => {
+    if (!wow) return;
+    const profile = getProfile(selectedCelebrity, customRoleModelName);
+    const lines = profile.routines;
+    const mt = (wow.missionText || morningTask).trim();
+    if (mt && lines.includes(mt)) {
+      setWowResetRoutine(mt);
+      setWowResetCustom('');
+    } else if (mt) {
+      setWowResetCustom(mt);
+      setWowResetRoutine(lines[0] ?? '');
+    } else {
+      setWowResetRoutine(lines[0] ?? '');
+      setWowResetCustom('');
+    }
+    setWowRoutineResetOpen(true);
+  };
+
+  const applyWowRoutineReset = () => {
+    const profile = getProfile(selectedCelebrity, customRoleModelName);
+    const line = clampText(
+      wowResetCustom.trim() || wowResetRoutine || profile.routines[0] || '',
+      80,
+    );
+    if (!line.trim()) return;
+    const nextDay = kstNextDayKey();
+    try {
+      localStorage.setItem(
+        'commute-tomorrow-reservation',
+        JSON.stringify({
+          forDay: nextDay,
+          celebrityId: selectedCelebrity,
+          customRoleModelName: selectedCelebrity === 'other' ? customRoleModelName.trim() : '',
+          morningTask: line,
+        }),
+      );
+    } catch {
+      // ignore
+    }
+    setWowRoutineResetOpen(false);
+    setToast(`내일(${nextDay}) 미션으로 저장했어요.`);
+    window.setTimeout(() => setToast(null), 2200);
+    trackEvent('reserve_tomorrow', { wowRoutineReset: true });
   };
 
   /** 축하 모달: 오늘과 동일 롤모델·미션으로 내일 예약만 저장하고 메인으로 */
@@ -906,7 +950,7 @@ export default function Home() {
   };
 
   const reserveTomorrowEasier = () => {
-    if (!wow) return;
+    if (!wow || wowEasierUsed) return;
     const prof = getProfile(selectedCelebrity, customRoleModelName);
     const rList = prof.routines;
     const fallbackMission = rList[daySeed(kstDayKey()) % rList.length];
@@ -929,18 +973,10 @@ export default function Home() {
       // ignore
     }
     setMorningTask('');
-    setWow(null);
-    goToTodayTab();
+    setWowEasierUsed(true);
     setToast(`${prof.name} 루틴으로 내일(${nextDay}) 더 쉬운 미션을 예약했어요.`);
     window.setTimeout(() => setToast(null), 2200);
     trackEvent('reserve_tomorrow', { easier: true });
-  };
-
-  const resetSetupFromWow = () => {
-    setWow(null);
-    goToTodayTab();
-    missionForReserveRef.current = '';
-    openRoleModelPicker('start_today');
   };
 
   const onUploadCelebrityPhoto = (
@@ -1526,19 +1562,6 @@ export default function Home() {
                         ))}
                       </div>
                       <p className="mt-2 text-xs text-toss-sub">{nextSuggestion}</p>
-                      {suggestedNextTask && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMorningTask((t) => clampText(t ? `${t} · ${suggestedNextTask}` : suggestedNextTask, 80));
-                            setToast('미션 끝에 추천 문구를 붙였어요.');
-                            window.setTimeout(() => setToast(null), 2000);
-                          }}
-                          className="mt-3 w-full py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
-                        >
-                          내일은 더 쉽게 바꾸기
-                        </button>
-                      )}
                     </div>
                   )}
 
@@ -1866,6 +1889,56 @@ export default function Home() {
         <div className="fixed inset-0 z-[70] overflow-y-auto overscroll-contain bg-black/55 [padding-top:max(1rem,env(safe-area-inset-top))] [padding-bottom:max(1rem,env(safe-area-inset-bottom))] px-4">
           <div className="flex min-h-[100dvh] min-h-[100svh] w-full items-center justify-center py-4">
           <div className="w-full max-w-md max-h-[min(92dvh,92svh)] overflow-y-auto rounded-2xl bg-gradient-to-b from-white to-blue-50 border border-toss-border p-4 sm:p-5 shadow-2xl text-center">
+            {wowRoutineResetOpen ? (
+              <div className="text-left">
+                <p className="text-lg font-bold text-toss-text text-center">{activeProfile.name}의 루틴 1개 선택하기</p>
+                <p className="text-[10px] text-toss-sub leading-relaxed mt-2 mb-3">{activeProfile.mediaNote}</p>
+                <div className="space-y-2">
+                  {activeProfile.routines.map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => {
+                        setWowResetRoutine(r);
+                        setWowResetCustom('');
+                      }}
+                      className={`w-full p-2.5 rounded-xl border text-sm text-left ${
+                        wowResetRoutine === r && !wowResetCustom.trim()
+                          ? 'bg-toss-blue/10 border-toss-blue text-toss-text'
+                          : 'bg-white border-toss-border text-toss-text'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                  <input
+                    type="text"
+                    value={wowResetCustom}
+                    onChange={(e) => setWowResetCustom(clampText(e.target.value, 80))}
+                    placeholder="기타: 미션을 내 말로 직접 쓰기"
+                    className="w-full border border-toss-border rounded-xl px-3 py-2.5 text-sm"
+                  />
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setWowRoutineResetOpen(false)}
+                    className="py-3 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                  >
+                    되돌아가기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applyWowRoutineReset}
+                    disabled={!(wowResetCustom.trim() || wowResetRoutine || activeProfile.routines[0])}
+                    className="py-3 rounded-xl bg-toss-blue text-white text-sm font-semibold disabled:opacity-50"
+                  >
+                    내일 미션으로 저장
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
             {(() => {
               const style = getLevelStyle(wow.level);
               return (
@@ -1946,32 +2019,30 @@ export default function Home() {
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={reserveTomorrow}
-                className="py-3 rounded-xl border border-toss-blue text-toss-blue font-semibold bg-white text-sm leading-snug"
-              >
-                내일 1개 예약
-              </button>
-              <button
-                type="button"
                 onClick={reserveTomorrowKeepSame}
-                className="py-3 px-2 rounded-xl bg-toss-blue text-white text-sm font-semibold leading-snug"
+                className="py-3 px-2 rounded-xl bg-toss-blue text-white text-sm font-semibold leading-snug col-span-2"
               >
                 지금 미션 그대로 유지하기
               </button>
-              <button
-                type="button"
-                onClick={reserveTomorrowEasier}
-                className="py-3 px-2 rounded-xl border border-toss-border bg-white text-toss-text text-sm font-semibold leading-snug"
-              >
-                내일 더 쉽게 바꾸기
-              </button>
-              <button
-                type="button"
-                onClick={resetSetupFromWow}
-                className="py-3 px-2 rounded-xl border border-toss-border bg-toss-bg text-toss-text text-sm font-semibold leading-snug"
-              >
-                다시 세팅하기
-              </button>
+              {!wow.completed && (
+                <>
+                  <button
+                    type="button"
+                    onClick={reserveTomorrowEasier}
+                    disabled={wowEasierUsed}
+                    className="py-3 px-2 rounded-xl border border-toss-border bg-white text-toss-text text-sm font-semibold leading-snug disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    내일 더 쉽게 바꾸기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openWowRoutineReset}
+                    className="py-3 px-2 rounded-xl border border-toss-border bg-toss-bg text-toss-text text-sm font-semibold leading-snug"
+                  >
+                    다시 세팅하기
+                  </button>
+                </>
+              )}
             </div>
             <button
               type="button"
@@ -1983,6 +2054,8 @@ export default function Home() {
             >
               닫기
             </button>
+              </>
+            )}
           </div>
           </div>
         </div>
