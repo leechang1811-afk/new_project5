@@ -2,9 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import BannerAd from '../components/BannerAd';
 import { adsService } from '../services/ads';
+import { fireMilestoneBurst } from '../utils/confetti';
 
 type GoalType = 'work' | 'health' | 'study' | 'relationship';
 type ResultType = 'done' | 'not_done';
+type WowState = {
+  score: number;
+  streak: number;
+  weeklyRate: number;
+  completed: boolean;
+};
 
 type DayKey = string; // YYYY-MM-DD (KST)
 
@@ -88,6 +95,7 @@ export default function Home() {
   const [showIntro, setShowIntro] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [view, setView] = useState<'today' | 'weekly'>('today');
+  const [wow, setWow] = useState<WowState | null>(null);
 
   useEffect(() => {
     const storedGoal = localStorage.getItem('commute-goal') as GoalType | null;
@@ -235,8 +243,30 @@ export default function Home() {
     setMorningConfirmed(false); // consume the day loop; user comes back next day.
   };
 
+  const computeStreak = (arr: boolean[]) => {
+    let count = 0;
+    for (let i = arr.length - 1; i >= 0; i -= 1) {
+      if (!arr[i]) break;
+      count += 1;
+    }
+    return count;
+  };
+
+  const computeWeeklyRate = (arr: boolean[]) => {
+    const last7 = arr.slice(-7);
+    if (!last7.length) return 0;
+    const done = last7.filter(Boolean).length;
+    return Math.round((done / last7.length) * 100);
+  };
+
   const onSubmitCheckoutWithAd = async () => {
     if (!checkoutResult || !morningConfirmed) return;
+    const completed = checkoutResult === 'done';
+    const nextHistory = [...history.slice(-13), completed];
+    const nextStreak = computeStreak(nextHistory);
+    const nextWeekly = computeWeeklyRate(nextHistory);
+    const nextScore = Math.min(100, Math.round(nextWeekly * 0.8 + nextStreak * 4));
+
     try {
       // 저녁 결과 저장 전 전면광고: 당일 첫 체크아웃은 생략(이탈 방지)
       const skip = isFirstCheckoutToday();
@@ -248,7 +278,16 @@ export default function Home() {
       // ignore
     }
     onSubmitCheckout();
-      setToast('저장 완료! 오늘 성공이 기록됐어요.');
+    if (completed) {
+      fireMilestoneBurst(Math.max(1, Math.min(15, nextStreak)));
+    }
+    setWow({
+      score: nextScore,
+      streak: nextStreak,
+      weeklyRate: nextWeekly,
+      completed,
+    });
+    setToast('저장 완료! 오늘 성공이 기록됐어요.');
     window.setTimeout(() => setToast(null), 2200);
   };
 
@@ -760,6 +799,52 @@ export default function Home() {
                 시작할래요
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {wow && (
+        <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white border border-toss-border p-5">
+            <p className="text-xs text-toss-sub">오늘 결과</p>
+            <p className="text-2xl font-extrabold text-toss-text mt-1">
+              {wow.completed ? '오늘 1개 완료! 🎉' : '오늘은 쉬어도 괜찮아요'}
+            </p>
+            <p className="text-sm text-toss-sub mt-2">
+              {wow.completed
+                ? '좋아요. 내일도 1개만 끝내면 됩니다.'
+                : '내일은 더 쉬운 1개로 다시 시작해요.'}
+            </p>
+
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
+                <p className="text-[11px] text-toss-sub">점수</p>
+                <p className="text-lg font-bold text-toss-text">{wow.score}</p>
+              </div>
+              <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
+                <p className="text-[11px] text-toss-sub">연속일</p>
+                <p className="text-lg font-bold text-toss-text">{wow.streak}일</p>
+              </div>
+              <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
+                <p className="text-[11px] text-toss-sub">주간</p>
+                <p className="text-lg font-bold text-toss-text">{wow.weeklyRate}%</p>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20">
+              <p className="text-xs text-toss-sub">내일 한 줄</p>
+              <p className="text-sm font-semibold text-toss-text mt-1">
+                {wow.completed ? '내일도 같은 시간에 1개만 끝내요.' : '내일은 3분짜리 쉬운 1개부터 시작해요.'}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setWow(null)}
+              className="mt-4 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold"
+            >
+              확인했어요
+            </button>
           </div>
         </div>
       )}
