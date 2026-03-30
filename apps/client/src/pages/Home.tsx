@@ -79,27 +79,6 @@ function clampText(s: string, max = 80) {
   return s.length > max ? s.slice(0, max) : s;
 }
 
-function minutesUntil(timeHHmm: string, now = new Date()) {
-  const [hh, mm] = timeHHmm.split(':').map((v) => Number(v));
-  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
-  const utc = now.getTime() + now.getTimezoneOffset() * 60_000;
-  const kstNow = new Date(utc + 9 * 60 * 60_000);
-  const target = new Date(kstNow);
-  target.setHours(hh, mm, 0, 0);
-  let diff = target.getTime() - kstNow.getTime();
-  if (diff < 0) diff += 24 * 60 * 60_000;
-  return Math.round(diff / 60_000);
-}
-
-function formatRemaining(minutes: number | null) {
-  if (minutes == null) return '-';
-  if (minutes < 60) return `${minutes}분`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (m === 0) return `${h}시간`;
-  return `${h}시간 ${m}분`;
-}
-
 function isFirstCheckoutToday(): boolean {
   const key = 'commute-first-checkout-date';
   const today = kstDayKey();
@@ -198,6 +177,8 @@ export default function Home() {
   const [pickerSearch, setPickerSearch] = useState('');
   /** 내일 예약: 오늘 완료한 미션 문장 스냅샷(이전과 똑같이 진행) */
   const missionForReserveRef = useRef('');
+  /** 미션 수정 화면: 취소 시 복원용 */
+  const morningTaskEditSnapshotRef = useRef('');
   const [reserveKeepSameTomorrow, setReserveKeepSameTomorrow] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [view, setView] = useState<'today' | 'weekly'>('today');
@@ -504,9 +485,6 @@ export default function Home() {
     if (failureReason === '생각보다 어려움') return '첫 단추 1개: 자료 1개만 열기';
     return '';
   }, [failureReason]);
-
-  const minsToMorning = useMemo(() => minutesUntil(reminders.morning), [reminders.morning, lastSavedDay]);
-  const minsToEvening = useMemo(() => minutesUntil(reminders.evening), [reminders.evening, lastSavedDay]);
 
   const onSubmitCheckout = () => {
     if (!checkoutResult) return;
@@ -857,8 +835,8 @@ export default function Home() {
           </div>
           <p className="text-sm text-toss-sub mt-2 leading-relaxed">
             {!morningConfirmed
-              ? `${activeProfile.name} 루틴을 하나 골라 적고 시작하면 돼요.`
-              : `오늘 미션: “${activeRoutineText.length > 36 ? `${activeRoutineText.slice(0, 36)}…` : activeRoutineText}” · 끝났으면 완료를 눌러 저장해요.`}
+              ? '미션 한 줄을 적고 시작하면 됩니다.'
+              : '끝났으면 아래에서 완료를 저장해요.'}
           </p>
           <p className="text-xs text-toss-blue/90 mt-2 font-medium leading-relaxed">{resemblanceHint}</p>
         </div>
@@ -919,7 +897,7 @@ export default function Home() {
 
             <div className="mt-4">
               <p className="text-xs text-toss-sub mb-1">알림 시간 (선택)</p>
-              <p className="text-[11px] text-toss-sub mb-2">시간은 점수와 무관해요. "다시 열어볼 시각"만 정해요.</p>
+              <p className="text-[11px] text-toss-sub mb-2">점수와 무관해요. 습관용 알림만 켜 두면 됩니다.</p>
               <div className="grid grid-cols-2 gap-3">
                 <label className="text-left">
                   <span className="block text-xs text-toss-sub mb-1">아침</span>
@@ -940,14 +918,6 @@ export default function Home() {
                   />
                 </label>
               </div>
-              <div className="mt-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
-                <p className="text-xs text-toss-sub">다음에 열어볼 시간</p>
-                <p className="text-sm font-semibold text-toss-text mt-1">
-                  다음 아침까지 {formatRemaining(minsToMorning)} · 다음 저녁까지 {formatRemaining(minsToEvening)}
-                </p>
-                <p className="text-xs text-toss-sub mt-1">오늘은 1번만 성공하면 끝!</p>
-              </div>
-              <p className="text-xs text-toss-sub mt-2">한 줄 요약: 시간은 선택, 핵심은 "오늘 1개 저장".</p>
             </div>
 
             <div className="mt-4 p-3 rounded-xl bg-white border border-toss-border">
@@ -1082,13 +1052,6 @@ export default function Home() {
           <>
             {/* 상태 기반: 체크인/체크아웃 2개 화면만 남김 */}
             <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
-              {morningConfirmed && (
-                <div className="mb-3 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20">
-                  <p className="text-xs text-toss-sub">팝업에서 고른 오늘 루틴</p>
-                  <p className="text-sm font-semibold text-toss-text mt-1">{activeProfile.name}</p>
-                  <p className="text-sm text-toss-text mt-1 leading-snug">“{activeRoutineText}”</p>
-                </div>
-              )}
               <p className="text-sm font-semibold text-toss-text mb-1">
                 {!morningConfirmed
                   ? `1) ${activeProfile.name} 루틴 1개 정하기`
@@ -1096,18 +1059,9 @@ export default function Home() {
               </p>
               <p className="text-xs text-toss-sub mb-3">
                 {!morningConfirmed
-                  ? `${activeProfile.name} 루틴 미션을 적거나, 아래 추천을 불러와 시작해요.`
-                  : `“${activeRoutineText}” 를 해냈다면 완료를 눌러 저장해요.`}
+                  ? '미션을 적거나, 플레이스홀더 추천을 참고해 시작해요.'
+                  : '끝났으면 완료를 눌러 저장해요.'}
               </p>
-              {!morningConfirmed && (
-                <div className="mb-3 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20">
-                  <p className="text-xs text-toss-sub">선택 중인 롤모델</p>
-                  <p className="text-sm font-semibold text-toss-text mt-1">
-                    {activeProfile.name} · {activeProfile.oneLine}
-                  </p>
-                  <p className="text-sm text-toss-text mt-1">추천 1미션: {todayMission}</p>
-                </div>
-              )}
 
               {!morningConfirmed ? (
                 <>
@@ -1127,7 +1081,7 @@ export default function Home() {
                       setMorningConfirmed(true);
                       setEditingMorningTask(false);
                       trackEvent('checkin_confirm', { celebrity: selectedCelebrity });
-                      setToast(`${activeProfile.name} 루틴 시작! 저녁에 완료 저장하면 점수가 올라요.`);
+                      setToast('시작했어요. 저녁에 완료를 저장해 주세요.');
                       window.setTimeout(() => setToast(null), 2200);
                     }}
                     disabled={!morningTask.trim()}
@@ -1139,12 +1093,15 @@ export default function Home() {
               ) : (
                 <>
                   <div className="mb-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
-                    <p className="text-xs text-toss-sub">오늘의 루틴(미션)</p>
+                    <p className="text-xs text-toss-sub">오늘의 미션</p>
                     <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => setEditingMorningTask(true)}
+                        onClick={() => {
+                          morningTaskEditSnapshotRef.current = morningTask;
+                          setEditingMorningTask(true);
+                        }}
                         className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
                       >
                         할 일 바꾸기
@@ -1176,18 +1133,30 @@ export default function Home() {
                       <div className="mt-2 flex justify-end">
                         <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingMorningTask(false);
-                          setToast('바꿨어요. 아래에서 완료 여부를 선택해 주세요.');
-                          window.setTimeout(() => setToast(null), 2000);
-                        }}
-                        disabled={!morningTask.trim()}
-                        className="mt-3 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
-                      >
-                        바꾸기 완료
-                      </button>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMorningTask(morningTaskEditSnapshotRef.current);
+                            setEditingMorningTask(false);
+                          }}
+                          className="py-3 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                        >
+                          돌아가기
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingMorningTask(false);
+                            setToast('반영했어요. 완료 여부를 선택해 주세요.');
+                            window.setTimeout(() => setToast(null), 2000);
+                          }}
+                          disabled={!morningTask.trim()}
+                          className="py-3 rounded-xl bg-toss-blue text-white text-sm font-semibold disabled:opacity-50"
+                        >
+                          바꾸기 완료
+                        </button>
+                      </div>
                     </>
                   )}
 
@@ -1223,7 +1192,7 @@ export default function Home() {
                         😓 아직 못했어요
                       </button>
                     </div>
-                    <p className="mt-2 text-[11px] text-toss-sub">완료는 원탭 저장됩니다. 미완료는 이유 1개 선택 후 저장됩니다.</p>
+                    <p className="mt-2 text-[11px] text-toss-sub">미완료는 이유를 고른 뒤 저장돼요.</p>
                   </div>
 
                   {checkoutResult === 'not_done' && (
@@ -1281,39 +1250,29 @@ export default function Home() {
             </section>
 
             <section className="mb-5 p-4 rounded-2xl bg-toss-bg border border-toss-border">
-              <p className="text-sm font-semibold text-toss-text mb-1">오늘 결과</p>
-              <p className="text-xs text-toss-sub mb-3">
-                {activeProfile.name} 루틴 · “{activeRoutineText.length > 40 ? `${activeRoutineText.slice(0, 40)}…` : activeRoutineText}”
+              <p className="text-sm font-semibold text-toss-text mb-1">오늘 요약</p>
+              <p className="text-xs text-toss-sub mb-3 line-clamp-2">
+                “{activeRoutineText.length > 40 ? `${activeRoutineText.slice(0, 40)}…` : activeRoutineText}”
               </p>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                  <p className="text-xs text-toss-sub">오늘 점수</p>
+                  <p className="text-xs text-toss-sub">점수</p>
                   <p className="text-lg font-bold text-toss-text">{score}</p>
                 </div>
                 <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                  <p className="text-xs text-toss-sub">연속일</p>
+                  <p className="text-xs text-toss-sub">연속</p>
                   <p className="text-lg font-bold text-toss-text">{streakDays}일</p>
                 </div>
                 <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                  <p className="text-xs text-toss-sub">주간 실행률</p>
+                  <p className="text-xs text-toss-sub">주간</p>
                   <p className="text-lg font-bold text-toss-text">{weeklyRate}%</p>
                 </div>
               </div>
-              <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
-                <p className="text-xs text-toss-sub">점수는 이렇게 계산해요</p>
-                <p className="text-sm font-semibold text-toss-text mt-1">주간 실행률 x 0.8 + 연속일 x 4 (최대 100점)</p>
-                <p className="text-xs text-toss-sub mt-1">쉬운 말로: 자주 하면 점수가 올라가요.</p>
-              </div>
-              <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
-                <p className="text-xs text-toss-sub">왜 이 앱을 쓰나요?</p>
-                <p className="text-sm font-semibold text-toss-text mt-1">
-                  미션을 채울수록 닮고 싶은 사람의 하루를 조금씩 닮아가는 느낌을 만들어요. 오늘은 1미션만.
-                </p>
-              </div>
-              <p className="mt-3 text-xs text-toss-sub">
-                {failureReason
-                  ? `${activeProfile.name} 루틴은 내일 다시 가볍게 이어가요. ${nextSuggestion}`
-                  : `${activeProfile.name} 루틴, 오늘도 한 걸음이에요.`}
+              <p className="mt-3 text-[11px] text-toss-sub leading-relaxed">
+                점수 = 주간 실행률×0.8 + 연속일×4 (최대 100). 하루 한 번 저장이면 반영돼요.
+              </p>
+              <p className="mt-2 text-xs text-toss-sub">
+                {failureReason ? nextSuggestion : `${activeProfile.name} 루틴, 오늘도 한 걸음이에요.`}
               </p>
             </section>
 
@@ -1341,7 +1300,7 @@ export default function Home() {
           <div className="flex min-h-[100dvh] min-h-[100svh] w-full items-center justify-center py-4">
           <div className="w-full max-w-md max-h-[min(88dvh,88svh)] overflow-y-auto rounded-2xl bg-white border border-toss-border p-4 sm:p-5 shadow-xl">
             <p className="text-lg font-bold text-toss-text text-center">
-              {pickerMode === 'reserve_tomorrow' ? '내일 미션 예약하기' : '롤모델부터 고르고 시작해요'}
+              {pickerMode === 'reserve_tomorrow' ? '내일 미션 예약하기' : '닮고 싶은 롤모델을 선택해주세요.'}
             </p>
             {pickerMode === 'reserve_tomorrow' ? (
               <div className="text-sm text-toss-sub mt-1 text-center leading-relaxed space-y-1">
@@ -1350,7 +1309,7 @@ export default function Home() {
               </div>
             ) : (
               <p className="text-sm text-toss-sub mt-1 text-center leading-relaxed">
-                초등학생도 쉽게: 사람 고르기 → 1미션 선택 → 시작
+                {'롤모델 선택하기 > 롤모델 루틴 1개 선택하기 > 시작'}
               </p>
             )}
 
@@ -1471,10 +1430,8 @@ export default function Home() {
             </div>
 
             <div className="mt-4 p-3 rounded-xl bg-toss-bg border border-toss-border">
-              <p className="text-xs text-toss-sub font-medium">롤모델 사진 업로드하기 (선택사항)</p>
-              <p className="text-[11px] text-toss-sub mt-1.5 leading-relaxed">
-                루틴 달성 시, 축하 메시지에 롤모델 사진이 함께 나옵니다.
-              </p>
+              <p className="text-xs text-toss-sub font-medium">롤모델 사진 (선택)</p>
+              <p className="text-[11px] text-toss-sub mt-1.5 leading-relaxed">축하 화면에 함께 표시됩니다.</p>
               <div className="mt-3 flex items-center gap-3">
                 {celebrityPhotos[pickerCelebrity] ? (
                   <img
@@ -1530,49 +1487,33 @@ export default function Home() {
               const style = getLevelStyle(wow.level);
               return (
                 <>
-                  <p className="text-xs text-toss-sub text-center">오늘 결과</p>
                   <p
-                    className={`text-2xl font-extrabold mt-1 text-balance break-keep leading-snug ${style.title} max-w-[95%] mx-auto`}
+                    className={`text-2xl font-extrabold text-balance break-keep leading-snug ${style.title} max-w-[95%] mx-auto`}
                   >
                     {wow.completed
                       ? getWowHeadline(wow.level, wow.weeklyRate, wow.celebrityName)
                       : '오늘은 쉬어도 괜찮아요'}
                   </p>
                   {wow.completed && (
-                    <div className="mt-2">
-                      <p className="text-xs text-toss-sub text-center mb-1">오늘 미션</p>
-                      <div className="text-sm font-medium text-toss-text text-center text-pretty break-keep leading-relaxed max-w-[95%] mx-auto space-y-1.5">
-                        {splitMissionForDisplay(wow.missionText).map((line, i) => (
-                          <p key={i} className="block">
-                            “{line}”
-                          </p>
-                        ))}
-                      </div>
+                    <div className="text-sm font-medium text-toss-text text-center text-pretty break-keep leading-relaxed max-w-[95%] mx-auto mt-2 space-y-1.5">
+                      {splitMissionForDisplay(wow.missionText).map((line, i) => (
+                        <p key={i} className="block">
+                          “{line}”
+                        </p>
+                      ))}
                     </div>
                   )}
-                  {wow.completed && (
-                    <p className="text-sm font-semibold text-toss-text mt-3 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
-                      조금씩 {wow.celebrityName}의 페이스에 가까워지고 있어요.
-                    </p>
-                  )}
-                  <p className="text-sm text-toss-sub mt-2 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
-                    {wow.completed
-                      ? `${style.next} 오늘도 충분히 잘했어요. 천천히, 하지만 꾸준히 같이 가요.`
-                      : '오늘은 쉬어도 괜찮아요. 내일 다시 가볍게 시작하면 됩니다.'}
+                  <p className="text-sm text-toss-sub mt-3 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
+                    {wow.completed ? style.next : '내일 다시 가볍게 이어가요.'}
                   </p>
                   {wow.completed && celebrityPhotos[selectedCelebrity] && (
-                    <div className="mt-3 p-2.5 rounded-xl bg-white border border-toss-border text-center">
-                      <p className="text-xs text-toss-sub mb-2">오늘 내가 따라한 롤모델</p>
-                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                        <img
-                          src={celebrityPhotos[selectedCelebrity]}
-                          alt={`${wow.celebrityName} 축하 이미지`}
-                          className="w-16 h-16 rounded-xl object-cover border border-toss-border shrink-0"
-                        />
-                        <p className="text-sm font-semibold text-toss-text text-center text-pretty break-keep">
-                          {wow.celebrityName} 루틴 성공! 👏
-                        </p>
-                      </div>
+                    <div className="mt-3 flex items-center justify-center gap-3 p-2.5 rounded-xl bg-white border border-toss-border">
+                      <img
+                        src={celebrityPhotos[selectedCelebrity]}
+                        alt=""
+                        className="w-14 h-14 rounded-xl object-cover border border-toss-border shrink-0"
+                      />
+                      <p className="text-sm font-semibold text-toss-text text-left">{wow.celebrityName}</p>
                     </div>
                   )}
 
@@ -1605,18 +1546,19 @@ export default function Home() {
             })()}
 
             <div className="mt-4 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20 text-center">
-              <p className="text-xs text-toss-sub">내일 한 줄</p>
-              <p className="text-sm font-semibold text-toss-text mt-1 text-pretty break-keep max-w-[95%] mx-auto">
+              <p className="text-sm font-semibold text-toss-text text-pretty break-keep max-w-[95%] mx-auto">
                 {wow.completed
-                  ? `내일도 ${wow.celebrityName} 루틴 1개만 따라가요.`
-                  : '내일은 3분짜리 쉬운 1개부터 시작해요.'}
+                  ? `내일도 ${wow.celebrityName} 루틴 1개만 이어가요.`
+                  : '내일은 3분짜리로 가볍게 시작해요.'}
               </p>
+              {wow.completed && (
+                <p className="text-xs text-toss-sub mt-2 text-pretty break-keep max-w-[95%] mx-auto">
+                  {streakDays >= 7
+                    ? '7일 루프 유지 중이에요.'
+                    : `다음 배지까지 ${streakDays < 1 ? 1 : streakDays < 3 ? 3 - streakDays : 7 - streakDays}일`}
+                </p>
+              )}
             </div>
-            {wow.completed && (
-              <p className="mt-2 text-xs text-toss-sub text-center text-pretty break-keep max-w-[95%] mx-auto">
-                {streakDays >= 7 ? '지금 최고 구간이에요. 7일 루프를 유지해요.' : `다음 배지까지 ${streakDays < 1 ? 1 : streakDays < 3 ? 3 - streakDays : 7 - streakDays}일`}
-              </p>
-            )}
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
