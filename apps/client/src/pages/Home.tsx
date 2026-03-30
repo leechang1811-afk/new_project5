@@ -5,6 +5,7 @@ import {
   CELEBRITIES,
   type CelebrityId,
   getProfile,
+  PRESET_CELEBRITY_GROUPS,
   PRESET_CELEBRITY_IDS,
   type PresetCelebrityId,
 } from '../data/celebrities';
@@ -62,6 +63,19 @@ function kstDayKey(d = new Date()): DayKey {
   const mm = String(kst.getMonth() + 1).padStart(2, '0');
   const dd = String(kst.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function readCheckoutOutcomeForToday(): ResultType | null {
+  try {
+    const raw = localStorage.getItem('commute-checkout-outcome-for-day');
+    if (!raw) return null;
+    const o = JSON.parse(raw) as { day: string; result: ResultType };
+    if (o.day !== kstDayKey()) return null;
+    if (o.result !== 'done' && o.result !== 'not_done') return null;
+    return o.result;
+  } catch {
+    return null;
+  }
 }
 
 function kstNextDayKey(d = new Date()): DayKey {
@@ -172,6 +186,10 @@ export default function Home() {
   const [morningConfirmed, setMorningConfirmed] = useState(false);
   const [editingMorningTask, setEditingMorningTask] = useState(true);
   const [checkoutResult, setCheckoutResult] = useState<ResultType | null>(null);
+  /** 오늘 이미 저장한 완료/미완료 — 같은 날 반대 선택 방지 */
+  const [checkoutOutcomeToday, setCheckoutOutcomeToday] = useState<ResultType | null>(() =>
+    readCheckoutOutcomeForToday(),
+  );
   const [failureReason, setFailureReason] = useState('');
   const [history, setHistory] = useState<boolean[]>([]); // last 14 days completion
   const [reminders, setReminders] = useState(() => DEFAULT_REMINDERS);
@@ -341,6 +359,27 @@ export default function Home() {
   }, [bestStreak]);
 
   useEffect(() => {
+    if (!morningConfirmed || !checkoutOutcomeToday) return;
+    setCheckoutResult(checkoutOutcomeToday);
+  }, [morningConfirmed, checkoutOutcomeToday]);
+
+  /** 예전 버전에서 저장만 하고 outcome 키가 없을 때, 오늘 history로 잠금 복구 */
+  useEffect(() => {
+    const today = kstDayKey();
+    if (lastCheckoutSavedDay !== today) return;
+    if (readCheckoutOutcomeForToday()) return;
+    if (history.length === 0) return;
+    const last = history[history.length - 1];
+    const outcome: ResultType = last ? 'done' : 'not_done';
+    try {
+      localStorage.setItem('commute-checkout-outcome-for-day', JSON.stringify({ day: today, result: outcome }));
+    } catch {
+      // ignore
+    }
+    setCheckoutOutcomeToday(outcome);
+  }, [lastCheckoutSavedDay, history]);
+
+  useEffect(() => {
     localStorage.setItem('commute-celebrity-photos', JSON.stringify(celebrityPhotos));
   }, [celebrityPhotos]);
 
@@ -354,6 +393,12 @@ export default function Home() {
         setEditingMorningTask(true);
         setCheckoutResult(null);
         setFailureReason('');
+        setCheckoutOutcomeToday(null);
+        try {
+          localStorage.removeItem('commute-checkout-outcome-for-day');
+        } catch {
+          // ignore
+        }
         try {
           const tr = localStorage.getItem('commute-tomorrow-reservation');
           if (tr) {
@@ -481,6 +526,9 @@ export default function Home() {
     [failureReason],
   );
 
+  /** 오늘 이미 저장한 결과가 있으면 반대쪽 완료 체크만 비활성 */
+  const checkoutCompletionLocked = checkoutOutcomeToday !== null;
+
   const onSubmitCheckout = () => {
     if (!checkoutResult) return;
     if (!morningConfirmed) return;
@@ -492,8 +540,15 @@ export default function Home() {
       return;
     }
     const completed = checkoutResult === 'done';
+    const outcome: ResultType = completed ? 'done' : 'not_done';
     setHistory((prev: boolean[]) => [...prev.slice(-13), completed]);
     setLastCheckoutSavedDay(today);
+    try {
+      localStorage.setItem('commute-checkout-outcome-for-day', JSON.stringify({ day: today, result: outcome }));
+    } catch {
+      // ignore
+    }
+    setCheckoutOutcomeToday(outcome);
     setCheckoutResult(null);
     setFailureReason('');
     setMorningConfirmed(false); // consume the day loop; user comes back next day.
@@ -1330,8 +1385,9 @@ export default function Home() {
                           setCheckoutResult('done');
                           setFailureReason('');
                         }}
+                        disabled={checkoutCompletionLocked && checkoutOutcomeToday === 'not_done'}
                         aria-pressed={checkoutResult === 'done'}
-                        className={`py-3 rounded-xl border text-base font-bold ${
+                        className={`py-3 rounded-xl border text-base font-bold disabled:opacity-40 disabled:pointer-events-none ${
                           checkoutResult === 'done'
                             ? 'bg-emerald-500 text-white border-emerald-500'
                             : 'border-toss-border text-toss-text bg-white'
@@ -1342,7 +1398,7 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setCheckoutResult('not_done')}
-                        disabled={checkoutResult === 'done'}
+                        disabled={checkoutCompletionLocked && checkoutOutcomeToday === 'done'}
                         aria-pressed={checkoutResult === 'not_done'}
                         className={`py-3 rounded-xl border text-base font-bold disabled:opacity-40 disabled:pointer-events-none ${
                           checkoutResult === 'not_done'
@@ -1504,52 +1560,112 @@ export default function Home() {
 
             <div className="mt-4">
               <p className="text-xs text-toss-sub mb-2">나의 롤모델 선택하기</p>
-              <div className="max-h-[min(11rem,38dvh)] overflow-auto pr-1 [contain:layout] [content-visibility:auto]">
-                <div className="grid grid-cols-3 gap-2">
-                  {pickerList.map((id) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => {
-                        setPickerCelebrity(id);
-                        setPickerOtherName('');
-                        setReserveKeepSameTomorrow(false);
-                        const p = getProfile(id, '');
-                        setPickerRoutine(p.routines[0] ?? '');
-                        setPickerCustomRoutine('');
-                      }}
-                      className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
-                        pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
-                      }`}
-                    >
-                      <p className="text-sm font-semibold leading-tight line-clamp-2">{CELEBRITIES[id].name}</p>
-                      <p
-                        className={`text-[10px] mt-1 leading-snug line-clamp-2 ${
-                          pickerCelebrity === id ? 'text-blue-50' : 'text-toss-sub'
+              <div className="max-h-[min(20rem,52dvh)] overflow-auto pr-1 [contain:layout] [content-visibility:auto]">
+                {pickerSearch.trim() ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {pickerList.map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => {
+                          setPickerCelebrity(id);
+                          setPickerOtherName('');
+                          setReserveKeepSameTomorrow(false);
+                          const p = getProfile(id, '');
+                          setPickerRoutine(p.routines[0] ?? '');
+                          setPickerCustomRoutine('');
+                        }}
+                        className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
+                          pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                         }`}
                       >
-                        {CELEBRITIES[id].oneLine}
+                        <p className="text-sm font-semibold leading-tight line-clamp-2">{CELEBRITIES[id].name}</p>
+                        <p
+                          className={`text-[10px] mt-1 leading-snug line-clamp-2 ${
+                            pickerCelebrity === id ? 'text-blue-50' : 'text-toss-sub'
+                          }`}
+                        >
+                          {CELEBRITIES[id].oneLine}
+                        </p>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPickerCelebrity('other');
+                        setReserveKeepSameTomorrow(false);
+                      }}
+                      className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
+                        pickerCelebrity === 'other'
+                          ? 'bg-toss-blue text-white border-toss-blue'
+                          : 'bg-white border-toss-border text-toss-text'
+                      }`}
+                    >
+                      <p className="text-sm font-semibold leading-tight">기타</p>
+                      <p className={`text-[10px] mt-1 leading-snug ${pickerCelebrity === 'other' ? 'text-blue-50' : 'text-toss-sub'}`}>
+                        직접 이름 입력
                       </p>
                     </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPickerCelebrity('other');
-                      setReserveKeepSameTomorrow(false);
-                    }}
-                    className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
-                      pickerCelebrity === 'other'
-                        ? 'bg-toss-blue text-white border-toss-blue'
-                        : 'bg-white border-toss-border text-toss-text'
-                    }`}
-                  >
-                    <p className="text-sm font-semibold leading-tight">기타</p>
-                    <p className={`text-[10px] mt-1 leading-snug ${pickerCelebrity === 'other' ? 'text-blue-50' : 'text-toss-sub'}`}>
-                      직접 이름 입력
-                    </p>
-                  </button>
-                </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {PRESET_CELEBRITY_GROUPS.map((group) => (
+                      <div key={group.label}>
+                        <p className="text-xs text-toss-sub mb-2">{group.label}</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {group.ids.map((id) => (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => {
+                                setPickerCelebrity(id);
+                                setPickerOtherName('');
+                                setReserveKeepSameTomorrow(false);
+                                const p = getProfile(id, '');
+                                setPickerRoutine(p.routines[0] ?? '');
+                                setPickerCustomRoutine('');
+                              }}
+                              className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
+                                pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
+                              }`}
+                            >
+                              <p className="text-sm font-semibold leading-tight line-clamp-2">{CELEBRITIES[id].name}</p>
+                              <p
+                                className={`text-[10px] mt-1 leading-snug line-clamp-2 ${
+                                  pickerCelebrity === id ? 'text-blue-50' : 'text-toss-sub'
+                                }`}
+                              >
+                                {CELEBRITIES[id].oneLine}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    <div>
+                      <p className="text-xs text-toss-sub mb-2">기타</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPickerCelebrity('other');
+                            setReserveKeepSameTomorrow(false);
+                          }}
+                          className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
+                            pickerCelebrity === 'other'
+                              ? 'bg-toss-blue text-white border-toss-blue'
+                              : 'bg-white border-toss-border text-toss-text'
+                          }`}
+                        >
+                          <p className="text-sm font-semibold leading-tight">기타</p>
+                          <p className={`text-[10px] mt-1 leading-snug ${pickerCelebrity === 'other' ? 'text-blue-50' : 'text-toss-sub'}`}>
+                            직접 이름 입력
+                          </p>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

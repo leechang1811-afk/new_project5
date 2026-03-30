@@ -389,53 +389,64 @@ export type PresetCelebrityId = keyof typeof CELEBRITIES;
 export type CelebrityId = PresetCelebrityId | 'other';
 
 /**
- * 그리드·“내일 예약” 순서
- * 한국(연예·CEO·위인·운동) → 기존 한국 프리셋 → 해외
+ * 롤모델 선택 그리드 순서 (인트로 등)
+ * 기업가 → 전세계 유명인 → 위인 → 연예인·가수(국내 연예·스포츠 등)
  */
-export const PRESET_CELEBRITY_IDS: PresetCelebrityId[] = [
-  // 한국 · 연예인
-  'yoo_jae_suk',
-  'gdragon',
-  'bts_suga',
-  'lim_young_woong',
-  'gong_yoo',
-  'son_ye_jin',
-  'iu',
-  'rm',
-  // 한국 · CEO
-  'kim_bong_jin',
-  'bang_si_hyuk',
-  'lee_hae_jin',
-  'lee_jae_yong',
-  // 한국 · 위인
-  'king_sejong',
-  'yun_dong_ju',
-  'kim_gu',
-  // 한국 · 운동선수
-  'son',
-  'kim_yuna',
-  'park_ji_sung',
-  'kim_young_kyung',
-  'ryu_hyun_jin',
-  // 해외
-  'jobs',
-  'musk',
-  'bezos',
-  'buffett',
-  'gates',
-  'zuckerberg',
-  'tim_cook',
-  'oprah',
-  'michelle_obama',
-  'obama',
-  'beyonce',
-  'taylor_swift',
-  'ronaldo',
-  'messi',
-  'serena',
-  'churchill',
-  'einstein',
+export const PRESET_CELEBRITY_GROUPS: { label: string; ids: PresetCelebrityId[] }[] = [
+  {
+    label: '기업가',
+    ids: [
+      'jobs',
+      'musk',
+      'bezos',
+      'buffett',
+      'gates',
+      'zuckerberg',
+      'tim_cook',
+      'kim_bong_jin',
+      'bang_si_hyuk',
+      'lee_hae_jin',
+      'lee_jae_yong',
+    ],
+  },
+  {
+    label: '전세계 유명인',
+    ids: [
+      'oprah',
+      'michelle_obama',
+      'obama',
+      'beyonce',
+      'taylor_swift',
+      'ronaldo',
+      'messi',
+      'serena',
+    ],
+  },
+  {
+    label: '위인',
+    ids: ['churchill', 'einstein', 'king_sejong', 'yun_dong_ju', 'kim_gu'],
+  },
+  {
+    label: '연예인·가수',
+    ids: [
+      'yoo_jae_suk',
+      'gdragon',
+      'bts_suga',
+      'lim_young_woong',
+      'gong_yoo',
+      'son_ye_jin',
+      'iu',
+      'rm',
+      'son',
+      'kim_yuna',
+      'park_ji_sung',
+      'kim_young_kyung',
+      'ryu_hyun_jin',
+    ],
+  },
 ];
+
+export const PRESET_CELEBRITY_IDS: PresetCelebrityId[] = PRESET_CELEBRITY_GROUPS.flatMap((g) => g.ids);
 
 export type CelebrityProfile = {
   name: string;
