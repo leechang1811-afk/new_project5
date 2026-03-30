@@ -86,6 +86,7 @@ export default function Home() {
   const [toast, setToast] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
     const storedGoal = localStorage.getItem('commute-goal') as GoalType | null;
@@ -268,15 +269,22 @@ export default function Home() {
         <div className="mx-auto max-w-md px-4 sm:px-6 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-            <img
-              src="/brand-logo.png"
-              alt="오늘1개완료 로고"
-              width={28}
-              height={28}
-              className="w-7 h-7 rounded-lg border border-toss-border bg-white object-cover"
-              loading="eager"
-              decoding="async"
-            />
+              {logoError ? (
+                <div className="w-7 h-7 rounded-lg border border-toss-border bg-toss-blue/10 flex items-center justify-center text-[12px]">
+                  ✅
+                </div>
+              ) : (
+                <img
+                  src="/app-icon-600x600.png"
+                  alt="오늘1개완료 로고"
+                  width={28}
+                  height={28}
+                  onError={() => setLogoError(true)}
+                  className="w-7 h-7 rounded-lg border border-toss-border bg-white object-cover"
+                  loading="eager"
+                  decoding="async"
+                />
+              )}
               <span className="text-sm font-semibold text-toss-text truncate">오늘1개완료</span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
