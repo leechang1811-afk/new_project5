@@ -34,7 +34,6 @@ type EventName =
   | 'open_settings'
   | 'close_settings'
   | 'intro_close'
-  | 'copy_variant_exposed'
   | 'level_promoted'
   | 'reserve_tomorrow'
   | 'milestone_badge_unlock'
@@ -186,7 +185,6 @@ export default function Home() {
   const [view, setView] = useState<'today' | 'weekly'>('today');
   const [wow, setWow] = useState<WowState | null>(null);
   const [promotion, setPromotion] = useState<PromotionState | null>(null);
-  const [abSummary, setAbSummary] = useState<{ A: number; B: number }>({ A: 0, B: 0 });
   const [bestStreak, setBestStreak] = useState(0);
   const [newRecord, setNewRecord] = useState<number | null>(null);
 
@@ -275,20 +273,6 @@ export default function Home() {
     // "오늘/주간" 탭 대신 명확한 화면 상태로 유지
     if (showWeekly) setView('weekly');
   }, [showWeekly]);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('todayone-event-log');
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Array<{ name?: string; variant?: string }>;
-      const recent = parsed.slice(-200);
-      const A = recent.filter((e) => e.name === 'copy_variant_exposed' && e.variant === 'A').length;
-      const B = recent.filter((e) => e.name === 'copy_variant_exposed' && e.variant === 'B').length;
-      setAbSummary({ A, B });
-    } catch {
-      // ignore
-    }
-  }, [showSettings, wow]);
 
   useEffect(() => {
     localStorage.setItem('commute-celebrity', selectedCelebrity);
@@ -439,15 +423,6 @@ export default function Home() {
     () => getProfile(pickerCelebrity, pickerOtherName),
     [pickerCelebrity, pickerOtherName],
   );
-  const copyVariant = useMemo<'A' | 'B'>(() => {
-    const dayNum = Number(todayKey.slice(-2));
-    return dayNum % 2 === 0 ? 'A' : 'B';
-  }, [todayKey]);
-
-  useEffect(() => {
-    trackEvent('copy_variant_exposed', { variant: copyVariant });
-  }, [copyVariant]);
-
   useEffect(() => {
     const profile = getProfile(pickerCelebrity, pickerOtherName);
     setPickerRoutine(profile.routines[0] ?? '');
@@ -948,12 +923,6 @@ export default function Home() {
                 </label>
               </div>
               <p className="text-[11px] text-toss-sub mt-2">완료 저장 후 축하 화면에 이 사진이 함께 나와요.</p>
-            </div>
-
-            <div className="mt-4 p-3 rounded-xl bg-toss-bg border border-toss-border">
-              <p className="text-xs text-toss-sub">문구 실험 리포트 (최근 로그)</p>
-              <p className="text-sm font-semibold text-toss-text mt-1">A안 노출 {abSummary.A}회 · B안 노출 {abSummary.B}회</p>
-              <p className="text-xs text-toss-sub mt-1">A/B 문구 노출 로그(내부 실험용)입니다.</p>
             </div>
           </section>
         )}
