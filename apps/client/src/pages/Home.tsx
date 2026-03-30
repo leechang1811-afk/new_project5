@@ -14,6 +14,14 @@ type WowState = {
 };
 
 type DayKey = string; // YYYY-MM-DD (KST)
+type EventName =
+  | 'checkin_confirm'
+  | 'checkout_done_quicksave'
+  | 'checkout_not_done_save'
+  | 'checkout_duplicate_block'
+  | 'open_settings'
+  | 'close_settings'
+  | 'intro_close';
 
 const GOAL_LABEL: Record<GoalType, string> = {
   work: '업무',
@@ -77,6 +85,18 @@ function isFirstCheckoutToday(): boolean {
     return true;
   }
   return false;
+}
+
+function trackEvent(name: EventName, payload?: Record<string, string | number | boolean>) {
+  try {
+    const key = 'todayone-event-log';
+    const prevRaw = localStorage.getItem(key);
+    const prev = prevRaw ? (JSON.parse(prevRaw) as Array<Record<string, unknown>>) : [];
+    const next = [...prev.slice(-199), { ts: Date.now(), name, ...(payload ?? {}) }];
+    localStorage.setItem(key, JSON.stringify(next));
+  } catch {
+    // ignore analytics storage failures
+  }
 }
 
 export default function Home() {
@@ -247,6 +267,7 @@ export default function Home() {
     if (!morningConfirmed) return;
     const today = kstDayKey();
     if (lastCheckoutSavedDay === today) {
+      trackEvent('checkout_duplicate_block');
       setToast('오늘 결과는 이미 저장했어요. 내일 다시 저장할 수 있어요.');
       window.setTimeout(() => setToast(null), 2200);
       return;
@@ -275,15 +296,17 @@ export default function Home() {
     return Math.round((done / last7.length) * 100);
   };
 
-  const onSubmitCheckoutWithAd = async () => {
-    if (!checkoutResult || !morningConfirmed) return;
+  const onSubmitCheckoutWithAd = async (forcedResult?: ResultType) => {
+    const selectedResult = forcedResult ?? checkoutResult;
+    if (!selectedResult || !morningConfirmed) return;
     const today = kstDayKey();
     if (lastCheckoutSavedDay === today) {
+      trackEvent('checkout_duplicate_block');
       setToast('오늘 결과는 이미 저장했어요. 내일 다시 저장할 수 있어요.');
       window.setTimeout(() => setToast(null), 2200);
       return;
     }
-    const completed = checkoutResult === 'done';
+    const completed = selectedResult === 'done';
     const nextHistory = [...history.slice(-13), completed];
     const nextStreak = computeStreak(nextHistory);
     const nextWeekly = computeWeeklyRate(nextHistory);
@@ -300,6 +323,11 @@ export default function Home() {
       // ignore
     }
     onSubmitCheckout();
+    trackEvent(completed ? 'checkout_done_quicksave' : 'checkout_not_done_save', {
+      streak: nextStreak,
+      weeklyRate: nextWeekly,
+      score: nextScore,
+    });
     if (completed) fireMilestoneBurst(Math.max(10, Math.min(28, nextStreak + 12)));
     setWow({
       score: nextScore,
@@ -326,6 +354,7 @@ export default function Home() {
   const closeIntro = () => {
     localStorage.setItem('todayone-intro-seen', 'true');
     setShowIntro(false);
+    trackEvent('intro_close');
   };
 
   return (
@@ -356,7 +385,13 @@ export default function Home() {
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
-                onClick={() => setShowSettings((v) => !v)}
+                onClick={() => {
+                  setShowSettings((v) => {
+                    const next = !v;
+                    trackEvent(next ? 'open_settings' : 'close_settings');
+                    return next;
+                  });
+                }}
                 aria-label="설정 바꾸기"
                 className="px-3 py-1.5 rounded-full border text-xs font-semibold bg-white text-toss-text border-toss-border"
               >
@@ -591,6 +626,7 @@ export default function Home() {
                     onClick={() => {
                       setMorningConfirmed(true);
                       setEditingMorningTask(false);
+                      trackEvent('checkin_confirm', { goal });
                       setToast('시작했어요! 저녁에 저장하면 점수가 올라요.');
                       window.setTimeout(() => setToast(null), 2200);
                     }}
@@ -667,7 +703,11 @@ export default function Home() {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => setCheckoutResult('done')}
+                        onClick={() => {
+                          setCheckoutResult('done');
+                          setFailureReason('');
+                          void onSubmitCheckoutWithAd('done');
+                        }}
                         aria-pressed={checkoutResult === 'done'}
                         className={`py-3 rounded-xl border text-base font-bold ${
                           checkoutResult === 'done'
@@ -690,6 +730,7 @@ export default function Home() {
                         😓 아직 못했어요
                       </button>
                     </div>
+                    <p className="mt-2 text-[11px] text-toss-sub">완료는 원탭 저장됩니다. 미완료는 이유 1개 선택 후 저장됩니다.</p>
                   </div>
 
                   {checkoutResult === 'not_done' && (
@@ -728,7 +769,9 @@ export default function Home() {
 
                   <button
                     type="button"
-                    onClick={onSubmitCheckoutWithAd}
+                    onClick={() => {
+                      void onSubmitCheckoutWithAd();
+                    }}
                     disabled={!checkoutResult || (checkoutResult === 'not_done' && !failureReason)}
                     className="mt-4 w-full py-4 rounded-xl bg-toss-blue text-white text-base font-extrabold shadow-[0_10px_24px_rgba(49,130,246,0.35)] disabled:opacity-50"
                   >
@@ -790,12 +833,12 @@ export default function Home() {
       {showIntro && (
         <div className="fixed inset-0 z-[60] bg-black/45 flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-2xl bg-white border border-toss-border p-5">
-            <p className="text-lg font-bold text-toss-text">처음이죠? 아주 쉬워요</p>
-            <p className="text-sm text-toss-sub mt-2">하루에 2번만 누르면 됩니다.</p>
+            <p className="text-lg font-bold text-toss-text">3초 사용법</p>
+            <p className="text-sm text-toss-sub mt-2">이것만 기억하면 끝나요.</p>
             <div className="mt-4 space-y-2 text-sm text-toss-text">
-              <p>1) 아침: 오늘 할 일 1개 적기</p>
-              <p>2) 저녁: 다 했는지 누르기</p>
-              <p>3) 저장하면 점수 올라가기</p>
+              <p>1) 아침에 1개 적기</p>
+              <p>2) 저녁에 완료 누르기</p>
+              <p>3) 저장하고 끝내기</p>
             </div>
             <div className="mt-4 p-3 rounded-xl bg-toss-bg border border-toss-border">
               <p className="text-xs text-toss-sub">핵심만 기억하세요</p>
@@ -807,14 +850,14 @@ export default function Home() {
                 onClick={closeIntro}
                 className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
               >
-                다시 안 볼래요
+                닫기
               </button>
               <button
                 type="button"
                 onClick={closeIntro}
                 className="py-2.5 rounded-xl bg-toss-blue text-white text-sm font-semibold"
               >
-                시작할래요
+                바로 시작
               </button>
             </div>
           </div>
