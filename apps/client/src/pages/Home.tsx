@@ -29,7 +29,8 @@ type EventName =
   | 'intro_close'
   | 'copy_variant_exposed'
   | 'level_promoted'
-  | 'reserve_tomorrow';
+  | 'reserve_tomorrow'
+  | 'milestone_badge_unlock';
 
 const GOAL_LABEL: Record<GoalType, string> = {
   work: '업무',
@@ -133,6 +134,17 @@ function getLevelStyle(level: 'BRONZE' | 'SILVER' | 'GOLD') {
     title: 'text-amber-700',
     next: '시작이 반이에요. 내일도 1개만 완료해요.',
   };
+}
+
+function getDailyRewardCopy(dayKey: string) {
+  const seeds = [
+    '깜짝 보상: 내일 시작 마찰 -20%',
+    '깜짝 보상: 오늘의 집중력 +1',
+    '깜짝 보상: 루틴 유지 확률 +12%',
+    '깜짝 보상: 내일 실행 저항 -1',
+  ];
+  const n = Number(dayKey.split('-').join(''));
+  return seeds[n % seeds.length];
 }
 
 export default function Home() {
@@ -273,6 +285,13 @@ export default function Home() {
   }, [history]);
 
   const score = Math.min(100, Math.round(weeklyRate * 0.8 + streakDays * 4));
+  const unlockedBadges = useMemo(() => {
+    const list: string[] = [];
+    if (streakDays >= 1) list.push('첫 저장');
+    if (streakDays >= 3) list.push('3일 연속');
+    if (streakDays >= 7) list.push('7일 연속');
+    return list;
+  }, [streakDays]);
   const hour = new Date().getHours();
   const isMorningSlot = hour < 15;
   const slotLabel = isMorningSlot ? '출근 전 체크인 시간' : '퇴근 후 체크아웃 시간';
@@ -398,6 +417,9 @@ export default function Home() {
     if (completed && prevLevel !== nextLevel) {
       setPromotion({ from: prevLevel, to: nextLevel });
       trackEvent('level_promoted', { from: prevLevel, to: nextLevel });
+    }
+    if (completed && (nextStreak === 1 || nextStreak === 3 || nextStreak === 7)) {
+      trackEvent('milestone_badge_unlock', { streak: nextStreak });
     }
     setWow({
       score: nextScore,
@@ -672,6 +694,25 @@ export default function Home() {
                 />
               </div>
               <p className="text-xs text-toss-sub mt-2">현재 {Math.min(7, streakDays)}/7일</p>
+            </div>
+            <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
+              <p className="text-xs text-toss-sub">배지 진열장</p>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {['첫 저장', '3일 연속', '7일 연속'].map((badge) => {
+                  const active = unlockedBadges.includes(badge);
+                  return (
+                    <div
+                      key={badge}
+                      className={`rounded-xl border px-2 py-2 text-center text-xs font-semibold ${
+                        active ? 'bg-yellow-50 border-yellow-200 text-yellow-800' : 'bg-white border-toss-border text-toss-sub'
+                      }`}
+                    >
+                      {active ? '🏅 ' : '🔒 '}
+                      {badge}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             {streakDays >= 7 && (
               <div className="mt-3 p-3 rounded-xl bg-yellow-50 border border-yellow-200">
@@ -976,8 +1017,8 @@ export default function Home() {
       )}
 
       {wow && (
-        <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white border border-toss-border p-5">
+        <div className="fixed inset-0 z-[70] bg-black/55 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-gradient-to-b from-white to-blue-50 border border-toss-border p-5 shadow-2xl">
             {(() => {
               const style = getLevelStyle(wow.level);
               return (
@@ -1008,6 +1049,12 @@ export default function Home() {
                       <p className="text-lg font-bold text-toss-text">{wow.weeklyRate}%</p>
                     </div>
                   </div>
+                  {wow.completed && (
+                    <div className="mt-3 p-3 rounded-xl bg-white border border-yellow-200">
+                      <p className="text-xs text-yellow-700">오늘의 깜짝 리워드</p>
+                      <p className="text-sm font-bold text-yellow-800 mt-1">{getDailyRewardCopy(todayKey)}</p>
+                    </div>
+                  )}
                 </>
               );
             })()}
@@ -1018,6 +1065,11 @@ export default function Home() {
                 {wow.completed ? '내일도 같은 시간에 1개만 끝내요.' : '내일은 3분짜리 쉬운 1개부터 시작해요.'}
               </p>
             </div>
+            {wow.completed && (
+              <p className="mt-2 text-xs text-toss-sub">
+                {streakDays >= 7 ? '지금 최고 구간이에요. 7일 루프를 유지해요.' : `다음 배지까지 ${streakDays < 1 ? 1 : streakDays < 3 ? 3 - streakDays : 7 - streakDays}일`}
+              </p>
+            )}
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
