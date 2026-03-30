@@ -225,33 +225,64 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center p-4 sm:p-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold text-toss-text mt-4 mb-2 text-center">오늘1개완료</h1>
-        <p className="text-toss-text text-base font-medium text-center">오늘 “1개”를 끝내는 확률을 올려요</p>
-        <p className="text-toss-sub text-sm mt-1 mb-3 text-center">
-          {todayKey} · {reminders.morning}/{reminders.evening} 리마인드
-        </p>
+    <div className="min-h-screen bg-white flex flex-col items-center p-4 sm:p-6 pt-[calc(4.5rem+env(safe-area-inset-top))] pb-[calc(7rem+env(safe-area-inset-bottom))]">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur border-b border-toss-border">
+        <div className="mx-auto max-w-md px-4 sm:px-6 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+            <img
+              src="/brand-logo.png"
+              alt="오늘1개완료 로고"
+              width={28}
+              height={28}
+              className="w-7 h-7 rounded-lg border border-toss-border bg-white object-cover"
+              loading="eager"
+              decoding="async"
+            />
+              <span className="text-sm font-semibold text-toss-text truncate">오늘1개완료</span>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowWeekly(false)}
+                aria-label="오늘 루프 보기"
+                className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${
+                  !showWeekly ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white text-toss-text border-toss-border'
+                }`}
+              >
+                오늘
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowWeekly(true)}
+                aria-label="주간 리포트 보기"
+                className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${
+                  showWeekly ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white text-toss-text border-toss-border'
+                }`}
+              >
+                주간
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <div className="mb-4 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setShowWeekly(false)}
-            className={`py-2.5 rounded-xl border text-sm font-semibold ${
-              !showWeekly ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white text-toss-text border-toss-border'
-            }`}
-          >
-            오늘 루프
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowWeekly(true)}
-            className={`py-2.5 rounded-xl border text-sm font-semibold ${
-              showWeekly ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white text-toss-text border-toss-border'
-            }`}
-          >
-            주간 리포트
-          </button>
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full mx-auto">
+        <div className="mt-2 mb-4 p-4 rounded-2xl bg-toss-bg border border-toss-border">
+          <p className="text-sm font-semibold text-toss-text">오늘의 목표는 단 하나</p>
+          <p className="text-xs text-toss-sub mt-1">체크인 30초 → 체크아웃 60초로 “오늘 1개 완료”를 만듭니다.</p>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="text-left">
+              <p className="text-xs text-toss-sub">오늘</p>
+              <p className="text-sm font-semibold text-toss-text">{todayKey}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-toss-sub">리마인드</p>
+              <p className="text-sm font-semibold text-toss-text">
+                {reminders.morning} / {reminders.evening}
+              </p>
+            </div>
+          </div>
         </div>
 
         {showWeekly ? (
@@ -355,6 +386,7 @@ export default function Home() {
                 onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
                 className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
                 placeholder="오늘 꼭 끝낼 1개를 적어보세요."
+                aria-label="오늘의 1개 입력"
               />
               <div className="mt-2 flex justify-between items-center">
                 <button
@@ -393,6 +425,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setCheckoutResult('done')}
+                      aria-pressed={checkoutResult === 'done'}
                       className={`py-2.5 rounded-xl border text-sm font-medium ${
                         checkoutResult === 'done'
                           ? 'bg-emerald-500 text-white border-emerald-500'
@@ -404,6 +437,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setCheckoutResult('not_done')}
+                      aria-pressed={checkoutResult === 'not_done'}
                       className={`py-2.5 rounded-xl border text-sm font-medium ${
                         checkoutResult === 'not_done'
                           ? 'bg-rose-500 text-white border-rose-500'
