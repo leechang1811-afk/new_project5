@@ -39,6 +39,7 @@ type EventName =
   | 'intro_close'
   | 'level_promoted'
   | 'reserve_tomorrow'
+  | 'reset_today_routine'
   | 'milestone_badge_unlock'
   | 'new_record';
 
@@ -205,6 +206,8 @@ export default function Home() {
   const [pickerRoutine, setPickerRoutine] = useState('');
   const [pickerCustomRoutine, setPickerCustomRoutine] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
+  /** 설정에서 연 롤모델 피커 — 오늘 완료 저장 후에는 내일 적용 분기에 사용 */
+  const [pickerLaunchedFromSettings, setPickerLaunchedFromSettings] = useState(false);
   /** 내일 예약: 오늘 완료한 미션 문장 스냅샷(이전과 똑같이 진행) */
   const missionForReserveRef = useRef('');
   /** 미션 수정 화면: 취소 시 복원용 */
@@ -351,6 +354,12 @@ export default function Home() {
   useEffect(() => {
     if (lastCheckoutSavedDay) {
       localStorage.setItem('commute-last-checkout-saved-day', lastCheckoutSavedDay);
+    } else {
+      try {
+        localStorage.removeItem('commute-last-checkout-saved-day');
+      } catch {
+        // ignore
+      }
     }
   }, [lastCheckoutSavedDay]);
 
@@ -656,11 +665,16 @@ export default function Home() {
     setShowIntro(false);
     setPickerMode('start_today');
     setReserveKeepSameTomorrow(false);
+    setPickerLaunchedFromSettings(false);
     goToTodayTab();
     trackEvent('intro_close');
   };
 
-  const openRoleModelPicker = (mode: 'start_today' | 'reserve_tomorrow' = 'start_today') => {
+  const openRoleModelPicker = (
+    mode: 'start_today' | 'reserve_tomorrow' = 'start_today',
+    opts?: { fromSettings?: boolean },
+  ) => {
+    setPickerLaunchedFromSettings(opts?.fromSettings ?? false);
     setShowSettings(false);
     setPickerMode(mode);
     if (mode === 'start_today') {
@@ -740,6 +754,36 @@ export default function Home() {
         ? (missionForReserveRef.current || '').trim() || routineDefault
         : routineDefault;
 
+    const todayKeyForDefer = kstDayKey();
+    const deferRoleToTomorrow =
+      pickerMode === 'start_today' &&
+      pickerLaunchedFromSettings &&
+      lastCheckoutSavedDay === todayKeyForDefer;
+
+    if (deferRoleToTomorrow) {
+      try {
+        localStorage.setItem(
+          'commute-tomorrow-reservation',
+          JSON.stringify({
+            forDay: nextDay,
+            celebrityId: pickerCelebrity,
+            customRoleModelName: pickerCelebrity === 'other' ? pickerOtherName.trim() : '',
+            morningTask: clampText(routine, 80),
+          }),
+        );
+      } catch {
+        // ignore
+      }
+      setPickerLaunchedFromSettings(false);
+      setReserveKeepSameTomorrow(false);
+      closeIntro();
+      setShowSettings(true);
+      setToast('선택한 롤모델·미션은 내일부터 적용됩니다.');
+      window.setTimeout(() => setToast(null), 2200);
+      trackEvent('reserve_tomorrow', { deferredFromSettings: true });
+      return;
+    }
+
     if (pickerMode === 'reserve_tomorrow') {
       if (pickerCelebrity === 'other') {
         setCustomRoleModelName(pickerOtherName.trim());
@@ -781,9 +825,42 @@ export default function Home() {
     setShowRewriteBack(false);
     setCheckoutResult(null);
     setFailureReason('');
+    setPickerLaunchedFromSettings(false);
     closeIntro();
     setToast(`${profile.name} 루틴으로 시작했어요.`);
     window.setTimeout(() => setToast(null), 2200);
+  };
+
+  /** 설정: 오늘 미션·완료 저장만 되돌리고 다시 진행 가능하게 */
+  const resetTodayRoutine = () => {
+    if (
+      !window.confirm(
+        '오늘의 미션·완료 상태를 초기화할까요? 오늘 저장한 기록은 되돌아가고, 다시 저장할 수 있어요.',
+      )
+    ) {
+      return;
+    }
+    const today = kstDayKey();
+    if (lastCheckoutSavedDay === today) {
+      setHistory((h) => (h.length > 0 ? h.slice(0, -1) : h));
+    }
+    setLastCheckoutSavedDay(null);
+    setCheckoutOutcomeToday(null);
+    try {
+      localStorage.removeItem('commute-checkout-outcome-for-day');
+    } catch {
+      // ignore
+    }
+    setMorningConfirmed(false);
+    setEditingMorningTask(true);
+    setMorningTask('');
+    setCheckoutResult(null);
+    setFailureReason('');
+    setShowRewriteBack(false);
+    setWow(null);
+    setToast('오늘 루틴을 초기화했어요.');
+    window.setTimeout(() => setToast(null), 2200);
+    trackEvent('reset_today_routine');
   };
 
   const reserveTomorrow = () => {
@@ -1030,7 +1107,7 @@ export default function Home() {
               </p>
               <button
                 type="button"
-                onClick={() => openRoleModelPicker()}
+                onClick={() => openRoleModelPicker('start_today', { fromSettings: true })}
                 className="mt-2 py-2 px-3 rounded-lg border border-toss-border bg-white text-xs font-semibold text-toss-text"
               >
                 롤모델/미션 다시 고르기
@@ -1060,6 +1137,19 @@ export default function Home() {
                   />
                 </label>
               </div>
+            </div>
+
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={resetTodayRoutine}
+                className="w-full py-3 rounded-xl border border-rose-200 bg-rose-50 text-sm font-semibold text-rose-800"
+              >
+                오늘 루틴 초기화하기
+              </button>
+              <p className="text-[11px] text-toss-sub mt-2 leading-relaxed">
+                오늘의 미션·완료 저장만 되돌립니다. 내일 예약·롤모델 사진은 그대로예요.
+              </p>
             </div>
 
             <div className="mt-4 p-3 rounded-xl bg-white border border-toss-border">
@@ -1536,6 +1626,15 @@ export default function Home() {
                 {'롤모델 선택하기 > 롤모델 루틴 1개 선택하기 > 시작'}
               </p>
             )}
+
+            {pickerLaunchedFromSettings &&
+              pickerMode === 'start_today' &&
+              lastCheckoutSavedDay === kstDayKey() && (
+                <p className="mt-3 text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 leading-relaxed text-center">
+                  오늘은 이미 완료를 저장했어요. 여기서 고르면{' '}
+                  <span className="font-semibold">내일부터 적용</span>됩니다.
+                </p>
+              )}
 
             {pickerMode === 'reserve_tomorrow' && (
               <button
