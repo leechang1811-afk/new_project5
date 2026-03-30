@@ -14,7 +14,7 @@ export default function ScreenshotCombo() {
         className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden"
         style={{ height: 524 }}
       >
-        <h1 className="text-xl font-bold text-toss-text mb-2 leading-tight">오늘1개완료</h1>
+        <h1 className="text-xl font-bold text-toss-text mb-2 leading-tight">오늘 1개만 완료</h1>
         <p className="text-toss-text text-sm mb-1 font-medium">하루 1개 완료를 돕는 실행 루틴</p>
         <p className="text-toss-sub text-xs mb-3 leading-relaxed">아침 체크인 30초 · 저녁 체크아웃 60초</p>
 
