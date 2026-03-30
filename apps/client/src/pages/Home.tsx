@@ -505,40 +505,75 @@ export default function Home() {
                 {!morningConfirmed ? '오늘 할 일 1개를 적고 시작해요.' : '완료/미완료를 누르고 저장해요.'}
               </p>
 
-              {!editingMorningTask && morningConfirmed ? (
-                <div className="p-3 rounded-xl bg-toss-bg border border-toss-border">
-                  <p className="text-xs text-toss-sub">지금 할 일</p>
-                  <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
+              {!morningConfirmed ? (
+                <>
+                  <textarea
+                    value={morningTask}
+                    onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
+                    className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
+                    placeholder="예) 숙제 1개 끝내기 / 10분 걷기"
+                    aria-label="오늘의 1개 입력"
+                  />
+                  <div className="mt-2 flex justify-between items-center">
                     <button
                       type="button"
-                      onClick={() => setEditingMorningTask(true)}
-                      className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                      onClick={() => setMorningTask(PRESET_TASKS[goal])}
+                      className="text-sm text-toss-blue font-medium"
                     >
-                      수정하기
+                      예시 넣기
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMorningConfirmed(false);
-                        setEditingMorningTask(true);
-                      }}
-                      className="py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700"
-                    >
-                      다시 적기
-                    </button>
+                    <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
                   </div>
-                </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMorningConfirmed(true);
+                      setEditingMorningTask(false);
+                      setToast('시작했어요! 저녁에 저장하면 점수가 올라요.');
+                      window.setTimeout(() => setToast(null), 2200);
+                    }}
+                    disabled={!morningTask.trim()}
+                    className="mt-3 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
+                  >
+                    시작하기
+                  </button>
+                </>
               ) : (
                 <>
-                  {!morningConfirmed ? (
+                  <div className="mb-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
+                    <p className="text-xs text-toss-sub">내가 적은 할 일</p>
+                    <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingMorningTask(true)}
+                        className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                      >
+                        할 일 바꾸기
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMorningConfirmed(false);
+                          setEditingMorningTask(true);
+                          setCheckoutResult(null);
+                          setFailureReason('');
+                        }}
+                        className="py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700"
+                      >
+                        다시 적기
+                      </button>
+                    </div>
+                  </div>
+
+                  {editingMorningTask ? (
                     <>
                       <textarea
                         value={morningTask}
                         onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
                         className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
                         placeholder="예) 숙제 1개 끝내기 / 10분 걷기"
-                        aria-label="오늘의 1개 입력"
+                        aria-label="오늘의 1개 다시 입력"
                       />
                       <div className="mt-2 flex justify-between items-center">
                         <button
@@ -553,23 +588,18 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => {
-                          setMorningConfirmed(true);
                           setEditingMorningTask(false);
-                          setToast('체크인 완료. 저녁에 저장하면 점수가 올라요.');
-                          window.setTimeout(() => setToast(null), 2200);
+                          setToast('바꿨어요. 이제 완료/미완료를 누르세요.');
+                          window.setTimeout(() => setToast(null), 2000);
                         }}
                         disabled={!morningTask.trim()}
                         className="mt-3 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
                       >
-                        시작하기
+                        바꾸기 완료
                       </button>
                     </>
                   ) : (
                     <>
-                      <div className="mb-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
-                        <p className="text-xs text-toss-sub">내가 적은 할 일</p>
-                        <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
-                      </div>
                       <p className="text-sm text-toss-sub mb-2">다 했나요?</p>
                       <div className="grid grid-cols-2 gap-2">
                         <button
