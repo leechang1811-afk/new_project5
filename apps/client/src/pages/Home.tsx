@@ -174,14 +174,14 @@ export default function Home() {
   }, [isMorningSlot, morningConfirmed]);
 
   const statusPill = useMemo(() => {
-    if (!morningConfirmed) return { label: '체크인 필요', tone: 'bg-amber-50 text-amber-700 border-amber-200' };
-    if (morningConfirmed && isMorningSlot) return { label: '체크인 완료', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
-    return { label: '체크아웃 시간', tone: 'bg-toss-blue/5 text-toss-blue border-toss-blue/20' };
+    if (!morningConfirmed) return { label: '지금: 체크인', tone: 'bg-amber-50 text-amber-700 border-amber-200' };
+    if (morningConfirmed && isMorningSlot) return { label: '오늘: 체크인 완료', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    return { label: '지금: 체크아웃', tone: 'bg-toss-blue/5 text-toss-blue border-toss-blue/20' };
   }, [isMorningSlot, morningConfirmed]);
 
   const morningTaskSummary = useMemo(() => {
     const t = morningTask.trim();
-    if (!t) return '아직 “오늘의 1개”가 없어요.';
+    if (!t) return '아직 비어 있어요. (오늘 딱 1개만)';
     return t.length > 48 ? `${t.slice(0, 48)}…` : t;
   }, [morningTask]);
 
@@ -220,19 +220,19 @@ export default function Home() {
       // 저녁 결과 저장 전 전면광고: 당일 첫 체크아웃은 생략(이탈 방지)
       const skip = isFirstCheckoutToday();
       if (!skip) {
-        setToast('잠시 후 결과를 저장할게요.');
+        setToast('잠시 후 결과를 보여드릴게요.');
         await adsService.showInterstitial();
       }
     } catch {
       // ignore
     }
     onSubmitCheckout();
-    setToast('저장 완료! 오늘 점수가 반영됐어요.');
+    setToast('저장 완료. 오늘 기록이 반영됐어요.');
     window.setTimeout(() => setToast(null), 2200);
   };
 
   const copyShare = async () => {
-    const text = `오늘1개완료 오늘의 실행력 점수 ${score}점 · 연속 ${streakDays}일 · 주간 실행률 ${weeklyRate}%\n${window.location.origin}`;
+    const text = `오늘1개완료 · 점수 ${score}점 · 연속 ${streakDays}일 · 주간 ${weeklyRate}%\n${window.location.origin}`;
     try {
       await navigator.clipboard.writeText(text);
       setToast('공유 문구를 복사했어요.');
@@ -290,8 +290,8 @@ export default function Home() {
         <div className="mt-2 mb-4 p-4 rounded-2xl bg-toss-bg border border-toss-border">
           <div className="flex items-start justify-between gap-3">
             <div className="text-left">
-              <p className="text-sm font-semibold text-toss-text">오늘 1개 완료 루프</p>
-              <p className="text-xs text-toss-sub mt-1">{todayKey} · {reminders.morning}/{reminders.evening}</p>
+              <p className="text-sm font-semibold text-toss-text">오늘 1개만 완료하기</p>
+              <p className="text-xs text-toss-sub mt-1">{todayKey} · 리마인드 {reminders.morning}/{reminders.evening}</p>
             </div>
             <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-semibold ${statusPill.tone}`}>
               {statusPill.label}
@@ -300,13 +300,16 @@ export default function Home() {
           <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
             <p className="text-xs text-toss-sub">오늘의 1개</p>
             <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
+            {!morningConfirmed && (
+              <p className="text-xs text-toss-sub mt-2">지금 30초만 쓰면, 저녁에 점수가 올라요.</p>
+            )}
           </div>
         </div>
 
         {showWeekly ? (
           <section className="mb-4 p-4 rounded-2xl bg-toss-bg border border-toss-border">
             <p className="text-sm font-semibold text-toss-text">이번 주 리포트</p>
-            <p className="text-xs text-toss-sub mt-1">“짧게 자주”가 이 앱의 전부예요.</p>
+            <p className="text-xs text-toss-sub mt-1">완료한 날만 파랗게 쌓입니다.</p>
             <div className="mt-3">
               <p className="text-xs text-toss-sub mb-2">최근 7일</p>
               <div className="grid grid-cols-7 gap-1.5">
@@ -321,7 +324,7 @@ export default function Home() {
                   );
                 })}
               </div>
-              <p className="text-xs text-toss-sub mt-2">파란 칸이 “결과 저장” 성공한 날이에요.</p>
+              <p className="text-xs text-toss-sub mt-2">파란 칸이 “저장 성공”한 날이에요.</p>
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
               <div className="bg-white rounded-xl p-2.5 border border-toss-border">
@@ -339,7 +342,7 @@ export default function Home() {
             </div>
             <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
               <p className="text-xs text-toss-sub">추천 챌린지</p>
-              <p className="text-sm font-semibold text-toss-text mt-1">7일 연속 “체크아웃” 달성</p>
+              <p className="text-sm font-semibold text-toss-text mt-1">7일 연속 저장하기</p>
               <div className="mt-2 h-2 rounded-full bg-toss-border/60 overflow-hidden">
                 <div
                   className="h-full bg-toss-blue"
@@ -354,7 +357,7 @@ export default function Home() {
                 onClick={copyShare}
                 className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
               >
-                점수 공유(복사)
+                공유 문구 복사
               </button>
               <button
                 type="button"
@@ -368,14 +371,13 @@ export default function Home() {
         ) : (
           <>
             <section className="mb-4 p-4 rounded-2xl bg-toss-blue/5 border border-toss-blue/20 text-left">
-              <p className="text-xs text-toss-sub">현재 타임슬롯</p>
+              <p className="text-xs text-toss-sub">지금 할 일</p>
               <p className="text-sm font-semibold text-toss-text mt-1">{slotLabel}</p>
-              <p className="text-xs text-toss-sub mt-1">오늘의 상태: {morningConfirmed ? '체크인 완료' : '체크인 필요'}</p>
-              <p className="text-xs text-toss-sub mt-1">선택 목표: {GOAL_LABEL[goal]}</p>
+              <p className="text-xs text-toss-sub mt-1">목표: {GOAL_LABEL[goal]}</p>
             </section>
 
             <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
-              <p className="text-sm font-semibold text-toss-text mb-2">1) 목표 선택</p>
+              <p className="text-sm font-semibold text-toss-text mb-2">목표 선택</p>
               <div className="grid grid-cols-2 gap-2">
                 {(Object.keys(GOAL_LABEL) as GoalType[]).map((item) => (
                   <button
@@ -399,10 +401,10 @@ export default function Home() {
             </section>
 
             <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
-              <p className="text-sm font-semibold text-toss-text mb-2">2) 아침 체크인 (30초)</p>
+              <p className="text-sm font-semibold text-toss-text mb-2">체크인 (30초)</p>
               {!editingMorningTask && morningConfirmed ? (
                 <div className="p-3 rounded-xl bg-toss-bg border border-toss-border">
-                  <p className="text-xs text-toss-sub">확정된 오늘의 1개</p>
+                  <p className="text-xs text-toss-sub">확정됨</p>
                   <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <button
@@ -420,7 +422,7 @@ export default function Home() {
                       }}
                       className="py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700"
                     >
-                      오늘 취소
+                      오늘 리셋
                     </button>
                   </div>
                 </div>
@@ -430,7 +432,7 @@ export default function Home() {
                     value={morningTask}
                     onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
                     className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
-                    placeholder="오늘 꼭 끝낼 1개를 적어보세요."
+                    placeholder="예) 결제 서류 1장 제출 / 10분 걷기 / 1페이지 읽기"
                     aria-label="오늘의 1개 입력"
                   />
                   <div className="mt-2 flex justify-between items-center">
@@ -448,32 +450,32 @@ export default function Home() {
                     onClick={() => {
                       setMorningConfirmed(true);
                       setEditingMorningTask(false);
-                      setToast('체크인 완료! 저녁에 결과 저장하면 점수가 올라요.');
+                      setToast('체크인 완료. 저녁에 저장하면 점수가 올라요.');
                       window.setTimeout(() => setToast(null), 2200);
                     }}
                     disabled={!morningTask.trim()}
                     className="mt-3 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
                   >
-                    오늘의 1개 확정하기
+                    체크인 확정
                   </button>
                 </>
               )}
               <p className="mt-2 text-xs text-toss-sub">
-                체크인을 확정하면, 저녁에 “결과 저장”으로 점수가 계산돼요.
+                체크인을 확정해야, 저녁에 저장할 수 있어요.
               </p>
             </section>
 
             <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
-              <p className="text-sm font-semibold text-toss-text mb-2">3) 저녁 체크아웃 (60초)</p>
+              <p className="text-sm font-semibold text-toss-text mb-2">체크아웃 (60초)</p>
               {!morningConfirmed ? (
                 <div className="p-3 rounded-xl bg-toss-bg border border-toss-border">
-                  <p className="text-sm text-toss-text font-semibold">아직 체크인이 없어요</p>
-                  <p className="text-xs text-toss-sub mt-1">오늘의 1개를 먼저 확정하면, 저녁에 점수가 올라갑니다.</p>
+                  <p className="text-sm text-toss-text font-semibold">먼저 체크인을 해주세요</p>
+                  <p className="text-xs text-toss-sub mt-1">체크인을 확정해야 저장/점수가 가능합니다.</p>
                 </div>
               ) : (
                 <>
                   <div className="mb-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
-                    <p className="text-xs text-toss-sub">오늘의 1개</p>
+                    <p className="text-xs text-toss-sub">확정한 1개</p>
                     <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
                   </div>
                   <p className="text-sm text-toss-sub mb-2">오늘의 1개를 완료했나요?</p>
@@ -505,7 +507,7 @@ export default function Home() {
                   </div>
                   {checkoutResult === 'not_done' && (
                     <div className="mt-3">
-                      <p className="text-xs text-toss-sub mb-2">이유를 하나만 선택해 주세요.</p>
+                      <p className="text-xs text-toss-sub mb-2">가장 큰 이유 1개만</p>
                       <div className="flex flex-wrap gap-2">
                         {FAILURE_REASONS.map((reason) => (
                           <button
@@ -533,7 +535,7 @@ export default function Home() {
                           }}
                           className="mt-3 w-full py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
                         >
-                          내일은 더 쉽게 설정하기
+                          내일은 더 쉽게
                         </button>
                       )}
                     </div>
@@ -544,17 +546,17 @@ export default function Home() {
                     disabled={!checkoutResult || (checkoutResult === 'not_done' && !failureReason)}
                     className="mt-4 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
                   >
-                    오늘 결과 저장하고 점수 받기
+                    저장하고 점수 받기
                   </button>
                   <p className="mt-2 text-xs text-toss-sub">
-                    광고가 나올 수 있어요. (실패해도 결과 저장은 항상 됩니다)
+                    광고가 나올 수 있어요. (저장은 항상 됩니다)
                   </p>
                 </>
               )}
             </section>
 
             <section className="mb-5 p-4 rounded-2xl bg-toss-bg border border-toss-border">
-              <p className="text-sm font-semibold text-toss-text mb-2">4) 오늘의 성취 리포트</p>
+              <p className="text-sm font-semibold text-toss-text mb-2">오늘의 성취</p>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="bg-white rounded-xl p-2.5 border border-toss-border">
                   <p className="text-xs text-toss-sub">실행 점수</p>
@@ -570,12 +572,12 @@ export default function Home() {
                 </div>
               </div>
               <p className="mt-3 text-xs text-toss-sub">
-                {failureReason ? nextSuggestion : '오늘도 “1개”에 집중하면, 실행률이 올라갑니다.'}
+                {failureReason ? nextSuggestion : '완벽보다 “완료”가 더 강합니다.'}
               </p>
             </section>
 
             <section className="mb-5 p-4 rounded-2xl border border-toss-border bg-white">
-              <p className="text-sm font-semibold text-toss-text mb-2">리마인드 시간</p>
+              <p className="text-sm font-semibold text-toss-text mb-2">리마인드</p>
               <div className="grid grid-cols-2 gap-3">
                 <label className="text-left">
                   <span className="block text-xs text-toss-sub mb-1">아침</span>
@@ -596,15 +598,12 @@ export default function Home() {
                   />
                 </label>
               </div>
-              <p className="mt-2 text-xs text-toss-sub">
-                앱인토스 푸시는 환경에 따라 제한될 수 있어요. 대신 이 앱은 “시간대 루프”를 화면에서 바로 보여줘요.
-              </p>
               <div className="mt-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
                 <p className="text-xs text-toss-sub">다음 방문 추천</p>
                 <p className="text-sm font-semibold text-toss-text mt-1">
                   아침까지 {minsToMorning != null ? `${minsToMorning}분` : '-'} · 저녁까지 {minsToEvening != null ? `${minsToEvening}분` : '-'}
                 </p>
-                <p className="text-xs text-toss-sub mt-1">오늘은 “체크인 → 체크아웃” 한 번만 완주하면 충분해요.</p>
+                <p className="text-xs text-toss-sub mt-1">오늘은 체크인 → 체크아웃 한 번만 완주하면 충분해요.</p>
               </div>
             </section>
           </>
