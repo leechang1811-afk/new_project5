@@ -75,6 +75,7 @@ export default function Home() {
   const [showWeekly, setShowWeekly] = useState(false);
   const [lastSavedDay, setLastSavedDay] = useState<DayKey>(() => kstDayKey());
   const [toast, setToast] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const storedGoal = localStorage.getItem('commute-goal') as GoalType | null;
@@ -263,6 +264,14 @@ export default function Home() {
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
+                onClick={() => setShowSettings((v) => !v)}
+                aria-label="설정 열기"
+                className="px-3 py-1.5 rounded-full border text-xs font-semibold bg-white text-toss-text border-toss-border"
+              >
+                설정
+              </button>
+              <button
+                type="button"
                 onClick={() => setShowWeekly(false)}
                 aria-label="오늘 루프 보기"
                 className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${
@@ -305,6 +314,77 @@ export default function Home() {
             )}
           </div>
         </div>
+
+        {showSettings && (
+          <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-toss-text">설정</p>
+              <button
+                type="button"
+                onClick={() => setShowSettings(false)}
+                className="text-xs font-semibold text-toss-blue"
+              >
+                닫기
+              </button>
+            </div>
+            <div className="mt-3">
+              <p className="text-xs text-toss-sub mb-2">목표</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.keys(GOAL_LABEL) as GoalType[]).map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => {
+                      setGoal(item);
+                      setMorningTask(PRESET_TASKS[item]);
+                      setEditingMorningTask(true);
+                      setToast(`목표가 “${GOAL_LABEL[item]}”로 바뀌었어요.`);
+                      window.setTimeout(() => setToast(null), 1800);
+                    }}
+                    className={`py-2.5 rounded-xl border text-sm font-medium transition ${
+                      goal === item
+                        ? 'bg-toss-blue text-white border-toss-blue'
+                        : 'bg-white text-toss-text border-toss-border'
+                    }`}
+                  >
+                    {GOAL_LABEL[item]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <p className="text-xs text-toss-sub mb-2">리마인드</p>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-left">
+                  <span className="block text-xs text-toss-sub mb-1">아침</span>
+                  <input
+                    type="time"
+                    value={reminders.morning}
+                    onChange={(e) => setReminders((r) => ({ ...r, morning: e.target.value }))}
+                    className="w-full border border-toss-border rounded-xl px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="text-left">
+                  <span className="block text-xs text-toss-sub mb-1">저녁</span>
+                  <input
+                    type="time"
+                    value={reminders.evening}
+                    onChange={(e) => setReminders((r) => ({ ...r, evening: e.target.value }))}
+                    className="w-full border border-toss-border rounded-xl px-3 py-2 text-sm"
+                  />
+                </label>
+              </div>
+              <div className="mt-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
+                <p className="text-xs text-toss-sub">다음 방문 추천</p>
+                <p className="text-sm font-semibold text-toss-text mt-1">
+                  아침까지 {minsToMorning != null ? `${minsToMorning}분` : '-'} · 저녁까지 {minsToEvening != null ? `${minsToEvening}분` : '-'}
+                </p>
+                <p className="text-xs text-toss-sub mt-1">오늘은 체크인 → 체크아웃 한 번만 완주하면 충분해요.</p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {showWeekly ? (
           <section className="mb-4 p-4 rounded-2xl bg-toss-bg border border-toss-border">
@@ -370,38 +450,15 @@ export default function Home() {
           </section>
         ) : (
           <>
-            <section className="mb-4 p-4 rounded-2xl bg-toss-blue/5 border border-toss-blue/20 text-left">
-              <p className="text-xs text-toss-sub">지금 할 일</p>
-              <p className="text-sm font-semibold text-toss-text mt-1">{slotLabel}</p>
-              <p className="text-xs text-toss-sub mt-1">목표: {GOAL_LABEL[goal]}</p>
-            </section>
-
+            {/* 상태 기반: 체크인/체크아웃 2개 화면만 남김 */}
             <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
-              <p className="text-sm font-semibold text-toss-text mb-2">목표 선택</p>
-              <div className="grid grid-cols-2 gap-2">
-                {(Object.keys(GOAL_LABEL) as GoalType[]).map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => {
-                      setGoal(item);
-                      setMorningTask(PRESET_TASKS[item]);
-                      setEditingMorningTask(true);
-                    }}
-                    className={`py-2.5 rounded-xl border text-sm font-medium transition ${
-                      goal === item
-                        ? 'bg-toss-blue text-white border-toss-blue'
-                        : 'bg-white text-toss-text border-toss-border'
-                    }`}
-                  >
-                    {GOAL_LABEL[item]}
-                  </button>
-                ))}
-              </div>
-            </section>
+              <p className="text-sm font-semibold text-toss-text mb-1">
+                {!morningConfirmed ? '체크인 (30초)' : '체크아웃 (60초)'}
+              </p>
+              <p className="text-xs text-toss-sub mb-3">
+                {!morningConfirmed ? '오늘의 1개를 확정해 주세요.' : '오늘 결과를 저장하면 점수가 반영돼요.'}
+              </p>
 
-            <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
-              <p className="text-sm font-semibold text-toss-text mb-2">체크인 (30초)</p>
               {!editingMorningTask && morningConfirmed ? (
                 <div className="p-3 rounded-xl bg-toss-bg border border-toss-border">
                   <p className="text-xs text-toss-sub">확정됨</p>
@@ -428,129 +485,120 @@ export default function Home() {
                 </div>
               ) : (
                 <>
-                  <textarea
-                    value={morningTask}
-                    onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
-                    className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
-                    placeholder="예) 결제 서류 1장 제출 / 10분 걷기 / 1페이지 읽기"
-                    aria-label="오늘의 1개 입력"
-                  />
-                  <div className="mt-2 flex justify-between items-center">
-                    <button
-                      type="button"
-                      onClick={() => setMorningTask(PRESET_TASKS[goal])}
-                      className="text-sm text-toss-blue font-medium"
-                    >
-                      추천 문구 사용
-                    </button>
-                    <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMorningConfirmed(true);
-                      setEditingMorningTask(false);
-                      setToast('체크인 완료. 저녁에 저장하면 점수가 올라요.');
-                      window.setTimeout(() => setToast(null), 2200);
-                    }}
-                    disabled={!morningTask.trim()}
-                    className="mt-3 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
-                  >
-                    체크인 확정
-                  </button>
-                </>
-              )}
-              <p className="mt-2 text-xs text-toss-sub">
-                체크인을 확정해야, 저녁에 저장할 수 있어요.
-              </p>
-            </section>
-
-            <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
-              <p className="text-sm font-semibold text-toss-text mb-2">체크아웃 (60초)</p>
-              {!morningConfirmed ? (
-                <div className="p-3 rounded-xl bg-toss-bg border border-toss-border">
-                  <p className="text-sm text-toss-text font-semibold">먼저 체크인을 해주세요</p>
-                  <p className="text-xs text-toss-sub mt-1">체크인을 확정해야 저장/점수가 가능합니다.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="mb-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
-                    <p className="text-xs text-toss-sub">확정한 1개</p>
-                    <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
-                  </div>
-                  <p className="text-sm text-toss-sub mb-2">오늘의 1개를 완료했나요?</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setCheckoutResult('done')}
-                      aria-pressed={checkoutResult === 'done'}
-                      className={`py-2.5 rounded-xl border text-sm font-medium ${
-                        checkoutResult === 'done'
-                          ? 'bg-emerald-500 text-white border-emerald-500'
-                          : 'border-toss-border text-toss-text'
-                      }`}
-                    >
-                      완료했어요
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCheckoutResult('not_done')}
-                      aria-pressed={checkoutResult === 'not_done'}
-                      className={`py-2.5 rounded-xl border text-sm font-medium ${
-                        checkoutResult === 'not_done'
-                          ? 'bg-rose-500 text-white border-rose-500'
-                          : 'border-toss-border text-toss-text'
-                      }`}
-                    >
-                      못했어요
-                    </button>
-                  </div>
-                  {checkoutResult === 'not_done' && (
-                    <div className="mt-3">
-                      <p className="text-xs text-toss-sub mb-2">가장 큰 이유 1개만</p>
-                      <div className="flex flex-wrap gap-2">
-                        {FAILURE_REASONS.map((reason) => (
-                          <button
-                            key={reason}
-                            type="button"
-                            onClick={() => setFailureReason(reason)}
-                            className={`px-3 py-1.5 rounded-full border text-xs ${
-                              failureReason === reason
-                                ? 'bg-toss-blue text-white border-toss-blue'
-                                : 'text-toss-sub border-toss-border'
-                            }`}
-                          >
-                            {reason}
-                          </button>
-                        ))}
-                      </div>
-                      <p className="mt-2 text-xs text-toss-sub">{nextSuggestion}</p>
-                      {suggestedNextTask && (
+                  {!morningConfirmed ? (
+                    <>
+                      <textarea
+                        value={morningTask}
+                        onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
+                        className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
+                        placeholder="예) 결제 서류 1장 제출 / 10분 걷기 / 1페이지 읽기"
+                        aria-label="오늘의 1개 입력"
+                      />
+                      <div className="mt-2 flex justify-between items-center">
                         <button
                           type="button"
-                          onClick={() => {
-                            setMorningTask((t) => clampText(t ? `${t} · ${suggestedNextTask}` : suggestedNextTask, 80));
-                            setToast('내일용 “더 쉬운 1개”를 준비했어요.');
-                            window.setTimeout(() => setToast(null), 2000);
-                          }}
-                          className="mt-3 w-full py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                          onClick={() => setMorningTask(PRESET_TASKS[goal])}
+                          className="text-sm text-toss-blue font-medium"
                         >
-                          내일은 더 쉽게
+                          추천 문구
                         </button>
+                        <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMorningConfirmed(true);
+                          setEditingMorningTask(false);
+                          setToast('체크인 완료. 저녁에 저장하면 점수가 올라요.');
+                          window.setTimeout(() => setToast(null), 2200);
+                        }}
+                        disabled={!morningTask.trim()}
+                        className="mt-3 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
+                      >
+                        체크인 확정
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="mb-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
+                        <p className="text-xs text-toss-sub">확정한 1개</p>
+                        <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
+                      </div>
+                      <p className="text-sm text-toss-sub mb-2">완료했나요?</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCheckoutResult('done')}
+                          aria-pressed={checkoutResult === 'done'}
+                          className={`py-2.5 rounded-xl border text-sm font-medium ${
+                            checkoutResult === 'done'
+                              ? 'bg-emerald-500 text-white border-emerald-500'
+                              : 'border-toss-border text-toss-text'
+                          }`}
+                        >
+                          완료
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCheckoutResult('not_done')}
+                          aria-pressed={checkoutResult === 'not_done'}
+                          className={`py-2.5 rounded-xl border text-sm font-medium ${
+                            checkoutResult === 'not_done'
+                              ? 'bg-rose-500 text-white border-rose-500'
+                              : 'border-toss-border text-toss-text'
+                          }`}
+                        >
+                          미완료
+                        </button>
+                      </div>
+
+                      {checkoutResult === 'not_done' && (
+                        <div className="mt-3">
+                          <p className="text-xs text-toss-sub mb-2">가장 큰 이유 1개만</p>
+                          <div className="flex flex-wrap gap-2">
+                            {FAILURE_REASONS.map((reason) => (
+                              <button
+                                key={reason}
+                                type="button"
+                                onClick={() => setFailureReason(reason)}
+                                className={`px-3 py-1.5 rounded-full border text-xs ${
+                                  failureReason === reason
+                                    ? 'bg-toss-blue text-white border-toss-blue'
+                                    : 'text-toss-sub border-toss-border'
+                                }`}
+                              >
+                                {reason}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="mt-2 text-xs text-toss-sub">{nextSuggestion}</p>
+                          {suggestedNextTask && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMorningTask((t) => clampText(t ? `${t} · ${suggestedNextTask}` : suggestedNextTask, 80));
+                                setToast('내일용 “더 쉬운 1개”를 준비했어요.');
+                                window.setTimeout(() => setToast(null), 2000);
+                              }}
+                              className="mt-3 w-full py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                            >
+                              내일은 더 쉽게
+                            </button>
+                          )}
+                        </div>
                       )}
-                    </div>
+
+                      <button
+                        type="button"
+                        onClick={onSubmitCheckoutWithAd}
+                        disabled={!checkoutResult || (checkoutResult === 'not_done' && !failureReason)}
+                        className="mt-4 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
+                      >
+                        저장하고 점수 받기
+                      </button>
+                      <p className="mt-2 text-xs text-toss-sub">광고가 나올 수 있어요. (저장은 항상 됩니다)</p>
+                    </>
                   )}
-                  <button
-                    type="button"
-                    onClick={onSubmitCheckoutWithAd}
-                    disabled={!checkoutResult || (checkoutResult === 'not_done' && !failureReason)}
-                    className="mt-4 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
-                  >
-                    저장하고 점수 받기
-                  </button>
-                  <p className="mt-2 text-xs text-toss-sub">
-                    광고가 나올 수 있어요. (저장은 항상 됩니다)
-                  </p>
                 </>
               )}
             </section>
@@ -576,36 +624,6 @@ export default function Home() {
               </p>
             </section>
 
-            <section className="mb-5 p-4 rounded-2xl border border-toss-border bg-white">
-              <p className="text-sm font-semibold text-toss-text mb-2">리마인드</p>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="text-left">
-                  <span className="block text-xs text-toss-sub mb-1">아침</span>
-                  <input
-                    type="time"
-                    value={reminders.morning}
-                    onChange={(e) => setReminders((r) => ({ ...r, morning: e.target.value }))}
-                    className="w-full border border-toss-border rounded-xl px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="text-left">
-                  <span className="block text-xs text-toss-sub mb-1">저녁</span>
-                  <input
-                    type="time"
-                    value={reminders.evening}
-                    onChange={(e) => setReminders((r) => ({ ...r, evening: e.target.value }))}
-                    className="w-full border border-toss-border rounded-xl px-3 py-2 text-sm"
-                  />
-                </label>
-              </div>
-              <div className="mt-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
-                <p className="text-xs text-toss-sub">다음 방문 추천</p>
-                <p className="text-sm font-semibold text-toss-text mt-1">
-                  아침까지 {minsToMorning != null ? `${minsToMorning}분` : '-'} · 저녁까지 {minsToEvening != null ? `${minsToEvening}분` : '-'}
-                </p>
-                <p className="text-xs text-toss-sub mt-1">오늘은 체크인 → 체크아웃 한 번만 완주하면 충분해요.</p>
-              </div>
-            </section>
           </>
         )}
       </motion.div>
