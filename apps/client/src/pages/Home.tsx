@@ -1128,28 +1128,47 @@ export default function Home() {
             <p className="text-sm text-toss-sub mt-1 text-center">초등학생도 쉽게: 사람 고르기 → 1미션 선택 → 시작</p>
 
             <div className="mt-4">
-              <p className="text-xs text-toss-sub mb-2">1) 닮고 싶은 사람</p>
-              <div className="max-h-40 overflow-auto space-y-2 pr-1">
-                {pickerList.map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setPickerCelebrity(id)}
-                    className={`w-full p-3 rounded-xl border text-left ${
-                      pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
-                    }`}
-                  >
-                    <p className="text-sm font-semibold">{CELEBRITIES[id].name}</p>
-                    <p className={`text-xs mt-0.5 ${pickerCelebrity === id ? 'text-blue-50' : 'text-toss-sub'}`}>
-                      {CELEBRITIES[id].oneLine}
-                    </p>
-                  </button>
-                ))}
+              <p className="text-xs text-toss-sub mb-2">사람 찾기</p>
+              <input
+                type="text"
+                value={pickerSearch}
+                onChange={(e) => setPickerSearch(e.target.value)}
+                placeholder="이름 검색 (예: 손흥민, 아이유)"
+                className="w-full border border-toss-border rounded-xl px-3 py-2.5 text-sm"
+              />
+            </div>
+
+            <div className="mt-4">
+              <p className="text-xs text-toss-sub mb-2">나의 롤모델 선택하기</p>
+              <div className="max-h-44 overflow-auto pr-1">
+                <div className="grid grid-cols-3 gap-2">
+                  {pickerList.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setPickerCelebrity(id)}
+                      className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
+                        pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
+                      }`}
+                    >
+                      <p className="text-sm font-semibold leading-tight line-clamp-2">{CELEBRITIES[id].name}</p>
+                      <p
+                        className={`text-[10px] mt-1 leading-snug line-clamp-2 ${
+                          pickerCelebrity === id ? 'text-blue-50' : 'text-toss-sub'
+                        }`}
+                      >
+                        {CELEBRITIES[id].oneLine}
+                      </p>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             <div className="mt-4">
-              <p className="text-xs text-toss-sub mb-2">2) 오늘 루틴 1개 선택</p>
+              <p className="text-xs text-toss-sub mb-2">
+                {CELEBRITIES[pickerCelebrity].name}의 루틴 1개 선택하기
+              </p>
               <div className="space-y-2">
                 {CELEBRITIES[pickerCelebrity].routines.map((r) => (
                   <button
@@ -1179,8 +1198,11 @@ export default function Home() {
             </div>
 
             <div className="mt-4 p-3 rounded-xl bg-toss-bg border border-toss-border">
-              <p className="text-xs text-toss-sub">3) 사진 업로드 (선택)</p>
-              <div className="mt-2 flex items-center gap-3">
+              <p className="text-xs text-toss-sub font-medium">롤모델 사진 업로드하기 (선택사항)</p>
+              <p className="text-[11px] text-toss-sub mt-1.5 leading-relaxed">
+                루틴 달성 시, 축하 메시지에 롤모델 사진이 함께 나옵니다.
+              </p>
+              <div className="mt-3 flex items-center gap-3">
                 {celebrityPhotos[pickerCelebrity] ? (
                   <img
                     src={celebrityPhotos[pickerCelebrity]}
@@ -1202,17 +1224,6 @@ export default function Home() {
                   />
                 </label>
               </div>
-            </div>
-
-            <div className="mt-4">
-              <p className="text-xs text-toss-sub mb-1">사람 찾기</p>
-              <input
-                type="text"
-                value={pickerSearch}
-                onChange={(e) => setPickerSearch(e.target.value)}
-                placeholder="이름 검색 (예: 손흥민, 아이유)"
-                className="w-full border border-toss-border rounded-xl px-3 py-2.5 text-sm"
-              />
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2">
