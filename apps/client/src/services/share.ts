@@ -10,13 +10,13 @@ export interface ShareResultData {
 }
 
 const APP_URL = typeof window !== 'undefined' ? window.location.origin : '';
-const APP_TITLE = '오늘1개완료';
+const APP_TITLE = '오늘 딱 1개만 완료';
 
 function getShareText(data: ShareResultData): string {
   if (data.isChampion) {
     return `👑 오늘 실행력 상위 0.1% · 실행 점수 ${data.runScore.toLocaleString()}점`;
   }
-  return `오늘1개완료 실행 점수 상위 ${data.percentileTop}% · ${data.runScore.toLocaleString()}점`;
+  return `오늘 딱 1개만 완료 · 점수 상위 ${data.percentileTop}% · ${data.runScore.toLocaleString()}점`;
 }
 
 export function getShareUrl(percentile?: number): string {
@@ -29,7 +29,7 @@ export function getShareUrl(percentile?: number): string {
 
 /** 상위 N% 공유용 - 친구가 링크 클릭 시 ?p=N으로 유입 */
 export function getShareTextPercentile(percentileTop: number): string {
-  return `오늘1개완료 실행 점수 상위 ${percentileTop}%! 🏆 너도 해봐!`;
+  return `오늘 딱 1개만 완료 · 점수 상위 ${percentileTop}%! 🏆 너도 해봐!`;
 }
 
 /** Load Kakao SDK script */

@@ -253,7 +253,7 @@ export default function Home() {
   };
 
   const copyShare = async () => {
-    const text = `오늘1개완료 · 점수 ${score}점 · 연속 ${streakDays}일 · 주간 ${weeklyRate}%\n${window.location.origin}`;
+    const text = `오늘 딱 1개만 완료 · 점수 ${score}점 · 연속 ${streakDays}일 · 주간 ${weeklyRate}%\n${window.location.origin}`;
     try {
       await navigator.clipboard.writeText(text);
       setToast('공유 문구를 복사했어요.');
@@ -283,7 +283,7 @@ export default function Home() {
               ) : (
                 <img
                   src="/app-icon-600x600.png"
-                  alt="오늘1개완료 로고"
+                  alt="오늘 딱 1개만 완료 로고"
                   width={28}
                   height={28}
                   onError={() => setLogoError(true)}
@@ -292,7 +292,7 @@ export default function Home() {
                   decoding="async"
                 />
               )}
-              <span className="text-sm font-semibold text-toss-text truncate">오늘1개완료</span>
+              <span className="text-sm font-semibold text-toss-text truncate">오늘 딱 1개만 완료</span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
