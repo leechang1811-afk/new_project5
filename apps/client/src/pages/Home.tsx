@@ -52,6 +52,15 @@ function minutesUntil(timeHHmm: string, now = new Date()) {
   return Math.round(diff / 60_000);
 }
 
+function formatRemaining(minutes: number | null) {
+  if (minutes == null) return '-';
+  if (minutes < 60) return `${minutes}분`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (m === 0) return `${h}시간`;
+  return `${h}시간 ${m}분`;
+}
+
 function isFirstCheckoutToday(): boolean {
   const key = 'commute-first-checkout-date';
   const today = kstDayKey();
@@ -76,6 +85,7 @@ export default function Home() {
   const [lastSavedDay, setLastSavedDay] = useState<DayKey>(() => kstDayKey());
   const [toast, setToast] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
 
   useEffect(() => {
     const storedGoal = localStorage.getItem('commute-goal') as GoalType | null;
@@ -106,6 +116,9 @@ export default function Home() {
     if (storedLastSavedDay) setLastSavedDay(storedLastSavedDay);
     // 기본은 입력 가능 상태로 두되, 이미 체크인 완료면 요약 모드로 시작
     if (storedConfirmed === 'true') setEditingMorningTask(false);
+    if (localStorage.getItem('todayone-intro-seen') !== 'true') {
+      setShowIntro(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -244,6 +257,11 @@ export default function Home() {
     }
   };
 
+  const closeIntro = () => {
+    localStorage.setItem('todayone-intro-seen', 'true');
+    setShowIntro(false);
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col items-center p-4 sm:p-6 pt-[calc(4.5rem+env(safe-area-inset-top))] pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <div className="fixed top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur border-b border-toss-border">
@@ -378,7 +396,7 @@ export default function Home() {
               <div className="mt-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
                 <p className="text-xs text-toss-sub">다음 방문 추천</p>
                 <p className="text-sm font-semibold text-toss-text mt-1">
-                  아침까지 {minsToMorning != null ? `${minsToMorning}분` : '-'} · 저녁까지 {minsToEvening != null ? `${minsToEvening}분` : '-'}
+                  다음 아침까지 {formatRemaining(minsToMorning)} · 다음 저녁까지 {formatRemaining(minsToEvening)}
                 </p>
                 <p className="text-xs text-toss-sub mt-1">오늘은 체크인 → 체크아웃 한 번만 완주하면 충분해요.</p>
               </div>
@@ -637,6 +655,40 @@ export default function Home() {
           <div className="mx-auto max-w-md">
             <div className="rounded-xl bg-toss-text text-white text-sm px-4 py-3 shadow-lg">
               {toast}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showIntro && (
+        <div className="fixed inset-0 z-[60] bg-black/45 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white border border-toss-border p-5">
+            <p className="text-lg font-bold text-toss-text">처음이시군요. 20초만 볼게요</p>
+            <p className="text-sm text-toss-sub mt-2">이 앱은 하루 2번만 하면 됩니다.</p>
+            <div className="mt-4 space-y-2 text-sm text-toss-text">
+              <p>1) 아침 30초: 오늘 할 1개를 적고 체크인</p>
+              <p>2) 저녁 60초: 완료/미완료를 체크하고 저장</p>
+              <p>3) 저장하면 점수와 연속일이 올라갑니다</p>
+            </div>
+            <div className="mt-4 p-3 rounded-xl bg-toss-bg border border-toss-border">
+              <p className="text-xs text-toss-sub">핵심만 기억하세요</p>
+              <p className="text-sm font-semibold text-toss-text mt-1">오늘은 딱 1개만 완료하면 성공입니다.</p>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={closeIntro}
+                className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+              >
+                다시 안 보기
+              </button>
+              <button
+                type="button"
+                onClick={closeIntro}
+                className="py-2.5 rounded-xl bg-toss-blue text-white text-sm font-semibold"
+              >
+                바로 시작
+              </button>
             </div>
           </div>
         </div>
