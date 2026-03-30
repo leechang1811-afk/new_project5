@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import BannerAd from '../components/BannerAd';
+import { adsService } from '../services/ads';
 
 type GoalType = 'work' | 'health' | 'study' | 'relationship';
 type ResultType = 'done' | 'not_done';
@@ -39,6 +40,29 @@ function clampText(s: string, max = 80) {
   return s.length > max ? s.slice(0, max) : s;
 }
 
+function minutesUntil(timeHHmm: string, now = new Date()) {
+  const [hh, mm] = timeHHmm.split(':').map((v) => Number(v));
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+  const utc = now.getTime() + now.getTimezoneOffset() * 60_000;
+  const kstNow = new Date(utc + 9 * 60 * 60_000);
+  const target = new Date(kstNow);
+  target.setHours(hh, mm, 0, 0);
+  let diff = target.getTime() - kstNow.getTime();
+  if (diff < 0) diff += 24 * 60 * 60_000;
+  return Math.round(diff / 60_000);
+}
+
+function isFirstCheckoutToday(): boolean {
+  const key = 'commute-first-checkout-date';
+  const today = kstDayKey();
+  const stored = localStorage.getItem(key);
+  if (stored !== today) {
+    localStorage.setItem(key, today);
+    return true;
+  }
+  return false;
+}
+
 export default function Home() {
   const [goal, setGoal] = useState<GoalType>('work');
   const [morningTask, setMorningTask] = useState('');
@@ -49,6 +73,7 @@ export default function Home() {
   const [reminders, setReminders] = useState(() => DEFAULT_REMINDERS);
   const [showWeekly, setShowWeekly] = useState(false);
   const [lastSavedDay, setLastSavedDay] = useState<DayKey>(() => kstDayKey());
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     const storedGoal = localStorage.getItem('commute-goal') as GoalType | null;
@@ -152,6 +177,17 @@ export default function Home() {
     return '완벽보다 “완료”가 더 강합니다.';
   }, [failureReason]);
 
+  const suggestedNextTask = useMemo(() => {
+    if (failureReason === '시간 부족') return '10분만: 첫 단계만 끝내기';
+    if (failureReason === '피곤함') return '3분만: 시작 버튼만 누르기';
+    if (failureReason === '우선순위 밀림') return '가장 먼저 1개: 출근 직후 5분';
+    if (failureReason === '생각보다 어려움') return '첫 단추 1개: 자료 1개만 열기';
+    return '';
+  }, [failureReason]);
+
+  const minsToMorning = useMemo(() => minutesUntil(reminders.morning), [reminders.morning, lastSavedDay]);
+  const minsToEvening = useMemo(() => minutesUntil(reminders.evening), [reminders.evening, lastSavedDay]);
+
   const onSubmitCheckout = () => {
     if (!checkoutResult) return;
     if (!morningConfirmed) return;
@@ -160,6 +196,32 @@ export default function Home() {
     setCheckoutResult(null);
     setFailureReason('');
     setMorningConfirmed(false); // consume the day loop; user comes back next day.
+  };
+
+  const onSubmitCheckoutWithAd = async () => {
+    if (!checkoutResult || !morningConfirmed) return;
+    try {
+      // 저녁 결과 저장 전 전면광고: 당일 첫 체크아웃은 생략(이탈 방지)
+      const skip = isFirstCheckoutToday();
+      if (!skip) await adsService.showInterstitial();
+    } catch {
+      // ignore
+    }
+    onSubmitCheckout();
+    setToast('저장 완료! 오늘 점수가 반영됐어요.');
+    window.setTimeout(() => setToast(null), 2200);
+  };
+
+  const copyShare = async () => {
+    const text = `퇴근력 오늘의 실행력 점수 ${score}점 · 연속 ${streakDays}일 · 주간 실행률 ${weeklyRate}%\n${window.location.origin}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setToast('공유 문구를 복사했어요.');
+      window.setTimeout(() => setToast(null), 1800);
+    } catch {
+      setToast('복사 권한이 없어요. 길게 눌러 선택해 주세요.');
+      window.setTimeout(() => setToast(null), 2200);
+    }
   };
 
   return (
@@ -196,6 +258,22 @@ export default function Home() {
           <section className="mb-4 p-4 rounded-2xl bg-toss-bg border border-toss-border">
             <p className="text-sm font-semibold text-toss-text">이번 주 리포트</p>
             <p className="text-xs text-toss-sub mt-1">“짧게 자주”가 이 앱의 전부예요.</p>
+            <div className="mt-3">
+              <p className="text-xs text-toss-sub mb-2">최근 7일</p>
+              <div className="grid grid-cols-7 gap-1.5">
+                {Array.from({ length: 7 }).map((_, idx) => {
+                  const v = history.slice(-7)[idx] ?? false;
+                  return (
+                    <div
+                      key={idx}
+                      className={`h-8 rounded-lg border ${v ? 'bg-toss-blue/90 border-toss-blue' : 'bg-white border-toss-border'}`}
+                      aria-label={v ? '완료' : '미완료'}
+                    />
+                  );
+                })}
+              </div>
+              <p className="text-xs text-toss-sub mt-2">파란 칸이 “결과 저장” 성공한 날이에요.</p>
+            </div>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
               <div className="bg-white rounded-xl p-2.5 border border-toss-border">
                 <p className="text-xs text-toss-sub">실행 점수</p>
@@ -220,6 +298,22 @@ export default function Home() {
                 />
               </div>
               <p className="text-xs text-toss-sub mt-2">현재 {Math.min(7, streakDays)}/7일</p>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={copyShare}
+                className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+              >
+                점수 공유(복사)
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowWeekly(false)}
+                className="py-2.5 rounded-xl bg-toss-blue text-white text-sm font-semibold"
+              >
+                오늘 루프로 돌아가기
+              </button>
             </div>
           </section>
         ) : (
@@ -339,11 +433,24 @@ export default function Home() {
                         ))}
                       </div>
                       <p className="mt-2 text-xs text-toss-sub">{nextSuggestion}</p>
+                      {suggestedNextTask && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMorningTask((t) => clampText(t ? `${t} · ${suggestedNextTask}` : suggestedNextTask, 80));
+                            setToast('내일용 “더 쉬운 1개”를 준비했어요.');
+                            window.setTimeout(() => setToast(null), 2000);
+                          }}
+                          className="mt-3 w-full py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                        >
+                          내일은 더 쉽게 설정하기
+                        </button>
+                      )}
                     </div>
                   )}
                   <button
                     type="button"
-                    onClick={onSubmitCheckout}
+                    onClick={onSubmitCheckoutWithAd}
                     disabled={!checkoutResult || (checkoutResult === 'not_done' && !failureReason)}
                     className="mt-4 w-full py-3 rounded-xl bg-toss-blue text-white font-semibold disabled:opacity-50"
                   >
@@ -402,6 +509,13 @@ export default function Home() {
               <p className="mt-2 text-xs text-toss-sub">
                 앱인토스 푸시는 환경에 따라 제한될 수 있어요. 대신 이 앱은 “시간대 루프”를 화면에서 바로 보여줘요.
               </p>
+              <div className="mt-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
+                <p className="text-xs text-toss-sub">다음 방문 추천</p>
+                <p className="text-sm font-semibold text-toss-text mt-1">
+                  아침까지 {minsToMorning != null ? `${minsToMorning}분` : '-'} · 저녁까지 {minsToEvening != null ? `${minsToEvening}분` : '-'}
+                </p>
+                <p className="text-xs text-toss-sub mt-1">오늘은 “체크인 → 체크아웃” 한 번만 완주하면 충분해요.</p>
+              </div>
             </section>
           </>
         )}
@@ -410,6 +524,16 @@ export default function Home() {
       <div className="w-full max-w-md mx-auto mt-auto">
         <BannerAd />
       </div>
+
+      {toast && (
+        <div className="fixed left-0 right-0 bottom-[calc(96px+env(safe-area-inset-bottom)+12px)] z-50 px-4 sm:px-6">
+          <div className="mx-auto max-w-md">
+            <div className="rounded-xl bg-toss-text text-white text-sm px-4 py-3 shadow-lg">
+              {toast}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
