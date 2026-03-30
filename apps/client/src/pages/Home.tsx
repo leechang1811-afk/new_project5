@@ -11,6 +11,7 @@ type WowState = {
   streak: number;
   weeklyRate: number;
   completed: boolean;
+  level: 'BRONZE' | 'SILVER' | 'GOLD';
 };
 
 type DayKey = string; // YYYY-MM-DD (KST)
@@ -97,6 +98,12 @@ function trackEvent(name: EventName, payload?: Record<string, string | number | 
   } catch {
     // ignore analytics storage failures
   }
+}
+
+function getLevel(score: number, streak: number): 'BRONZE' | 'SILVER' | 'GOLD' {
+  if (score >= 80 || streak >= 7) return 'GOLD';
+  if (score >= 50 || streak >= 3) return 'SILVER';
+  return 'BRONZE';
 }
 
 export default function Home() {
@@ -311,6 +318,7 @@ export default function Home() {
     const nextStreak = computeStreak(nextHistory);
     const nextWeekly = computeWeeklyRate(nextHistory);
     const nextScore = Math.min(100, Math.round(nextWeekly * 0.8 + nextStreak * 4));
+    const nextLevel = getLevel(nextScore, nextStreak);
 
     try {
       // 저녁 결과 저장 전 전면광고: 당일 첫 체크아웃은 생략(이탈 방지)
@@ -334,6 +342,7 @@ export default function Home() {
       streak: nextStreak,
       weeklyRate: nextWeekly,
       completed,
+      level: nextLevel,
     });
     setToast('저장 완료! 오늘 성공이 기록됐어요.');
     window.setTimeout(() => setToast(null), 2200);
@@ -735,13 +744,18 @@ export default function Home() {
 
                   {checkoutResult === 'not_done' && (
                     <div className="mt-3">
-                      <p className="text-xs text-toss-sub mb-2">왜 못했는지 1개만 고르기</p>
+                      <p className="text-xs text-toss-sub mb-2">왜 못했는지 1개 선택 (누르면 바로 저장)</p>
                       <div className="flex flex-wrap gap-2">
                         {FAILURE_REASONS.map((reason) => (
                           <button
                             key={reason}
                             type="button"
-                            onClick={() => setFailureReason(reason)}
+                            onClick={() => {
+                              setFailureReason(reason);
+                              window.setTimeout(() => {
+                                void onSubmitCheckoutWithAd('not_done');
+                              }, 0);
+                            }}
                             className={`px-3 py-1.5 rounded-full border text-xs ${
                               failureReason === reason ? 'bg-toss-blue text-white border-toss-blue' : 'text-toss-sub border-toss-border'
                             }`}
@@ -878,6 +892,10 @@ export default function Home() {
             </p>
 
             <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5">
+                <p className="text-[11px] text-amber-700">레벨</p>
+                <p className="text-lg font-bold text-amber-800">{wow.level}</p>
+              </div>
               <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
                 <p className="text-[11px] text-toss-sub">점수</p>
                 <p className="text-lg font-bold text-toss-text">{wow.score}</p>
@@ -886,7 +904,7 @@ export default function Home() {
                 <p className="text-[11px] text-toss-sub">연속일</p>
                 <p className="text-lg font-bold text-toss-text">{wow.streak}일</p>
               </div>
-              <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
+              <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5 col-span-3 sm:col-span-1">
                 <p className="text-[11px] text-toss-sub">주간</p>
                 <p className="text-lg font-bold text-toss-text">{wow.weeklyRate}%</p>
               </div>
