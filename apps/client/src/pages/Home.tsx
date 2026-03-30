@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import BannerAd from '../components/BannerAd';
 import {
@@ -6,6 +6,7 @@ import {
   type CelebrityId,
   getProfile,
   PRESET_CELEBRITY_IDS,
+  type PresetCelebrityId,
 } from '../data/celebrities';
 import { adsService } from '../services/ads';
 import { fireMilestoneBurst } from '../utils/confetti';
@@ -195,6 +196,9 @@ export default function Home() {
   const [pickerRoutine, setPickerRoutine] = useState('');
   const [pickerCustomRoutine, setPickerCustomRoutine] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
+  /** 내일 예약: 오늘 완료한 미션 문장 스냅샷(이전과 똑같이 진행) */
+  const missionForReserveRef = useRef('');
+  const [reserveKeepSameTomorrow, setReserveKeepSameTomorrow] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [view, setView] = useState<'today' | 'weekly'>('today');
   const [wow, setWow] = useState<WowState | null>(null);
@@ -436,12 +440,19 @@ export default function Home() {
   const pickerList = useMemo(() => {
     const q = pickerSearch.trim().toLowerCase();
     const all = PRESET_CELEBRITY_IDS;
-    if (!q) return all;
-    return all.filter((id) => {
-      const c = CELEBRITIES[id];
-      return c.name.toLowerCase().includes(q) || c.oneLine.toLowerCase().includes(q);
-    });
-  }, [pickerSearch]);
+    let base: PresetCelebrityId[] = !q
+      ? [...all]
+      : all.filter((id) => {
+          const c = CELEBRITIES[id];
+          return c.name.toLowerCase().includes(q) || c.oneLine.toLowerCase().includes(q);
+        });
+    const selectedPreset: PresetCelebrityId | null =
+      pickerCelebrity !== 'other' ? (pickerCelebrity as PresetCelebrityId) : null;
+    if (selectedPreset && base.includes(selectedPreset)) {
+      base = [selectedPreset, ...base.filter((id) => id !== selectedPreset)];
+    }
+    return base;
+  }, [pickerSearch, pickerCelebrity]);
   const pickerProfile = useMemo(
     () => getProfile(pickerCelebrity, pickerOtherName),
     [pickerCelebrity, pickerOtherName],
@@ -614,11 +625,16 @@ export default function Home() {
     localStorage.setItem('rolemodel-picker-seen', 'true');
     setShowIntro(false);
     setPickerMode('start_today');
+    setReserveKeepSameTomorrow(false);
     trackEvent('intro_close');
   };
 
   const openRoleModelPicker = (mode: 'start_today' | 'reserve_tomorrow' = 'start_today') => {
     setPickerMode(mode);
+    if (mode === 'start_today') {
+      missionForReserveRef.current = '';
+    }
+    setReserveKeepSameTomorrow(false);
     setPickerCelebrity(selectedCelebrity);
     if (selectedCelebrity === 'other') {
       setPickerOtherName(customRoleModelName);
@@ -630,7 +646,11 @@ export default function Home() {
     const dayKeyForSuggestion = mode === 'reserve_tomorrow' ? kstNextDayKey() : kstDayKey();
     const suggested = routines[daySeed(dayKeyForSuggestion) % routines.length];
     const mt = morningTask.trim();
+    const todayLine = mt || routines[daySeed(kstDayKey()) % routines.length];
     if (mode === 'reserve_tomorrow') {
+      if (!missionForReserveRef.current.trim()) {
+        missionForReserveRef.current = todayLine;
+      }
       setPickerRoutine(suggested);
       setPickerCustomRoutine('');
     } else if (mt && routines.includes(mt)) {
@@ -647,6 +667,30 @@ export default function Home() {
     setShowIntro(true);
   };
 
+  /** 내일 예약: 오늘과 동일 롤모델·미션으로 폼 채우기 */
+  const applyKeepSameTomorrow = () => {
+    const profile = getProfile(selectedCelebrity, customRoleModelName);
+    const routines = profile.routines;
+    const line = missionForReserveRef.current;
+    setPickerCelebrity(selectedCelebrity);
+    if (selectedCelebrity === 'other') {
+      setPickerOtherName(customRoleModelName);
+    } else {
+      setPickerOtherName('');
+    }
+    if (line && routines.includes(line)) {
+      setPickerRoutine(line);
+      setPickerCustomRoutine('');
+    } else if (line) {
+      setPickerCustomRoutine(line);
+      setPickerRoutine(routines[0] ?? '');
+    } else {
+      setPickerRoutine(routines[0] ?? '');
+      setPickerCustomRoutine('');
+    }
+    setReserveKeepSameTomorrow(true);
+  };
+
   const applyPickerStart = () => {
     if (pickerCelebrity === 'other') {
       const name = pickerOtherName.trim();
@@ -657,8 +701,12 @@ export default function Home() {
       }
     }
     const profile = getProfile(pickerCelebrity, pickerOtherName.trim());
-    const routine = pickerCustomRoutine.trim() || pickerRoutine || profile.routines[0];
     const nextDay = kstNextDayKey();
+    const routineDefault = pickerCustomRoutine.trim() || pickerRoutine || profile.routines[0];
+    const routine =
+      pickerMode === 'reserve_tomorrow' && reserveKeepSameTomorrow
+        ? (missionForReserveRef.current || '').trim() || routineDefault
+        : routineDefault;
 
     if (pickerMode === 'reserve_tomorrow') {
       if (pickerCelebrity === 'other') {
@@ -681,6 +729,7 @@ export default function Home() {
         // ignore
       }
       setMorningTask('');
+      setReserveKeepSameTomorrow(false);
       closeIntro();
       setToast(`${profile.name} 루틴으로 내일(${nextDay}) 미션을 예약했어요.`);
       window.setTimeout(() => setToast(null), 2200);
@@ -705,6 +754,12 @@ export default function Home() {
   };
 
   const reserveTomorrow = () => {
+    const prof = getProfile(selectedCelebrity, customRoleModelName);
+    const rList = prof.routines;
+    const fallbackMission = rList[daySeed(kstDayKey()) % rList.length];
+    const routineSnap =
+      wow?.missionText?.trim() || morningTask.trim() || fallbackMission;
+    missionForReserveRef.current = routineSnap;
     setWow(null);
     openRoleModelPicker('reserve_tomorrow');
   };
@@ -1288,11 +1343,26 @@ export default function Home() {
             <p className="text-lg font-bold text-toss-text text-center">
               {pickerMode === 'reserve_tomorrow' ? '내일 미션 예약하기' : '롤모델부터 고르고 시작해요'}
             </p>
-            <p className="text-sm text-toss-sub mt-1 text-center leading-relaxed">
-              {pickerMode === 'reserve_tomorrow'
-                ? '지금 쓰던 롤모델이 기본으로 선택돼 있어요. 루틴을 눌러 고르거나, 아래에 직접 적을 수 있어요.'
-                : '초등학생도 쉽게: 사람 고르기 → 1미션 선택 → 시작'}
-            </p>
+            {pickerMode === 'reserve_tomorrow' ? (
+              <div className="text-sm text-toss-sub mt-1 text-center leading-relaxed space-y-1">
+                <p>지금 선택한 롤모델이 기본으로 선택되어 있어요.</p>
+                <p>루틴을 눌러 고르거나, 아래에 직접 적을 수 있어요.</p>
+              </div>
+            ) : (
+              <p className="text-sm text-toss-sub mt-1 text-center leading-relaxed">
+                초등학생도 쉽게: 사람 고르기 → 1미션 선택 → 시작
+              </p>
+            )}
+
+            {pickerMode === 'reserve_tomorrow' && (
+              <button
+                type="button"
+                onClick={applyKeepSameTomorrow}
+                className="mt-4 w-full py-3 rounded-xl border-2 border-toss-blue bg-toss-blue/5 text-toss-blue text-sm font-semibold"
+              >
+                이전과 똑같이 진행하기
+              </button>
+            )}
 
             <div className="mt-4">
               <p className="text-xs text-toss-sub mb-2">사람 찾기</p>
@@ -1316,6 +1386,10 @@ export default function Home() {
                       onClick={() => {
                         setPickerCelebrity(id);
                         setPickerOtherName('');
+                        setReserveKeepSameTomorrow(false);
+                        const p = getProfile(id, '');
+                        setPickerRoutine(p.routines[0] ?? '');
+                        setPickerCustomRoutine('');
                       }}
                       className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
                         pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
@@ -1333,7 +1407,10 @@ export default function Home() {
                   ))}
                   <button
                     type="button"
-                    onClick={() => setPickerCelebrity('other')}
+                    onClick={() => {
+                      setPickerCelebrity('other');
+                      setReserveKeepSameTomorrow(false);
+                    }}
                     className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
                       pickerCelebrity === 'other'
                         ? 'bg-toss-blue text-white border-toss-blue'
@@ -1369,6 +1446,7 @@ export default function Home() {
                     onClick={() => {
                       setPickerRoutine(r);
                       setPickerCustomRoutine('');
+                      setReserveKeepSameTomorrow(false);
                     }}
                     className={`w-full p-2.5 rounded-xl border text-sm text-left ${
                       pickerRoutine === r && !pickerCustomRoutine
@@ -1382,7 +1460,10 @@ export default function Home() {
                 <input
                   type="text"
                   value={pickerCustomRoutine}
-                  onChange={(e) => setPickerCustomRoutine(clampText(e.target.value, 80))}
+                  onChange={(e) => {
+                    setPickerCustomRoutine(clampText(e.target.value, 80));
+                    setReserveKeepSameTomorrow(false);
+                  }}
                   placeholder="기타: 미션을 내 말로 직접 쓰기"
                   className="w-full border border-toss-border rounded-xl px-3 py-2.5 text-sm"
                 />
