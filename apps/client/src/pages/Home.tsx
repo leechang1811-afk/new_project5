@@ -1040,7 +1040,7 @@ export default function Home() {
                 onClick={copyShare}
                 className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
               >
-                공유 문구 복사
+                내 미션 성공률 자랑하기
               </button>
               <button
                 type="button"
