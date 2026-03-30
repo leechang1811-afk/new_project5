@@ -194,6 +194,9 @@ export default function Home() {
   /** 「다시 적기」로 1단계 복귀 시, 2단계로 되돌릴 미션 스냅샷 */
   const morningTaskBeforeRewriteRef = useRef('');
   const [showRewriteBack, setShowRewriteBack] = useState(false);
+  /** 할 일 바꾸기: 프리셋 루틴 vs 직접 입력 */
+  const [taskReplaceRoutine, setTaskReplaceRoutine] = useState('');
+  const [taskReplaceCustom, setTaskReplaceCustom] = useState('');
   const [reserveKeepSameTomorrow, setReserveKeepSameTomorrow] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [view, setView] = useState<'today' | 'weekly'>('today');
@@ -1005,7 +1008,7 @@ export default function Home() {
             </div>
 
             <div className="mt-4 p-3 rounded-xl bg-white border border-toss-border">
-              <p className="text-xs text-toss-sub">선택 인물 사진 (축하 모달 표시용)</p>
+              <p className="text-xs text-toss-sub">롤모델 사진(축하 메시지용)</p>
               <div className="mt-2 flex items-center gap-3">
                 {celebrityPhotos[selectedCelebrity] ? (
                   <img
@@ -1030,7 +1033,7 @@ export default function Home() {
                   />
                 </label>
               </div>
-              <p className="text-[11px] text-toss-sub mt-2">완료 저장 후 축하 화면에 이 사진이 함께 나와요.</p>
+              <p className="text-[11px] text-toss-sub mt-2">완료 저장 후 축하 메시지 화면에 함께 표시돼요.</p>
             </div>
           </section>
         )}
@@ -1209,6 +1212,18 @@ export default function Home() {
                         type="button"
                         onClick={() => {
                           morningTaskEditSnapshotRef.current = morningTask;
+                          const rList = activeProfile.routines;
+                          const m = morningTask.trim();
+                          if (m && rList.includes(m)) {
+                            setTaskReplaceRoutine(m);
+                            setTaskReplaceCustom('');
+                          } else if (m) {
+                            setTaskReplaceCustom(m);
+                            setTaskReplaceRoutine(rList[0] ?? '');
+                          } else {
+                            setTaskReplaceRoutine(rList[0] ?? '');
+                            setTaskReplaceCustom('');
+                          }
                           setEditingMorningTask(true);
                         }}
                         className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
@@ -1233,16 +1248,40 @@ export default function Home() {
                   </div>
 
                   {editingMorningTask && (
-                    <>
-                      <textarea
-                        value={morningTask}
-                        onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
-                        className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
-                        placeholder={`${activeProfile.name} 루틴 예: ${todayMission}`}
-                        aria-label="오늘의 1개 다시 입력"
-                      />
-                      <div className="mt-2 flex justify-end">
-                        <span className="text-xs text-toss-sub">{morningTask.length}/80</span>
+                    <div className="mt-3 p-3 rounded-xl border border-toss-border bg-white">
+                      <p className="text-sm font-semibold text-toss-text">
+                        {activeProfile.name}의 루틴 1개 선택하기
+                      </p>
+                      <p className="text-[10px] text-toss-sub leading-relaxed mt-1.5 mb-2">
+                        {activeProfile.mediaNote}
+                      </p>
+                      <div className="space-y-2">
+                        {activeProfile.routines.map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => {
+                              setTaskReplaceRoutine(r);
+                              setTaskReplaceCustom('');
+                            }}
+                            className={`w-full p-2.5 rounded-xl border text-sm text-left ${
+                              taskReplaceRoutine === r && !taskReplaceCustom.trim()
+                                ? 'bg-toss-blue/10 border-toss-blue text-toss-text'
+                                : 'bg-white border-toss-border text-toss-text'
+                            }`}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                        <input
+                          type="text"
+                          value={taskReplaceCustom}
+                          onChange={(e) => {
+                            setTaskReplaceCustom(clampText(e.target.value, 80));
+                          }}
+                          placeholder="기타: 미션을 내 말로 직접 쓰기"
+                          className="w-full border border-toss-border rounded-xl px-3 py-2.5 text-sm"
+                        />
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         <button
@@ -1251,24 +1290,35 @@ export default function Home() {
                             setMorningTask(morningTaskEditSnapshotRef.current);
                             setEditingMorningTask(false);
                           }}
-                          className="py-3 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                          className="py-3 rounded-xl border border-toss-border bg-toss-bg text-sm font-semibold text-toss-text"
                         >
                           돌아가기
                         </button>
                         <button
                           type="button"
                           onClick={() => {
+                            const line = clampText(
+                              taskReplaceCustom.trim() ||
+                                taskReplaceRoutine ||
+                                activeProfile.routines[0] ||
+                                '',
+                              80,
+                            );
+                            if (!line.trim()) return;
+                            setMorningTask(line);
                             setEditingMorningTask(false);
                             setToast('반영했어요. 완료 여부를 선택해 주세요.');
                             window.setTimeout(() => setToast(null), 2000);
                           }}
-                          disabled={!morningTask.trim()}
+                          disabled={
+                            !(taskReplaceCustom.trim() || taskReplaceRoutine || activeProfile.routines[0])
+                          }
                           className="py-3 rounded-xl bg-toss-blue text-white text-sm font-semibold disabled:opacity-50"
                         >
                           바꾸기 완료
                         </button>
                       </div>
-                    </>
+                    </div>
                   )}
 
                   <div className="mt-3 p-3 rounded-xl border border-toss-blue/20 bg-toss-blue/5">
