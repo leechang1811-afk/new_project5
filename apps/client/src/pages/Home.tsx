@@ -222,6 +222,10 @@ const CELEBRITY_CURATED_AVATAR_PHOTOS: Partial<Record<PresetCelebrityId, string>
   beyonce: '/rolemodels/beyonce-avatar.png',
   taylor_swift: '/rolemodels/taylor-swift-avatar.png',
   messi: '/rolemodels/messi-avatar.png',
+  serena: '/rolemodels/serena-avatar.png',
+  churchill: '/rolemodels/churchill-avatar.png',
+  einstein: '/rolemodels/einstein-avatar.png',
+  king_sejong: '/rolemodels/king-sejong-avatar.png',
 };
 
 function getDefaultCelebrityImage(id: PresetCelebrityId) {
