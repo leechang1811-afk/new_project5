@@ -1697,11 +1697,11 @@ export default function Home() {
                           setPickerRoutine(p.routines[0] ?? '');
                           setPickerCustomRoutine('');
                         }}
-                        className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
+                      className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
                           pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                         }`}
                       >
-                        <p className="text-sm font-semibold leading-tight line-clamp-2">{CELEBRITIES[id].name}</p>
+                      <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                         <p
                           className={`text-[10px] mt-1 leading-snug line-clamp-2 ${
                             pickerCelebrity === id ? 'text-blue-50' : 'text-toss-sub'
@@ -1751,7 +1751,7 @@ export default function Home() {
                                 pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                               }`}
                             >
-                              <p className="text-sm font-semibold leading-tight line-clamp-2">{CELEBRITIES[id].name}</p>
+                              <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                               <p
                                 className={`text-[10px] mt-1 leading-snug line-clamp-2 ${
                                   pickerCelebrity === id ? 'text-blue-50' : 'text-toss-sub'
