@@ -233,6 +233,8 @@ export default function Home() {
   const [pickerLaunchedFromSettings, setPickerLaunchedFromSettings] = useState(false);
   /** 내일 예약: 오늘 완료한 미션 문장 스냅샷(이전과 똑같이 진행) */
   const missionForReserveRef = useRef('');
+  /** 롤모델 선택 모달: 루틴 선택 영역 스크롤링용 */
+  const pickerRoutineRef = useRef<HTMLDivElement | null>(null);
   /** 미션 수정 화면: 취소 시 복원용 */
   const morningTaskEditSnapshotRef = useRef('');
   /** 「다시 적기」로 1단계 복귀 시, 2단계로 되돌릴 미션 스냅샷 */
@@ -742,6 +744,9 @@ export default function Home() {
     }
     setPickerSearch('');
     setShowIntro(true);
+    window.setTimeout(() => {
+      pickerRoutineRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 0);
   };
 
   /** 내일 예약: 오늘과 동일 롤모델·미션으로 폼 채우기 */
@@ -1061,30 +1066,10 @@ export default function Home() {
                     return next;
                   });
                 }}
-                aria-label="설정 바꾸기"
+                aria-label="설정"
                 className="px-3 py-1.5 rounded-full border text-xs font-semibold bg-white text-toss-text border-toss-border"
               >
-                설정 바꾸기
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (checkoutResult !== null) {
-                    setToast('내일부터 체크할 수 있어요.');
-                    window.setTimeout(() => setToast(null), 2200);
-                    return;
-                  }
-                  openRoleModelPicker();
-                }}
-                aria-label="롤모델 선택 열기"
-                aria-disabled={checkoutResult !== null}
-                className={`px-3 py-1.5 rounded-full border text-xs font-semibold border-toss-border ${
-                  checkoutResult !== null
-                    ? 'bg-toss-bg text-toss-sub cursor-not-allowed opacity-60'
-                    : 'bg-white text-toss-text'
-                }`}
-              >
-                롤모델 선택
+                ⚙️ 설정
               </button>
             </div>
           </div>
@@ -1437,16 +1422,16 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => {
-                          morningTaskBeforeRewriteRef.current = morningTask;
-                          setShowRewriteBack(true);
-                          setMorningConfirmed(false);
-                          setEditingMorningTask(false);
-                          setCheckoutResult(null);
-                          setFailureReason('');
+                          if (checkoutResult !== null) {
+                            setToast('내일부터 체크할 수 있어요.');
+                            window.setTimeout(() => setToast(null), 2200);
+                            return;
+                          }
+                          openRoleModelPicker('start_today', { fromSettings: true });
                         }}
-                        className="py-2.5 rounded-xl border border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700"
+                        className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
                       >
-                        다시 적기
+                        롤모델 다시 선택하기
                       </button>
                     </div>
                   </div>
@@ -1838,7 +1823,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4" ref={pickerRoutineRef}>
               <p className="text-xs text-toss-sub mb-2">{pickerProfile.name}의 루틴 1개 선택하기</p>
               {pickerCelebrity === 'other' && (
                 <input
