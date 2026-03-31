@@ -1247,7 +1247,7 @@ export default function Home() {
         </div>
 
         {!showSettings && (
-          <section className="mb-4 p-3 rounded-2xl border border-toss-border bg-white shadow-sm">
+          <section className="mb-3 p-2.5 rounded-2xl border border-toss-border bg-white shadow-sm">
             <p className="text-xs font-semibold text-toss-sub text-center">오늘 진행 상태</p>
             <div className="mt-2 grid grid-cols-3 gap-2 text-center">
               {[
@@ -1286,7 +1286,7 @@ export default function Home() {
               setShowWeekly(false);
               setView('today');
             }}
-            className={`py-2.5 rounded-xl border text-sm font-semibold ${
+            className={`py-3 rounded-xl border text-sm font-semibold ${
               view === 'today' ? 'bg-toss-blue text-white border-toss-blue shadow-[0_8px_20px_rgba(49,130,246,0.25)]' : 'bg-white text-toss-text border-toss-border'
             }`}
           >
@@ -1299,7 +1299,7 @@ export default function Home() {
               setShowWeekly(true);
               setView('weekly');
             }}
-            className={`py-2.5 rounded-xl border text-sm font-semibold ${
+            className={`py-3 rounded-xl border text-sm font-semibold ${
               view === 'weekly' ? 'bg-toss-blue text-white border-toss-blue shadow-[0_8px_20px_rgba(49,130,246,0.25)]' : 'bg-white text-toss-text border-toss-border'
             }`}
           >
@@ -1562,7 +1562,7 @@ export default function Home() {
                   <div className="mb-3 p-3 rounded-xl border border-sky-200 bg-gradient-to-b from-sky-100 to-slate-100">
                     <p className="text-xs text-toss-sub">오늘의 미션</p>
                     <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -1656,9 +1656,9 @@ export default function Home() {
                     </div>
                   )}
 
-                    <div className="mt-3 p-3 rounded-xl border border-toss-blue/20 bg-gradient-to-b from-toss-blue/5 to-white text-center">
+                  <div className="mt-3 p-3 rounded-xl border border-toss-blue/20 bg-gradient-to-b from-toss-blue/5 to-white text-center">
                     <p className="text-sm font-semibold text-toss-text mb-2">완료 체크 (가장 중요)</p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -1738,35 +1738,6 @@ export default function Home() {
             </section>
             )}
 
-            {!showSettings && (
-              <section className="mb-5 p-4 rounded-2xl bg-toss-bg border border-toss-border text-center">
-                <p className="text-sm font-semibold text-toss-text mb-1">오늘 요약</p>
-                <p className="text-xs text-toss-sub mb-3 line-clamp-2">
-                  “{activeRoutineText.length > 40 ? `${activeRoutineText.slice(0, 40)}…` : activeRoutineText}”
-                </p>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                    <p className="text-xs text-toss-sub">점수</p>
-                    <p className="text-lg font-bold text-toss-text">{score}</p>
-                  </div>
-                  <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                    <p className="text-xs text-toss-sub">연속</p>
-                    <p className="text-lg font-bold text-toss-text">{streakDays}일</p>
-                  </div>
-                  <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                    <p className="text-xs text-toss-sub">1개월</p>
-                    <p className="text-lg font-bold text-toss-text">{weeklyRate}%</p>
-                  </div>
-                </div>
-                <p className="mt-3 text-[11px] text-toss-sub leading-relaxed">
-                  점수 = 1개월 실행률×0.8 + 연속일×4 (최대 100). 하루 한 번 저장이면 반영돼요.
-                </p>
-                {failureReason && nextSuggestion && (
-                  <p className="mt-2 text-xs text-toss-sub">{nextSuggestion}</p>
-                )}
-              </section>
-            )}
-
           </>
         )}
       </motion.div>
@@ -1832,6 +1803,15 @@ export default function Home() {
                 {'롤모델 선택하기 > 롤모델 루틴 1개 선택하기 > 시작'}
               </p>
             )}
+            {pickerMode === 'start_today' && (
+              <button
+                type="button"
+                onClick={applyPickerStart}
+                className="mt-3 w-full py-2.5 rounded-xl bg-toss-blue text-white text-sm font-semibold"
+              >
+                20초로 바로 시작하기
+              </button>
+            )}
 
             {pickerLaunchedFromSettings &&
               pickerMode === 'start_today' &&
@@ -1867,7 +1847,7 @@ export default function Home() {
               <p className="text-xs text-toss-sub mb-2">나의 롤모델 선택하기</p>
               <div className="max-h-[min(20rem,52dvh)] overflow-auto pr-1 [contain:layout] [content-visibility:auto]">
                 {pickerSearch.trim() ? (
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {pickerList.map((id) => (
                       <button
                         key={id}
@@ -1912,7 +1892,7 @@ export default function Home() {
                         setPickerCelebrity('other');
                         setReserveKeepSameTomorrow(false);
                       }}
-                      className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
+                      className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center col-span-2 sm:col-span-1 ${
                         pickerCelebrity === 'other'
                           ? 'bg-toss-blue text-white border-toss-blue'
                           : 'bg-white border-toss-border text-toss-text'
@@ -1929,7 +1909,7 @@ export default function Home() {
                     {PRESET_CELEBRITY_GROUPS.map((group) => (
                       <div key={group.label}>
                         <p className="text-xs text-toss-sub mb-2">{group.label}</p>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {group.ids.map((id) => (
                             <button
                               key={id}
@@ -1973,14 +1953,14 @@ export default function Home() {
                     ))}
                     <div>
                       <p className="text-xs text-toss-sub mb-2">기타</p>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         <button
                           type="button"
                           onClick={() => {
                             setPickerCelebrity('other');
                             setReserveKeepSameTomorrow(false);
                           }}
-                          className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
+                          className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center col-span-2 sm:col-span-1 ${
                             pickerCelebrity === 'other'
                               ? 'bg-toss-blue text-white border-toss-blue'
                               : 'bg-white border-toss-border text-toss-text'
