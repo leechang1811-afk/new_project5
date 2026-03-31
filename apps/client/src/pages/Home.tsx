@@ -1560,6 +1560,11 @@ export default function Home() {
                             onClick={() => {
                               setTaskReplaceRoutine(r);
                               setTaskReplaceCustom('');
+                              const line = clampText(r || activeProfile.routines[0] || '', 80);
+                              setMorningTask(line);
+                              setEditingMorningTask(false);
+                              setToast('반영했어요. 완료 여부를 선택해 주세요.');
+                              window.setTimeout(() => setToast(null), 2000);
                             }}
                             className={`w-full p-2.5 rounded-xl border text-sm text-center ${
                               taskReplaceRoutine === r && !taskReplaceCustom.trim()
@@ -1574,13 +1579,16 @@ export default function Home() {
                           type="text"
                           value={taskReplaceCustom}
                           onChange={(e) => {
-                            setTaskReplaceCustom(clampText(e.target.value, 80));
+                            const v = clampText(e.target.value, 80);
+                            setTaskReplaceCustom(v);
+                            setTaskReplaceRoutine('');
+                            setMorningTask(v);
                           }}
                           placeholder="기타: 미션을 내 말로 직접 쓰기"
                           className="w-full border border-toss-border rounded-xl px-3 py-2.5 text-sm"
                         />
                       </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div className="mt-3">
                         <button
                           type="button"
                           onClick={() => {
@@ -1590,29 +1598,6 @@ export default function Home() {
                           className="py-3 rounded-xl border border-toss-border bg-toss-bg text-sm font-semibold text-toss-text"
                         >
                           돌아가기
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const line = clampText(
-                              taskReplaceCustom.trim() ||
-                                taskReplaceRoutine ||
-                                activeProfile.routines[0] ||
-                                '',
-                              80,
-                            );
-                            if (!line.trim()) return;
-                            setMorningTask(line);
-                            setEditingMorningTask(false);
-                            setToast('반영했어요. 완료 여부를 선택해 주세요.');
-                            window.setTimeout(() => setToast(null), 2000);
-                          }}
-                          disabled={
-                            !(taskReplaceCustom.trim() || taskReplaceRoutine || activeProfile.routines[0])
-                          }
-                          className="py-3 rounded-xl bg-toss-blue text-white text-sm font-semibold disabled:opacity-50"
-                        >
-                          바꾸기 완료
                         </button>
                       </div>
                     </div>
@@ -2068,8 +2053,27 @@ export default function Home() {
                       key={r}
                       type="button"
                       onClick={() => {
-                        setWowResetRoutine(r);
-                        setWowResetCustom('');
+                        const line = clampText(r || activeProfile.routines[0] || '', 80);
+                        if (!line.trim()) return;
+                        const nextDay = kstNextDayKey();
+                        try {
+                          localStorage.setItem(
+                            'commute-tomorrow-reservation',
+                            JSON.stringify({
+                              forDay: nextDay,
+                              celebrityId: selectedCelebrity,
+                              customRoleModelName:
+                                selectedCelebrity === 'other' ? customRoleModelName.trim() : '',
+                              morningTask: line,
+                            }),
+                          );
+                        } catch {
+                          // ignore
+                        }
+                        setWowRoutineResetOpen(false);
+                        setToast(`내일(${nextDay}) 미션으로 저장했어요.`);
+                        window.setTimeout(() => setToast(null), 2200);
+                        trackEvent('reserve_tomorrow', { wowRoutineReset: true });
                       }}
                       className={`w-full p-2.5 rounded-xl border text-sm text-left ${
                         wowResetRoutine === r && !wowResetCustom.trim()
@@ -2099,7 +2103,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={applyWowRoutineReset}
-                    disabled={!(wowResetCustom.trim() || wowResetRoutine || activeProfile.routines[0])}
+                    disabled={!wowResetCustom.trim()}
                     className="py-3 rounded-xl bg-toss-blue text-white text-sm font-semibold disabled:opacity-50"
                   >
                     내일 미션으로 저장
