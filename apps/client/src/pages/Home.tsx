@@ -194,7 +194,7 @@ const CELEBRITY_STATIC_PHOTOS: Partial<Record<CelebrityId, string>> = {
   lee_jae_yong: '/rolemodels/___________2026-03-31______4.06.42-f09d01f9-9eae-40e2-8965-9a4e48e04e26.png',
   bezos: '/rolemodels/___________2026-03-31______4.05.51-37517019-7315-4e2b-b5a5-21e7e5303886.png',
   gates: '/rolemodels/___________2026-03-31______4.06.02-dba2c110-7afd-47d8-9168-5e0276aa7892.png',
-  kim_bong_jin: '/rolemodels/___________2026-03-31______4.06.13-b13f3274-73ce-438b-b8a1-5131e31bb687.png',
+  kim_bong_jin: '/rolemodels/___________2026-03-31______4.06.52-0e844e01-60bf-4bb9-bb30-ce3ac9d1d17d.png',
   zuckerberg: '/rolemodels/___________2026-03-31______4.06.07-5e05244f-0b58-47ca-9b84-c217e4953f88.png',
   bang_si_hyuk: '/rolemodels/___________2026-03-31______4.06.17-e646afe4-c1af-4929-82e5-105cb2a3d228.png',
   oprah: '/rolemodels/___________2026-03-31______4.08.58-36f82ba7-ddea-48de-a3f4-9056a5f3649b.png',
@@ -208,7 +208,7 @@ const CELEBRITY_STATIC_PHOTOS: Partial<Record<CelebrityId, string>> = {
   churchill: '/rolemodels/___________2026-03-31______4.06.36-3bc57ba3-b89c-4b0c-9133-10990a09949b.png',
   buffett: '/rolemodels/___________2026-03-31______4.05.57-d51304f2-0a77-4338-8709-7182937670bf.png',
   lee_hae_jin: '/rolemodels/___________2026-03-31______4.06.47-143a4d50-3f4f-4ada-abc9-f1fa4f7e89a6.png',
-  kim_beom_seok: '/rolemodels/___________2026-03-31______4.06.52-0e844e01-60bf-4bb9-bb30-ce3ac9d1d17d.png',
+  kim_beom_seok: '/rolemodels/___________2026-03-31______4.06.13-b13f3274-73ce-438b-b8a1-5131e31bb687.png',
   tim_cook: '/rolemodels/tim-cook-2026-04-01.png',
   yun_dong_ju: '/rolemodels/yun-dong-ju-2026-04-01.png',
   king_sejong: '/rolemodels/king-sejong-2026-04-01.png',
@@ -219,7 +219,7 @@ function getDailyRewardCopy(dayKey: string) {
   const seeds = [
     '내일도 같은 시간에 알림만 켜 두면 기억하기 쉬워요.',
     '미션 문장은 설정에서 언제든 바꿀 수 있어요.',
-    '최근 1개월 실행률이 점수의 큰 비중을 차지합니다.',
+    '최근 1개월 달성률이 핵심 지표입니다.',
     '연속일은 하루에 한 번 저장으로만 올라갑니다.',
   ];
   const n = Number(dayKey.split('-').join(''));
@@ -531,9 +531,8 @@ export default function Home() {
 
   const weeklyRate = useMemo(() => {
     const last30 = history.slice(-HISTORY_WINDOW_DAYS);
-    if (last30.length === 0) return 0;
     const doneCount = last30.filter(Boolean).length;
-    return Math.round((doneCount / last30.length) * 100);
+    return Math.round((doneCount / HISTORY_WINDOW_DAYS) * 100);
   }, [history]);
 
   // 실행점수 = 최근 1개월 실행률(0~100)
@@ -663,9 +662,8 @@ export default function Home() {
 
   const computeWeeklyRate = (arr: boolean[]) => {
     const last30 = arr.slice(-HISTORY_WINDOW_DAYS);
-    if (!last30.length) return 0;
     const done = last30.filter(Boolean).length;
-    return Math.round((done / last30.length) * 100);
+    return Math.round((done / HISTORY_WINDOW_DAYS) * 100);
   };
 
   const onSubmitCheckoutWithAd = async (forcedResult?: ResultType) => {
@@ -752,7 +750,7 @@ export default function Home() {
 
   const copyShare = async () => {
     const missionLine = activeRoutineText.trim();
-    const text = `롤모델따라하기 · ${activeProfile.name} 루틴 · ${missionLine}\n점수 ${score}점 · 연속 ${streakDays}일 · 1개월 ${weeklyRate}%\n${window.location.origin}`;
+    const text = `롤모델따라하기 · ${activeProfile.name} 루틴 · ${missionLine}\n달성률 ${weeklyRate}% · 연속 ${streakDays}일\n${window.location.origin}`;
     try {
       await navigator.clipboard.writeText(text);
       setToast('공유 문구를 복사했어요.');
@@ -1427,17 +1425,13 @@ export default function Home() {
               </div>
               <p className="text-xs text-toss-sub mt-2">파란 칸이 “저장 성공”한 날이에요.</p>
             </div>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                <p className="text-xs text-toss-sub">실행 점수</p>
-                <p className="text-lg font-bold text-toss-text">{score}</p>
-              </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-center">
               <div className="bg-white rounded-xl p-2.5 border border-toss-border">
                 <p className="text-xs text-toss-sub">연속일</p>
                 <p className="text-lg font-bold text-toss-text">{streakDays}일</p>
               </div>
               <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                <p className="text-xs text-toss-sub">1개월 실행률</p>
+                <p className="text-xs text-toss-sub">1개월 달성률</p>
                 <p className="text-lg font-bold text-toss-text">{weeklyRate}%</p>
               </div>
             </div>
@@ -2215,15 +2209,11 @@ export default function Home() {
                       )}
                     </div>
                     <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
-                      <p className="text-[11px] text-toss-sub">점수</p>
-                      <p className="text-lg font-bold text-toss-text">{wow.score}</p>
-                    </div>
-                    <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
                       <p className="text-[11px] text-toss-sub">연속일</p>
                       <p className="text-lg font-bold text-toss-text">{wow.streak}일</p>
                     </div>
-                    <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5 col-span-3 sm:col-span-1">
-                      <p className="text-[11px] text-toss-sub">1개월</p>
+                    <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
+                      <p className="text-[11px] text-toss-sub">1개월 달성률</p>
                       <p className="text-lg font-bold text-toss-text">{wow.weeklyRate}%</p>
                     </div>
                   </div>
@@ -2328,7 +2318,7 @@ export default function Home() {
             <p className="text-sm text-toss-sub mt-2">
               {promotion.from} → <span className="font-bold text-toss-blue">{promotion.to}</span>
             </p>
-            <p className="text-xs text-toss-sub mt-2">점수와 배지는 아래 통계에 반영됩니다.</p>
+            <p className="text-xs text-toss-sub mt-2">달성률과 배지는 아래 통계에 반영됩니다.</p>
             <button
               type="button"
               onClick={() => setPromotion(null)}
