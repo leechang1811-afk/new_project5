@@ -496,6 +496,7 @@ export default function Home() {
     const doneCount = last30.filter(Boolean).length;
     return Math.round((doneCount / HISTORY_WINDOW_DAYS) * 100);
   }, [history]);
+  const completedDaysCount = useMemo(() => history.filter(Boolean).length, [history]);
 
   // 실행점수 = 최근 1개월 실행률(0~100)
   const score = weeklyRate;
@@ -547,6 +548,23 @@ export default function Home() {
       tone: 'bg-amber-50 text-amber-700 border-amber-200',
     };
   }, [weeklyRate, streakDays, activeProfile.name]);
+  const onboardingCoachCopy = useMemo(() => {
+    if (completedDaysCount >= 3) return null;
+    const variant = daySeed(todayKey) % 2;
+    if (completedDaysCount === 0) {
+      return variant === 0
+        ? '첫 3일은 완벽보다 저장이 목표예요. 오늘은 1개만 끝내도 충분합니다.'
+        : '시작 3일은 리듬 만들기 구간입니다. 짧아도 같은 시간에 저장해 보세요.';
+    }
+    if (completedDaysCount === 1) return '좋은 출발입니다. 오늘까지 저장하면 “내 루틴” 감각이 생기기 시작해요.';
+    return '3일차를 채우면 습관 고정이 쉬워집니다. 오늘도 1개만 저장해 보세요.';
+  }, [completedDaysCount, todayKey]);
+  const milestoneWow = useMemo(() => {
+    if (!savedToday) return null;
+    if (streakDays === LEVEL_GOLD_STREAK) return '14일 연속 달성! 이제 닮아감이 생활 패턴으로 굳어집니다.';
+    if (streakDays === LEVEL_SILVER_STREAK) return '7일 연속 달성! 닮아가는 흐름이 눈에 띄게 안정화됐어요.';
+    return null;
+  }, [savedToday, streakDays]);
   const activeRoutineText = useMemo(() => {
     if (lastCheckoutSavedDay === todayKey && completedMissionToday.trim()) {
       return completedMissionToday.trim();
@@ -723,7 +741,7 @@ export default function Home() {
 
   const copyShare = async () => {
     const missionLine = activeRoutineText.trim();
-    const text = `롤모델따라하기 · ${activeProfile.name} 루틴 · ${missionLine}\n달성률 ${weeklyRate}% · 연속 ${streakDays}일\n${window.location.origin}`;
+    const text = `롤모델따라하기 · ${activeProfile.name} 루틴 · ${missionLine}\n달성률 ${weeklyRate}% · 연속 ${streakDays}일 · ${resemblanceStage.label}\n${window.location.origin}`;
     try {
       // 전면광고는 공유 액션에서만 노출
       await adsService.showInterstitial();
@@ -1246,6 +1264,9 @@ export default function Home() {
               <p className="text-[11px] text-toss-sub mt-1">{resemblanceStage.desc}</p>
             </div>
           )}
+          {!showSettings && onboardingCoachCopy && (
+            <p className="text-[11px] text-toss-sub mt-2 leading-relaxed">{onboardingCoachCopy}</p>
+          )}
         </div>
 
         {!showSettings && (
@@ -1276,6 +1297,11 @@ export default function Home() {
                 );
               })}
             </div>
+            {milestoneWow && (
+              <div className="mt-2 rounded-xl border border-toss-blue/30 bg-blue-50 px-2.5 py-2 text-[11px] font-semibold text-blue-700 animate-pulse">
+                {milestoneWow}
+              </div>
+            )}
           </section>
         )}
 
