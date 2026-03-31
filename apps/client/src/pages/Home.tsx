@@ -45,6 +45,10 @@ type EventName =
   | 'new_record';
 
 const FAILURE_REASONS = ['시간 부족', '피곤함', '우선순위 밀림', '생각보다 어려움'];
+const HISTORY_WINDOW_DAYS = 30;
+const LEVEL_SILVER_STREAK = 7;
+const LEVEL_GOLD_STREAK = 14;
+const LEVEL_PLATINUM_STREAK = 21;
 
 function getSuggestedNextTaskForReason(reason: string | undefined): string {
   if (!reason) return '';
@@ -129,10 +133,10 @@ function trackEvent(name: EventName, payload?: Record<string, string | number | 
 }
 
 function getLevel(_score: number, streak: number): 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' {
-  // 레벨 기준: 1>2 연속 3일, 2>3 연속 7일, 3>4 연속 14일
-  if (streak >= 14) return 'PLATINUM';
-  if (streak >= 7) return 'GOLD';
-  if (streak >= 3) return 'SILVER';
+  // 최근 1개월 기준으로 비례 조정된 레벨 임계값
+  if (streak >= LEVEL_PLATINUM_STREAK) return 'PLATINUM';
+  if (streak >= LEVEL_GOLD_STREAK) return 'GOLD';
+  if (streak >= LEVEL_SILVER_STREAK) return 'SILVER';
   return 'BRONZE';
 }
 
@@ -166,9 +170,9 @@ function getLevelStyle(level: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM') {
 }
 
 function getRemainingToNextLevel(level: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM', streak: number) {
-  if (level === 'BRONZE') return Math.max(0, 3 - streak);
-  if (level === 'SILVER') return Math.max(0, 7 - streak);
-  if (level === 'GOLD') return Math.max(0, 14 - streak);
+  if (level === 'BRONZE') return Math.max(0, LEVEL_SILVER_STREAK - streak);
+  if (level === 'SILVER') return Math.max(0, LEVEL_GOLD_STREAK - streak);
+  if (level === 'GOLD') return Math.max(0, LEVEL_PLATINUM_STREAK - streak);
   return 0;
 }
 
@@ -199,7 +203,7 @@ function getDailyRewardCopy(dayKey: string) {
   const seeds = [
     '내일도 같은 시간에 알림만 켜 두면 기억하기 쉬워요.',
     '미션 문장은 설정에서 언제든 바꿀 수 있어요.',
-    '주간 실행률이 점수의 큰 비중을 차지합니다.',
+    '최근 1개월 실행률이 점수의 큰 비중을 차지합니다.',
     '연속일은 하루에 한 번 저장으로만 올라갑니다.',
   ];
   const n = Number(dayKey.split('-').join(''));
@@ -216,11 +220,11 @@ function getWowHeadline(
   celebName: string,
 ) {
   if (level === 'PLATINUM' && weeklyRate >= 90) {
-    return `오늘 미션 완료 · ${celebName} 루틴 · 주간 ${weeklyRate}%`;
+    return `오늘 미션 완료 · ${celebName} 루틴 · 1개월 ${weeklyRate}%`;
   }
   if (level === 'PLATINUM') return `오늘 미션 완료 · ${celebName} 루틴`;
   if (level === 'GOLD' && weeklyRate >= 85) {
-    return `오늘 미션 완료 · ${celebName} 루틴 · 주간 ${weeklyRate}%`;
+    return `오늘 미션 완료 · ${celebName} 루틴 · 1개월 ${weeklyRate}%`;
   }
   if (level === 'GOLD') return `오늘 미션 완료 · ${celebName} 루틴`;
   if (level === 'SILVER') return `오늘 미션 완료 · ${celebName} 루틴`;
@@ -240,7 +244,7 @@ export default function Home() {
     readCheckoutOutcomeForToday(),
   );
   const [failureReason, setFailureReason] = useState('');
-  const [history, setHistory] = useState<boolean[]>([]); // last 14 days completion
+  const [history, setHistory] = useState<boolean[]>([]); // last 30 days completion
   const [reminders, setReminders] = useState(() => DEFAULT_REMINDERS);
   const [showWeekly, setShowWeekly] = useState(false);
   const [lastSavedDay, setLastSavedDay] = useState<DayKey>(() => kstDayKey());
@@ -393,7 +397,7 @@ export default function Home() {
   }, [morningTask]);
 
   useEffect(() => {
-    localStorage.setItem('commute-history', JSON.stringify(history.slice(-14)));
+    localStorage.setItem('commute-history', JSON.stringify(history.slice(-HISTORY_WINDOW_DAYS)));
   }, [history]);
 
   useEffect(() => {
@@ -500,18 +504,18 @@ export default function Home() {
   }, [history]);
 
   const weeklyRate = useMemo(() => {
-    const last7 = history.slice(-7);
-    if (last7.length === 0) return 0;
-    const doneCount = last7.filter(Boolean).length;
-    return Math.round((doneCount / last7.length) * 100);
+    const last30 = history.slice(-HISTORY_WINDOW_DAYS);
+    if (last30.length === 0) return 0;
+    const doneCount = last30.filter(Boolean).length;
+    return Math.round((doneCount / last30.length) * 100);
   }, [history]);
 
   const score = Math.min(100, Math.round(weeklyRate * 0.8 + streakDays * 4));
   const unlockedBadges = useMemo(() => {
     const list: string[] = [];
     if (streakDays >= 1) list.push('첫 저장');
-    if (streakDays >= 3) list.push('3일 연속');
-    if (streakDays >= 7) list.push('7일 연속');
+    if (streakDays >= LEVEL_SILVER_STREAK) list.push('7일 연속');
+    if (streakDays >= LEVEL_GOLD_STREAK) list.push('14일 연속');
     return list;
   }, [streakDays]);
   const hour = new Date().getHours();
@@ -604,7 +608,7 @@ export default function Home() {
     }
     const completed = checkoutResult === 'done';
     const outcome: ResultType = completed ? 'done' : 'not_done';
-    setHistory((prev: boolean[]) => [...prev.slice(-13), completed]);
+    setHistory((prev: boolean[]) => [...prev.slice(-(HISTORY_WINDOW_DAYS - 1)), completed]);
     setLastCheckoutSavedDay(today);
     try {
       localStorage.setItem('commute-checkout-outcome-for-day', JSON.stringify({ day: today, result: outcome }));
@@ -628,10 +632,10 @@ export default function Home() {
   };
 
   const computeWeeklyRate = (arr: boolean[]) => {
-    const last7 = arr.slice(-7);
-    if (!last7.length) return 0;
-    const done = last7.filter(Boolean).length;
-    return Math.round((done / last7.length) * 100);
+    const last30 = arr.slice(-HISTORY_WINDOW_DAYS);
+    if (!last30.length) return 0;
+    const done = last30.filter(Boolean).length;
+    return Math.round((done / last30.length) * 100);
   };
 
   const onSubmitCheckoutWithAd = async (forcedResult?: ResultType) => {
@@ -645,7 +649,7 @@ export default function Home() {
       return;
     }
     const completed = selectedResult === 'done';
-    const nextHistory = [...history.slice(-13), completed];
+    const nextHistory = [...history.slice(-(HISTORY_WINDOW_DAYS - 1)), completed];
     const nextStreak = computeStreak(nextHistory);
     const nextWeekly = computeWeeklyRate(nextHistory);
     const nextScore = Math.min(100, Math.round(nextWeekly * 0.8 + nextStreak * 4));
@@ -685,7 +689,10 @@ export default function Home() {
       fireMilestoneBurst(Math.max(22, Math.min(40, nextStreak + 20)));
       trackEvent('new_record', { streak: nextStreak });
     }
-    if (completed && (nextStreak === 1 || nextStreak === 3 || nextStreak === 7)) {
+    if (
+      completed &&
+      (nextStreak === 1 || nextStreak === LEVEL_SILVER_STREAK || nextStreak === LEVEL_GOLD_STREAK)
+    ) {
       trackEvent('milestone_badge_unlock', { streak: nextStreak });
     }
     setWow({
@@ -705,7 +712,7 @@ export default function Home() {
 
   const copyShare = async () => {
     const missionLine = activeRoutineText.trim();
-    const text = `롤모델따라하기 · ${activeProfile.name} 루틴 · ${missionLine}\n점수 ${score}점 · 연속 ${streakDays}일 · 주간 ${weeklyRate}%\n${window.location.origin}`;
+    const text = `롤모델따라하기 · ${activeProfile.name} 루틴 · ${missionLine}\n점수 ${score}점 · 연속 ${streakDays}일 · 1개월 ${weeklyRate}%\n${window.location.origin}`;
     try {
       await navigator.clipboard.writeText(text);
       setToast('공유 문구를 복사했어요.');
@@ -1342,15 +1349,15 @@ export default function Home() {
 
         {showWeekly ? (
           <section className="mb-4 p-4 rounded-2xl bg-toss-bg border border-toss-border">
-            <p className="text-sm font-semibold text-toss-text">이번 주 리포트</p>
+            <p className="text-sm font-semibold text-toss-text">최근 1개월 리포트</p>
             <p className="text-xs text-toss-sub mt-1">
               완료 저장한 날은 파란 칸으로 표시됩니다.
             </p>
             <div className="mt-3">
-              <p className="text-xs text-toss-sub mb-2">최근 7일</p>
-              <div className="grid grid-cols-7 gap-1.5">
-                {Array.from({ length: 7 }).map((_, idx) => {
-                  const v = history.slice(-7)[idx] ?? false;
+              <p className="text-xs text-toss-sub mb-2">최근 30일</p>
+              <div className="grid grid-cols-10 gap-1.5">
+                {Array.from({ length: HISTORY_WINDOW_DAYS }).map((_, idx) => {
+                  const v = history.slice(-HISTORY_WINDOW_DAYS)[idx] ?? false;
                   return (
                     <div
                       key={idx}
@@ -1372,25 +1379,27 @@ export default function Home() {
                 <p className="text-lg font-bold text-toss-text">{streakDays}일</p>
               </div>
               <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                <p className="text-xs text-toss-sub">주간 실행률</p>
+                <p className="text-xs text-toss-sub">1개월 실행률</p>
                 <p className="text-lg font-bold text-toss-text">{weeklyRate}%</p>
               </div>
             </div>
             <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
               <p className="text-xs text-toss-sub">추천 챌린지</p>
-              <p className="text-sm font-semibold text-toss-text mt-1">7일 연속 저장하기</p>
+              <p className="text-sm font-semibold text-toss-text mt-1">14일 연속 저장하기</p>
               <div className="mt-2 h-2 rounded-full bg-toss-border/60 overflow-hidden">
                 <div
                   className="h-full bg-toss-blue"
-                  style={{ width: `${Math.min(100, Math.round((streakDays / 7) * 100))}%` }}
+                  style={{ width: `${Math.min(100, Math.round((streakDays / LEVEL_GOLD_STREAK) * 100))}%` }}
                 />
               </div>
-              <p className="text-xs text-toss-sub mt-2">현재 {Math.min(7, streakDays)}/7일</p>
+              <p className="text-xs text-toss-sub mt-2">
+                현재 {Math.min(LEVEL_GOLD_STREAK, streakDays)}/{LEVEL_GOLD_STREAK}일
+              </p>
             </div>
             <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
               <p className="text-xs text-toss-sub">배지 진열장</p>
               <div className="mt-2 grid grid-cols-3 gap-2">
-                {['첫 저장', '3일 연속', '7일 연속'].map((badge) => {
+                {['첫 저장', '7일 연속', '14일 연속'].map((badge) => {
                   const active = unlockedBadges.includes(badge);
                   return (
                     <div
@@ -1407,10 +1416,10 @@ export default function Home() {
               </div>
               <p className="mt-2 text-xs text-toss-sub">내 최고 연속 기록: {bestStreak}일</p>
             </div>
-            {streakDays >= 7 && (
+            {streakDays >= LEVEL_GOLD_STREAK && (
               <div className="mt-3 p-3 rounded-xl bg-yellow-50 border border-yellow-200">
                 <p className="text-xs text-yellow-700">보상 카드</p>
-                <p className="text-sm font-bold text-yellow-800 mt-1">7일 연속 달성! 유지 보상 +10</p>
+                <p className="text-sm font-bold text-yellow-800 mt-1">14일 연속 달성! 유지 보상 +10</p>
                 <p className="text-xs text-yellow-700 mt-1">내일도 저장하면 연속일이 이어집니다.</p>
               </div>
             )}
@@ -1506,7 +1515,7 @@ export default function Home() {
                 </>
               ) : (
                 <>
-                  <div className="mb-3 p-3 rounded-xl bg-toss-bg border border-toss-border">
+                  <div className="mb-3 p-3 rounded-xl border border-sky-200 bg-gradient-to-b from-sky-100 to-slate-100">
                     <p className="text-xs text-toss-sub">오늘의 미션</p>
                     <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
                     <div className="mt-3 grid grid-cols-2 gap-2">
@@ -1701,12 +1710,12 @@ export default function Home() {
                     <p className="text-lg font-bold text-toss-text">{streakDays}일</p>
                   </div>
                   <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                    <p className="text-xs text-toss-sub">주간</p>
+                    <p className="text-xs text-toss-sub">1개월</p>
                     <p className="text-lg font-bold text-toss-text">{weeklyRate}%</p>
                   </div>
                 </div>
                 <p className="mt-3 text-[11px] text-toss-sub leading-relaxed">
-                  점수 = 주간 실행률×0.8 + 연속일×4 (최대 100). 하루 한 번 저장이면 반영돼요.
+                  점수 = 1개월 실행률×0.8 + 연속일×4 (최대 100). 하루 한 번 저장이면 반영돼요.
                 </p>
                 {failureReason && nextSuggestion && (
                   <p className="mt-2 text-xs text-toss-sub">{nextSuggestion}</p>
@@ -2149,7 +2158,7 @@ export default function Home() {
                     if (quotes.length === 0) return null;
                     const idx = Math.max(0, wow.streak - 1) % quotes.length;
                     return (
-                      <p className="text-sm text-toss-sub mt-3 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
+                      <p className="text-sm text-toss-text font-semibold mt-3 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
                         “{quotes[idx]}”
                       </p>
                     );
@@ -2172,15 +2181,23 @@ export default function Home() {
                       <p className="text-lg font-bold text-toss-text">{wow.streak}일</p>
                     </div>
                     <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5 col-span-3 sm:col-span-1">
-                      <p className="text-[11px] text-toss-sub">주간</p>
+                      <p className="text-[11px] text-toss-sub">1개월</p>
                       <p className="text-lg font-bold text-toss-text">{wow.weeklyRate}%</p>
                     </div>
                   </div>
                   {wow.completed && (
                     <p className="mt-3 text-xs text-toss-sub text-center">
-                      {wow.level === 'PLATINUM'
-                        ? '이미 최고 단계입니다.'
-                        : `연속 ${getRemainingToNextLevel(wow.level, wow.streak)}번 하면 다음 단계로 넘어갑니다.`}
+                      {(() => {
+                        if (wow.level === 'PLATINUM') return '이미 최고 단계입니다.';
+                        const remain = getRemainingToNextLevel(wow.level, wow.streak);
+                        const nextLabel =
+                          wow.level === 'BRONZE'
+                            ? '실버'
+                            : wow.level === 'SILVER'
+                              ? '골드'
+                              : '플래티넘';
+                        return `연속 ${remain}번 하면 ${nextLabel} 레벨로 올라갑니다.`;
+                      })()}
                     </p>
                   )}
                   {wow.completed && (
@@ -2203,7 +2220,7 @@ export default function Home() {
                 <p className="text-xs text-toss-sub mt-2 text-pretty break-keep max-w-[95%] mx-auto">
                   {streakDays >= 7
                     ? '7일 연속 달성 구간입니다.'
-                    : `다음 배지까지 ${streakDays < 1 ? 1 : streakDays < 3 ? 3 - streakDays : 7 - streakDays}일`}
+                    : `다음 배지까지 ${streakDays < 1 ? 1 : LEVEL_SILVER_STREAK - streakDays}일`}
                 </p>
               )}
             </div>
