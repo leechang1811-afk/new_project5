@@ -216,6 +216,12 @@ const CELEBRITY_CURATED_AVATAR_PHOTOS: Partial<Record<PresetCelebrityId, string>
   bang_si_hyuk: '/rolemodels/bang-si-hyuk-avatar.png',
   lee_hae_jin: '/rolemodels/lee-hae-jin-avatar.png',
   lee_jae_yong: '/rolemodels/lee-jae-yong-avatar.png',
+  oprah: '/rolemodels/oprah-avatar.png',
+  michelle_obama: '/rolemodels/michelle-obama-avatar.png',
+  obama: '/rolemodels/obama-avatar.png',
+  beyonce: '/rolemodels/beyonce-avatar.png',
+  taylor_swift: '/rolemodels/taylor-swift-avatar.png',
+  messi: '/rolemodels/messi-avatar.png',
 };
 
 function getDefaultCelebrityImage(id: PresetCelebrityId) {
