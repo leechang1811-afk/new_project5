@@ -2104,9 +2104,12 @@ export default function Home() {
                   )}
                   <p className="text-sm text-toss-sub mt-3 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
                     {wow.completed
-                      ? celebProfile.quote
-                        ? `“${celebProfile.quote}”`
-                        : style.next
+                      ? (() => {
+                          const quotes = celebProfile.quotes ?? [];
+                          if (quotes.length === 0) return style.next;
+                          const idx = Math.max(0, wow.streak - 1) % quotes.length;
+                          return `“${quotes[idx]}”`;
+                        })()
                       : '내일 다시 미션을 정하면 됩니다.'}
                   </p>
 
