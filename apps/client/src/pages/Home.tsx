@@ -156,26 +156,26 @@ function getLevelStyle(level: 'BRONZE' | 'SILVER' | 'GOLD') {
 }
 
 const CELEBRITY_STATIC_PHOTOS: Partial<Record<CelebrityId, string>> = {
-  jobs: '/assets/___________2026-03-31______4.05.40-b176ce7f-2c75-4820-a3bb-8a27ed773792.png',
-  musk: '/assets/___________2026-03-31______4.05.35-f4f6106c-48bf-42c4-bf5a-ef5084a04496.png',
-  lee_jae_yong: '/assets/___________2026-03-31______4.06.42-f09d01f9-9eae-40e2-8965-9a4e48e04e26.png',
-  bezos: '/assets/___________2026-03-31______4.05.51-37517019-7315-4e2b-b5a5-21e7e5303886.png',
-  gates: '/assets/___________2026-03-31______4.06.02-dba2c110-7afd-47d8-9168-5e0276aa7892.png',
-  kim_bong_jin: '/assets/___________2026-03-31______4.06.13-b13f3274-73ce-438b-b8a1-5131e31bb687.png',
-  zuckerberg: '/assets/___________2026-03-31______4.06.07-5e05244f-0b58-47ca-9b84-c217e4953f88.png',
-  bang_si_hyuk: '/assets/___________2026-03-31______4.06.17-e646afe4-c1af-4929-82e5-105cb2a3d228.png',
-  oprah: '/assets/___________2026-03-31______4.08.58-36f82ba7-ddea-48de-a3f4-9056a5f3649b.png',
-  obama: '/assets/___________2026-03-31______4.09.11-0766c53a-f6b2-426b-ad8a-7c658fdf2aa7.png',
-  taylor_swift: '/assets/___________2026-03-31______4.09.21-182713c1-c6ca-4a56-a8a8-c81001a06db1.png',
-  beyonce: '/assets/___________2026-03-31______4.09.16-50248b1d-ef0b-4405-a836-3d8e0b7b781b.png',
-  michelle_obama: '/assets/___________2026-03-31______4.09.05-199f4b4d-6746-4163-96c1-9b928ca84dcb.png',
-  messi: '/assets/___________2026-03-31______4.06.27-d1b5bcb7-595c-4b74-985e-8367a8875b9c.png',
-  einstein: '/assets/___________2026-03-31______4.06.31-0e68b0e2-8a42-4aa8-9d95-8bbd67a4253a.png',
-  serena: '/assets/___________2026-03-31______4.06.22-66a90f6b-6503-499b-b28f-9652c2657e95.png',
-  churchill: '/assets/___________2026-03-31______4.06.36-3bc57ba3-b89c-4b0c-9133-10990a09949b.png',
-  buffett: '/assets/___________2026-03-31______4.05.57-d51304f2-0a77-4338-8709-7182937670bf.png',
-  lee_hae_jin: '/assets/___________2026-03-31______4.06.47-143a4d50-3f4f-4ada-abc9-f1fa4f7e89a6.png',
-  kim_beom_seok: '/assets/___________2026-03-31______4.06.52-0e844e01-60bf-4bb9-bb30-ce3ac9d1d17d.png',
+  jobs: '/rolemodels/___________2026-03-31______4.05.40-b176ce7f-2c75-4820-a3bb-8a27ed773792.png',
+  musk: '/rolemodels/___________2026-03-31______4.05.35-f4f6106c-48bf-42c4-bf5a-ef5084a04496.png',
+  lee_jae_yong: '/rolemodels/___________2026-03-31______4.06.42-f09d01f9-9eae-40e2-8965-9a4e48e04e26.png',
+  bezos: '/rolemodels/___________2026-03-31______4.05.51-37517019-7315-4e2b-b5a5-21e7e5303886.png',
+  gates: '/rolemodels/___________2026-03-31______4.06.02-dba2c110-7afd-47d8-9168-5e0276aa7892.png',
+  kim_bong_jin: '/rolemodels/___________2026-03-31______4.06.13-b13f3274-73ce-438b-b8a1-5131e31bb687.png',
+  zuckerberg: '/rolemodels/___________2026-03-31______4.06.07-5e05244f-0b58-47ca-9b84-c217e4953f88.png',
+  bang_si_hyuk: '/rolemodels/___________2026-03-31______4.06.17-e646afe4-c1af-4929-82e5-105cb2a3d228.png',
+  oprah: '/rolemodels/___________2026-03-31______4.08.58-36f82ba7-ddea-48de-a3f4-9056a5f3649b.png',
+  obama: '/rolemodels/___________2026-03-31______4.09.11-0766c53a-f6b2-426b-ad8a-7c658fdf2aa7.png',
+  taylor_swift: '/rolemodels/___________2026-03-31______4.09.21-182713c1-c6ca-4a56-a8a8-c81001a06db1.png',
+  beyonce: '/rolemodels/___________2026-03-31______4.09.16-50248b1d-ef0b-4405-a836-3d8e0b7b781b.png',
+  michelle_obama: '/rolemodels/___________2026-03-31______4.09.05-199f4b4d-6746-4163-96c1-9b928ca84dcb.png',
+  messi: '/rolemodels/___________2026-03-31______4.06.27-d1b5bcb7-595c-4b74-985e-8367a8875b9c.png',
+  einstein: '/rolemodels/___________2026-03-31______4.06.31-0e68b0e2-8a42-4aa8-9d95-8bbd67a4253a.png',
+  serena: '/rolemodels/___________2026-03-31______4.06.22-66a90f6b-6503-499b-b28f-9652c2657e95.png',
+  churchill: '/rolemodels/___________2026-03-31______4.06.36-3bc57ba3-b89c-4b0c-9133-10990a09949b.png',
+  buffett: '/rolemodels/___________2026-03-31______4.05.57-d51304f2-0a77-4338-8709-7182937670bf.png',
+  lee_hae_jin: '/rolemodels/___________2026-03-31______4.06.47-143a4d50-3f4f-4ada-abc9-f1fa4f7e89a6.png',
+  kim_beom_seok: '/rolemodels/___________2026-03-31______4.06.52-0e844e01-60bf-4bb9-bb30-ce3ac9d1d17d.png',
 };
 
 function getDailyRewardCopy(dayKey: string) {
@@ -1737,7 +1737,7 @@ export default function Home() {
                         <div className="w-full flex-1 flex flex-col justify-center">
                           <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                         <p
-                          className={`text-[10px] mt-1 leading-snug line-clamp-2 ${
+                          className={`text-[10px] mt-1 leading-snug line-clamp-2 text-center ${
                             pickerCelebrity === id ? 'text-blue-50' : 'text-toss-sub'
                           }`}
                         >
@@ -1799,7 +1799,7 @@ export default function Home() {
                               <div className="w-full flex-1 flex flex-col justify-center">
                                 <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                               <p
-                                className={`text-[10px] mt-1 leading-snug line-clamp-2 ${
+                                className={`text-[10px] mt-1 leading-snug line-clamp-2 text-center ${
                                   pickerCelebrity === id ? 'text-blue-50' : 'text-toss-sub'
                                 }`}
                               >
