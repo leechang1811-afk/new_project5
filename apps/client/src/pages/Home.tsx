@@ -195,7 +195,7 @@ function getSafeAvatarDataUri(name: string) {
   const seed = hashColorSeed(name);
   const hue = seed % 360;
   const initials = getInitials(name);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="hsl(${hue} 70% 88%)"/><stop offset="100%" stop-color="hsl(${(hue + 30) % 360} 70% 78%)"/></linearGradient></defs><rect width="256" height="256" rx="44" fill="url(#g)"/><circle cx="128" cy="96" r="42" fill="rgba(255,255,255,0.55)"/><rect x="56" y="146" width="144" height="74" rx="36" fill="rgba(255,255,255,0.55)"/><text x="128" y="224" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="rgba(20,30,45,0.72)">${initials}</text></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="hsl(${hue} 74% 88%)"/><stop offset="100%" stop-color="hsl(${(hue + 24) % 360} 76% 80%)"/></linearGradient><linearGradient id="shirt" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="hsl(${(hue + 190) % 360} 22% 34%)"/><stop offset="100%" stop-color="hsl(${(hue + 210) % 360} 20% 24%)"/></linearGradient></defs><rect width="256" height="256" rx="52" fill="url(#bg)"/><rect x="18" y="18" width="220" height="220" rx="44" fill="rgba(255,255,255,0.34)"/><ellipse cx="128" cy="222" rx="68" ry="18" fill="rgba(0,0,0,0.12)"/><circle cx="128" cy="92" r="34" fill="#f6d4bf"/><path d="M92 95c4-24 18-39 36-39 18 0 32 15 36 39-8-8-20-13-36-13s-28 5-36 13z" fill="hsl(${(hue + 32) % 360} 10% 34%)"/><path d="M76 196c0-34 24-58 52-58s52 24 52 58v22H76z" fill="url(#shirt)"/><text x="128" y="214" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, Arial, sans-serif" font-size="28" font-weight="700" fill="rgba(255,255,255,0.92)">${initials}</text></svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
@@ -1858,11 +1858,19 @@ export default function Home() {
                           setPickerRoutine(p.routines[0] ?? '');
                           setPickerCustomRoutine('');
                         }}
-                        className={`p-2.5 rounded-xl border text-left min-h-[5.2rem] flex flex-col justify-center items-center ${
+                        className={`p-2.5 rounded-xl border text-left min-h-[9rem] flex flex-col justify-between items-center ${
                           pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                         }`}
                       >
-                        <div className="w-full flex flex-col justify-center">
+                        <div className="w-full flex-1 flex items-center justify-center mb-1">
+                          <img
+                            src={CELEBRITY_SAFE_AVATARS[id]}
+                            alt={`${CELEBRITIES[id].name} 아바타`}
+                            className="w-full max-w-[72px] aspect-square rounded-xl object-cover border border-white/40"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="w-full flex-1 flex flex-col justify-center">
                           <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                         <p
                           className={`text-[10px] mt-1 leading-snug line-clamp-2 text-center ${
@@ -1910,11 +1918,19 @@ export default function Home() {
                                 setPickerRoutine(p.routines[0] ?? '');
                                 setPickerCustomRoutine('');
                               }}
-                              className={`p-2.5 rounded-xl border text-left min-h-[5.2rem] flex flex-col justify-center items-center ${
+                              className={`p-2.5 rounded-xl border text-left min-h-[9rem] flex flex-col justify-between items-center ${
                                 pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                               }`}
                             >
-                              <div className="w-full flex flex-col justify-center">
+                              <div className="w-full flex-1 flex items-center justify-center mb-1">
+                                <img
+                                  src={CELEBRITY_SAFE_AVATARS[id]}
+                                  alt={`${CELEBRITIES[id].name} 아바타`}
+                                  className="w-full max-w-[72px] aspect-square rounded-xl object-cover border border-white/40"
+                                  loading="lazy"
+                                />
+                              </div>
+                              <div className="w-full flex-1 flex flex-col justify-center">
                                 <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                               <p
                                 className={`text-[10px] mt-1 leading-snug line-clamp-2 text-center ${
