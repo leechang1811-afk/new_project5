@@ -177,67 +177,6 @@ function getRemainingToNextLevel(level: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM
   return 0;
 }
 
-function getInitials(name: string) {
-  const normalized = name.trim();
-  if (!normalized) return 'RM';
-  const parts = normalized.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  return normalized.slice(0, 2).toUpperCase();
-}
-
-function hashColorSeed(s: string) {
-  let h = 0;
-  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h;
-}
-
-function getSafeAvatarDataUri(name: string) {
-  const seed = hashColorSeed(name);
-  const hue = seed % 360;
-  const initials = getInitials(name);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f1f3f5"/><stop offset="100%" stop-color="#dfe3e8"/></linearGradient><linearGradient id="suit" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#222831"/><stop offset="100%" stop-color="#11161d"/></linearGradient></defs><rect width="256" height="256" rx="48" fill="url(#bg)"/><circle cx="128" cy="88" r="44" fill="#f0c6a6"/><path d="M84 92c2-26 18-45 44-45s42 19 44 45c-10-10-25-15-44-15s-34 5-44 15z" fill="#8d8f94"/><path d="M88 76c9-18 23-26 40-26 17 0 31 8 40 26-6-2-15-4-40-4s-34 2-40 4z" fill="#9ea1a7"/><rect x="90" y="84" width="32" height="20" rx="7" fill="none" stroke="#4c5664" stroke-width="4"/><rect x="134" y="84" width="32" height="20" rx="7" fill="none" stroke="#4c5664" stroke-width="4"/><rect x="122" y="90" width="12" height="4" rx="2" fill="#4c5664"/><path d="M70 208c0-42 26-68 58-68s58 26 58 68v20H70z" fill="url(#suit)"/><path d="M110 152h36l-18 26z" fill="#f9fafb"/><ellipse cx="128" cy="220" rx="68" ry="14" fill="rgba(0,0,0,0.08)"/><text x="128" y="236" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, Arial, sans-serif" font-size="24" font-weight="700" fill="hsl(${hue} 45% 45%)">${initials}</text></svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
-
-const CELEBRITY_SAFE_AVATARS: Record<PresetCelebrityId, string> = Object.fromEntries(
-  (Object.keys(CELEBRITIES) as PresetCelebrityId[]).map((id) => [id, getSafeAvatarDataUri(CELEBRITIES[id].name)]),
-) as Record<PresetCelebrityId, string>;
-
-const CELEBRITY_CURATED_AVATAR_PHOTOS: Partial<Record<PresetCelebrityId, string>> = {
-  jobs: '/rolemodels/jobs-avatar.png',
-  musk: '/rolemodels/musk-avatar.png',
-  bezos: '/rolemodels/bezos-avatar.png',
-  buffett: '/rolemodels/buffett-avatar.png',
-  gates: '/rolemodels/gates-avatar.png',
-  zuckerberg: '/rolemodels/zuckerberg-avatar.png',
-  tim_cook: '/rolemodels/tim-cook-avatar.png',
-  kim_beom_seok: '/rolemodels/kim-beom-seok-avatar.png',
-  kim_bong_jin: '/rolemodels/kim-bong-jin-avatar.png',
-  bang_si_hyuk: '/rolemodels/bang-si-hyuk-avatar.png',
-  lee_hae_jin: '/rolemodels/lee-hae-jin-avatar.png',
-  lee_jae_yong: '/rolemodels/lee-jae-yong-avatar.png',
-  oprah: '/rolemodels/oprah-avatar.png',
-  michelle_obama: '/rolemodels/michelle-obama-avatar.png',
-  obama: '/rolemodels/obama-avatar.png',
-  beyonce: '/rolemodels/beyonce-avatar.png',
-  taylor_swift: '/rolemodels/taylor-swift-avatar.png',
-  messi: '/rolemodels/messi-avatar.png',
-  serena: '/rolemodels/serena-avatar.png',
-  churchill: '/rolemodels/churchill-avatar.png',
-  einstein: '/rolemodels/einstein-avatar.png',
-  king_sejong: '/rolemodels/king-sejong-avatar.png',
-  yun_dong_ju: '/rolemodels/yun-dong-ju-avatar.png',
-  kim_gu: '/rolemodels/kim-gu-avatar.png',
-};
-
-const TEXT_ONLY_CELEBRITY_IDS = new Set<PresetCelebrityId>(
-  PRESET_CELEBRITY_GROUPS.find((group) => group.label === '연예인·가수')?.ids ?? [],
-);
-
-function getDefaultCelebrityImage(id: PresetCelebrityId) {
-  return CELEBRITY_CURATED_AVATAR_PHOTOS[id] ?? CELEBRITY_SAFE_AVATARS[id];
-}
-
 function getDailyRewardCopy(dayKey: string) {
   const seeds = [
     '내일도 같은 시간에 알림만 켜 두면 기억하기 쉬워요.',
@@ -1913,21 +1852,11 @@ export default function Home() {
                           setPickerRoutine(p.routines[0] ?? '');
                           setPickerCustomRoutine('');
                         }}
-                        className={`p-2.5 rounded-xl border text-left min-h-[9rem] flex flex-col justify-between items-center ${
+                        className={`p-2.5 rounded-xl border text-left min-h-[5.2rem] flex flex-col justify-center items-center ${
                           pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                         }`}
                       >
-                        {!TEXT_ONLY_CELEBRITY_IDS.has(id) && (
-                          <div className="w-full flex-1 flex items-center justify-center mb-1">
-                            <img
-                              src={getDefaultCelebrityImage(id)}
-                              alt={`${CELEBRITIES[id].name} 아바타`}
-                              className="w-full max-w-[72px] aspect-square rounded-xl object-cover border border-white/40"
-                              loading="lazy"
-                            />
-                          </div>
-                        )}
-                        <div className="w-full flex-1 flex flex-col justify-center">
+                        <div className="w-full flex flex-col justify-center">
                           <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                         <p
                           className={`text-[10px] mt-1 leading-snug line-clamp-2 text-center ${
@@ -1975,21 +1904,11 @@ export default function Home() {
                                 setPickerRoutine(p.routines[0] ?? '');
                                 setPickerCustomRoutine('');
                               }}
-                              className={`p-2.5 rounded-xl border text-left min-h-[9rem] flex flex-col justify-between items-center ${
+                              className={`p-2.5 rounded-xl border text-left min-h-[5.2rem] flex flex-col justify-center items-center ${
                                 pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                               }`}
                             >
-                              {!TEXT_ONLY_CELEBRITY_IDS.has(id) && (
-                                <div className="w-full flex-1 flex items-center justify-center mb-1">
-                                  <img
-                                    src={getDefaultCelebrityImage(id)}
-                                    alt={`${CELEBRITIES[id].name} 아바타`}
-                                    className="w-full max-w-[72px] aspect-square rounded-xl object-cover border border-white/40"
-                                    loading="lazy"
-                                  />
-                                </div>
-                              )}
-                              <div className="w-full flex-1 flex flex-col justify-center">
+                              <div className="w-full flex flex-col justify-center">
                                 <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                               <p
                                 className={`text-[10px] mt-1 leading-snug line-clamp-2 text-center ${
@@ -2213,8 +2132,7 @@ export default function Home() {
               const style = getLevelStyle(wow.level);
               const celebProfile = getProfile(selectedCelebrity, customRoleModelName);
               const wowPhoto =
-                celebrityPhotos[selectedCelebrity] ??
-                (selectedCelebrity === 'other' ? null : getDefaultCelebrityImage(selectedCelebrity));
+                celebrityPhotos[selectedCelebrity] ?? null;
               return (
                 <>
                   <p
