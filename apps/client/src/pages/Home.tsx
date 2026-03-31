@@ -1175,7 +1175,7 @@ export default function Home() {
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain [scrollbar-gutter:stable] px-4 sm:px-6">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full pt-3 sm:pt-4 pb-2 sm:pb-3">
         {/* Minimal hero */}
-        <div className="mb-4">
+        <div className="mb-4 rounded-2xl border border-toss-border bg-gradient-to-b from-white to-toss-bg/60 p-4">
           <div className="flex items-center justify-between gap-3">
             <div className="text-left min-w-0">
               <p className="text-xs text-toss-sub">{todayKey}</p>
@@ -1192,11 +1192,11 @@ export default function Home() {
               ? '롤모델과 축하 화면 사진을 이 화면에서 바꿀 수 있어요.'
               : `루틴 : ${activeRoutineText}`}
           </p>
-          <p className="text-xs text-toss-blue/90 mt-2 font-medium leading-relaxed">{resemblanceHint}</p>
+          <p className="text-xs text-toss-blue/90 mt-2 font-semibold leading-relaxed">{resemblanceHint}</p>
         </div>
 
         {!showSettings && (
-          <section className="mb-4 p-3 rounded-2xl border border-toss-border bg-toss-bg">
+          <section className="mb-4 p-3 rounded-2xl border border-toss-border bg-white shadow-sm">
             <p className="text-xs font-semibold text-toss-sub text-center">오늘 진행 상태</p>
             <div className="mt-2 grid grid-cols-3 gap-2 text-center">
               {[
@@ -1236,7 +1236,7 @@ export default function Home() {
               setView('today');
             }}
             className={`py-2.5 rounded-xl border text-sm font-semibold ${
-              view === 'today' ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white text-toss-text border-toss-border'
+              view === 'today' ? 'bg-toss-blue text-white border-toss-blue shadow-[0_8px_20px_rgba(49,130,246,0.25)]' : 'bg-white text-toss-text border-toss-border'
             }`}
           >
             오늘 하기
@@ -1249,7 +1249,7 @@ export default function Home() {
               setView('weekly');
             }}
             className={`py-2.5 rounded-xl border text-sm font-semibold ${
-              view === 'weekly' ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white text-toss-text border-toss-border'
+              view === 'weekly' ? 'bg-toss-blue text-white border-toss-blue shadow-[0_8px_20px_rgba(49,130,246,0.25)]' : 'bg-white text-toss-text border-toss-border'
             }`}
           >
             내 기록 보기
@@ -1257,7 +1257,7 @@ export default function Home() {
         </div>
 
         {showSettings && (
-          <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white text-center">
+          <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white text-center shadow-sm">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-toss-text">설정 바꾸기</p>
               <button
@@ -1434,7 +1434,7 @@ export default function Home() {
         ) : (
           <>
             {!showSettings && (
-            <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white text-center">
+            <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white text-center shadow-sm">
               <p className="text-sm font-semibold text-toss-text mb-1">
                 {!morningConfirmed
                   ? `1) ${activeProfile.name} 루틴 1개 정하기`
@@ -1618,7 +1618,7 @@ export default function Home() {
                     </div>
                   )}
 
-                    <div className="mt-3 p-3 rounded-xl border border-toss-blue/20 bg-toss-blue/5 text-center">
+                    <div className="mt-3 p-3 rounded-xl border border-toss-blue/20 bg-gradient-to-b from-toss-blue/5 to-white text-center">
                     <p className="text-sm font-semibold text-toss-text mb-2">완료 체크 (가장 중요)</p>
                     <div className="grid grid-cols-2 gap-2">
                       <button
@@ -1691,7 +1691,7 @@ export default function Home() {
                       !checkoutResult ||
                       (checkoutResult === 'not_done' && !failureReason.trim())
                     }
-                    className="mt-4 w-full py-4 rounded-xl bg-toss-blue text-white text-base font-extrabold shadow-[0_10px_24px_rgba(49,130,246,0.35)] disabled:opacity-50"
+                    className="mt-4 w-full py-4 rounded-xl bg-toss-blue text-white text-base font-extrabold shadow-[0_10px_24px_rgba(49,130,246,0.35)] disabled:opacity-50 disabled:shadow-none"
                   >
                     {savedToday ? '오늘 결과 저장 완료' : '오늘 결과 저장하기'}
                   </button>
