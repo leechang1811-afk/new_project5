@@ -177,32 +177,31 @@ function getRemainingToNextLevel(level: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM
   return 0;
 }
 
-const CELEBRITY_STATIC_PHOTOS: Partial<Record<CelebrityId, string>> = {
-  jobs: '/rolemodels/___________2026-03-31______4.05.40-b176ce7f-2c75-4820-a3bb-8a27ed773792.png',
-  musk: '/rolemodels/elon-musk-updated-2026-04-01.png',
-  lee_jae_yong: '/rolemodels/___________2026-03-31______4.06.42-f09d01f9-9eae-40e2-8965-9a4e48e04e26.png',
-  bezos: '/rolemodels/___________2026-03-31______4.05.51-37517019-7315-4e2b-b5a5-21e7e5303886.png',
-  gates: '/rolemodels/___________2026-03-31______4.06.02-dba2c110-7afd-47d8-9168-5e0276aa7892.png',
-  kim_bong_jin: '/rolemodels/___________2026-03-31______4.06.52-0e844e01-60bf-4bb9-bb30-ce3ac9d1d17d.png',
-  zuckerberg: '/rolemodels/___________2026-03-31______4.06.07-5e05244f-0b58-47ca-9b84-c217e4953f88.png',
-  bang_si_hyuk: '/rolemodels/___________2026-03-31______4.06.17-e646afe4-c1af-4929-82e5-105cb2a3d228.png',
-  oprah: '/rolemodels/___________2026-03-31______4.08.58-36f82ba7-ddea-48de-a3f4-9056a5f3649b.png',
-  obama: '/rolemodels/___________2026-03-31______4.09.11-0766c53a-f6b2-426b-ad8a-7c658fdf2aa7.png',
-  taylor_swift: '/rolemodels/___________2026-03-31______4.09.21-182713c1-c6ca-4a56-a8a8-c81001a06db1.png',
-  beyonce: '/rolemodels/___________2026-03-31______4.09.16-50248b1d-ef0b-4405-a836-3d8e0b7b781b.png',
-  michelle_obama: '/rolemodels/___________2026-03-31______4.09.05-199f4b4d-6746-4163-96c1-9b928ca84dcb.png',
-  messi: '/rolemodels/___________2026-03-31______4.06.27-d1b5bcb7-595c-4b74-985e-8367a8875b9c.png',
-  einstein: '/rolemodels/___________2026-03-31______4.06.31-0e68b0e2-8a42-4aa8-9d95-8bbd67a4253a.png',
-  serena: '/rolemodels/___________2026-03-31______4.06.22-66a90f6b-6503-499b-b28f-9652c2657e95.png',
-  churchill: '/rolemodels/___________2026-03-31______4.06.36-3bc57ba3-b89c-4b0c-9133-10990a09949b.png',
-  buffett: '/rolemodels/___________2026-03-31______4.05.57-d51304f2-0a77-4338-8709-7182937670bf.png',
-  lee_hae_jin: '/rolemodels/___________2026-03-31______4.06.47-143a4d50-3f4f-4ada-abc9-f1fa4f7e89a6.png',
-  kim_beom_seok: '/rolemodels/___________2026-03-31______4.06.13-b13f3274-73ce-438b-b8a1-5131e31bb687.png',
-  tim_cook: '/rolemodels/tim-cook-2026-04-01.png',
-  yun_dong_ju: '/rolemodels/yun-dong-ju-2026-04-01.png',
-  king_sejong: '/rolemodels/king-sejong-2026-04-01.png',
-  kim_gu: '/rolemodels/kim-gu-2026-04-01.png',
-};
+function getInitials(name: string) {
+  const normalized = name.trim();
+  if (!normalized) return 'RM';
+  const parts = normalized.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return normalized.slice(0, 2).toUpperCase();
+}
+
+function hashColorSeed(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function getSafeAvatarDataUri(name: string) {
+  const seed = hashColorSeed(name);
+  const hue = seed % 360;
+  const initials = getInitials(name);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="hsl(${hue} 70% 88%)"/><stop offset="100%" stop-color="hsl(${(hue + 30) % 360} 70% 78%)"/></linearGradient></defs><rect width="256" height="256" rx="44" fill="url(#g)"/><circle cx="128" cy="96" r="42" fill="rgba(255,255,255,0.55)"/><rect x="56" y="146" width="144" height="74" rx="36" fill="rgba(255,255,255,0.55)"/><text x="128" y="224" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="rgba(20,30,45,0.72)">${initials}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+const CELEBRITY_SAFE_AVATARS: Record<PresetCelebrityId, string> = Object.fromEntries(
+  (Object.keys(CELEBRITIES) as PresetCelebrityId[]).map((id) => [id, getSafeAvatarDataUri(CELEBRITIES[id].name)]),
+) as Record<PresetCelebrityId, string>;
 
 function getDailyRewardCopy(dayKey: string) {
   const seeds = [
@@ -1359,7 +1358,9 @@ export default function Home() {
                   />
                 </label>
               </div>
-              <p className="text-[11px] text-toss-sub mt-2">완료 저장 후 축하 메시지 화면에 함께 표시돼요.</p>
+              <p className="text-[11px] font-semibold text-toss-blue mt-2">
+                롤모델 사진을 넣으면 축하 메시지에 롤모델이 반영됩니다.
+              </p>
             </div>
 
             <div className="mt-6 pt-5 border-t border-toss-border">
@@ -1861,16 +1862,14 @@ export default function Home() {
                           pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                         }`}
                       >
-                        {CELEBRITY_STATIC_PHOTOS[id] && (
-                          <div className="w-full flex-1 flex items-center justify-center mb-1">
-                            <img
-                              src={CELEBRITY_STATIC_PHOTOS[id]}
-                              alt={`${CELEBRITIES[id].name} 사진`}
-                              className="w-full max-w-[72px] aspect-square rounded-lg object-cover border border-white/40"
-                              loading="lazy"
-                            />
-                          </div>
-                        )}
+                        <div className="w-full flex-1 flex items-center justify-center mb-1">
+                          <img
+                            src={CELEBRITY_SAFE_AVATARS[id]}
+                            alt={`${CELEBRITIES[id].name} 아바타`}
+                            className="w-full max-w-[72px] aspect-square rounded-lg object-cover border border-white/40"
+                            loading="lazy"
+                          />
+                        </div>
                         <div className="w-full flex-1 flex flex-col justify-center">
                           <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                         <p
@@ -1923,16 +1922,14 @@ export default function Home() {
                                 pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                               }`}
                             >
-                              {CELEBRITY_STATIC_PHOTOS[id] && (
-                                <div className="w-full flex-1 flex items-center justify-center mb-1">
-                                  <img
-                                    src={CELEBRITY_STATIC_PHOTOS[id]}
-                                    alt={`${CELEBRITIES[id].name} 사진`}
-                                    className="w-full max-w-[72px] aspect-square rounded-lg object-cover border border-white/40"
-                                    loading="lazy"
-                                  />
-                                </div>
-                              )}
+                              <div className="w-full flex-1 flex items-center justify-center mb-1">
+                                <img
+                                  src={CELEBRITY_SAFE_AVATARS[id]}
+                                  alt={`${CELEBRITIES[id].name} 아바타`}
+                                  className="w-full max-w-[72px] aspect-square rounded-lg object-cover border border-white/40"
+                                  loading="lazy"
+                                />
+                              </div>
                               <div className="w-full flex-1 flex flex-col justify-center">
                                 <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                               <p
@@ -2021,7 +2018,9 @@ export default function Home() {
 
             <div className="mt-4 p-3 rounded-xl bg-toss-bg border border-toss-border">
               <p className="text-xs text-toss-sub font-medium">롤모델 사진 (선택)</p>
-              <p className="text-[11px] text-toss-sub mt-1.5 leading-relaxed">축하 화면에 함께 표시됩니다.</p>
+              <p className="text-[11px] text-toss-blue font-semibold mt-1.5 leading-relaxed">
+                롤모델 사진을 넣으면 축하 메시지에 롤모델이 반영됩니다.
+              </p>
               <div className="mt-3 flex items-center gap-3">
                 {celebrityPhotos[pickerCelebrity] ? (
                   <img
@@ -2145,7 +2144,9 @@ export default function Home() {
             {(() => {
               const style = getLevelStyle(wow.level);
               const celebProfile = getProfile(selectedCelebrity, customRoleModelName);
-              const wowPhoto = celebrityPhotos[selectedCelebrity] ?? CELEBRITY_STATIC_PHOTOS[selectedCelebrity];
+              const wowPhoto =
+                celebrityPhotos[selectedCelebrity] ??
+                (selectedCelebrity === 'other' ? null : CELEBRITY_SAFE_AVATARS[selectedCelebrity]);
               return (
                 <>
                   <p
