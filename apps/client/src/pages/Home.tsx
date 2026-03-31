@@ -174,7 +174,7 @@ function getRemainingToNextLevel(level: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM
 
 const CELEBRITY_STATIC_PHOTOS: Partial<Record<CelebrityId, string>> = {
   jobs: '/rolemodels/___________2026-03-31______4.05.40-b176ce7f-2c75-4820-a3bb-8a27ed773792.png',
-  musk: '/rolemodels/___________2026-03-31______4.05.35-f4f6106c-48bf-42c4-bf5a-ef5084a04496.png',
+  musk: '/rolemodels/elon-musk-updated-2026-04-01.png',
   lee_jae_yong: '/rolemodels/___________2026-03-31______4.06.42-f09d01f9-9eae-40e2-8965-9a4e48e04e26.png',
   bezos: '/rolemodels/___________2026-03-31______4.05.51-37517019-7315-4e2b-b5a5-21e7e5303886.png',
   gates: '/rolemodels/___________2026-03-31______4.06.02-dba2c110-7afd-47d8-9168-5e0276aa7892.png',
@@ -519,6 +519,8 @@ export default function Home() {
   const slotLabel = isMorningSlot ? '출근 전 체크인 시간' : '퇴근 후 체크아웃 시간';
 
   const todayKey = kstDayKey();
+  const savedToday = lastCheckoutSavedDay === todayKey;
+  const journeyStep = savedToday ? 3 : morningConfirmed ? 2 : 1;
   const activeProfile = useMemo(
     () => getProfile(selectedCelebrity, customRoleModelName),
     [selectedCelebrity, customRoleModelName],
@@ -1193,6 +1195,37 @@ export default function Home() {
           <p className="text-xs text-toss-blue/90 mt-2 font-medium leading-relaxed">{resemblanceHint}</p>
         </div>
 
+        {!showSettings && (
+          <section className="mb-4 p-3 rounded-2xl border border-toss-border bg-toss-bg">
+            <p className="text-xs font-semibold text-toss-sub text-center">오늘 진행 상태</p>
+            <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+              {[
+                { step: 1, label: '루틴 정하기' },
+                { step: 2, label: '완료 체크' },
+                { step: 3, label: '저장 완료' },
+              ].map((item) => {
+                const active = journeyStep === item.step;
+                const done = journeyStep > item.step;
+                return (
+                  <div
+                    key={item.step}
+                    className={`rounded-xl border px-2 py-2 text-[11px] font-semibold ${
+                      active
+                        ? 'bg-toss-blue text-white border-toss-blue'
+                        : done
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-white text-toss-sub border-toss-border'
+                    }`}
+                  >
+                    {done ? '✓ ' : ''}
+                    {item.label}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* Primary navigation: explicit and child-friendly */}
         <div className="mb-4 grid grid-cols-2 gap-2">
           <button
@@ -1654,12 +1687,13 @@ export default function Home() {
                       void onSubmitCheckoutWithAd();
                     }}
                     disabled={
+                      savedToday ||
                       !checkoutResult ||
                       (checkoutResult === 'not_done' && !failureReason.trim())
                     }
                     className="mt-4 w-full py-4 rounded-xl bg-toss-blue text-white text-base font-extrabold shadow-[0_10px_24px_rgba(49,130,246,0.35)] disabled:opacity-50"
                   >
-                    오늘 결과 저장하기
+                    {savedToday ? '오늘 결과 저장 완료' : '오늘 결과 저장하기'}
                   </button>
                 </>
               )}
