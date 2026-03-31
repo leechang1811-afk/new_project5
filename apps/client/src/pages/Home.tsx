@@ -640,15 +640,9 @@ export default function Home() {
     if (!checkoutResult) return;
     if (!morningConfirmed) return;
     const today = kstDayKey();
-    if (lastCheckoutSavedDay === today) {
-      trackEvent('checkout_duplicate_block');
-      setToast('오늘 결과는 이미 저장했어요. 내일 다시 저장할 수 있어요.');
-      window.setTimeout(() => setToast(null), 2200);
-      return;
-    }
     const completed = checkoutResult === 'done';
     const outcome: ResultType = completed ? 'done' : 'not_done';
-    setHistory((prev: boolean[]) => [...prev.slice(-(HISTORY_WINDOW_DAYS - 1)), completed]);
+    setHistory((prev: boolean[]) => computeNextHistoryForToday(prev, completed, today));
     setLastCheckoutSavedDay(today);
     try {
       localStorage.setItem('commute-checkout-outcome-for-day', JSON.stringify({ day: today, result: outcome }));
@@ -677,18 +671,19 @@ export default function Home() {
     return Math.round((done / HISTORY_WINDOW_DAYS) * 100);
   };
 
+  const computeNextHistoryForToday = (arr: boolean[], completed: boolean, today: DayKey) => {
+    if (lastCheckoutSavedDay === today && arr.length > 0) {
+      return [...arr.slice(0, -1), completed];
+    }
+    return [...arr.slice(-(HISTORY_WINDOW_DAYS - 1)), completed];
+  };
+
   const onSubmitCheckoutWithAd = async (forcedResult?: ResultType) => {
     const selectedResult = forcedResult ?? checkoutResult;
     if (!selectedResult || !morningConfirmed) return;
     const today = kstDayKey();
-    if (lastCheckoutSavedDay === today) {
-      trackEvent('checkout_duplicate_block');
-      setToast('오늘 결과는 이미 저장했어요. 내일 다시 저장할 수 있어요.');
-      window.setTimeout(() => setToast(null), 2200);
-      return;
-    }
     const completed = selectedResult === 'done';
-    const nextHistory = [...history.slice(-(HISTORY_WINDOW_DAYS - 1)), completed];
+    const nextHistory = computeNextHistoryForToday(history, completed, today);
     const nextStreak = computeStreak(nextHistory);
     const nextWeekly = computeWeeklyRate(nextHistory);
     // 다음 실행점수도 1개월 실행률 그대로 사용
@@ -1280,7 +1275,7 @@ export default function Home() {
         </div>
 
         {!showSettings && (
-          <section className="mb-3 p-2.5 rounded-2xl border-2 border-toss-blue bg-white">
+          <section className="mb-5 p-2.5 rounded-2xl border-2 border-toss-blue bg-white">
             <p className="text-xs font-semibold text-toss-sub text-center">오늘 진행 상태</p>
             <div className="mt-2 grid grid-cols-3 gap-2 text-center">
               {[
