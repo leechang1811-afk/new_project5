@@ -536,7 +536,8 @@ export default function Home() {
     return Math.round((doneCount / last30.length) * 100);
   }, [history]);
 
-  const score = Math.min(100, Math.round(weeklyRate * 0.8 + streakDays * 4));
+  // 실행점수 = 최근 1개월 실행률(0~100)
+  const score = weeklyRate;
   const unlockedBadges = useMemo(() => {
     const list: string[] = [];
     if (streakDays >= 1) list.push('첫 저장');
@@ -681,7 +682,8 @@ export default function Home() {
     const nextHistory = [...history.slice(-(HISTORY_WINDOW_DAYS - 1)), completed];
     const nextStreak = computeStreak(nextHistory);
     const nextWeekly = computeWeeklyRate(nextHistory);
-    const nextScore = Math.min(100, Math.round(nextWeekly * 0.8 + nextStreak * 4));
+    // 다음 실행점수도 1개월 실행률 그대로 사용
+    const nextScore = nextWeekly;
     const nextLevel = getLevel(nextScore, nextStreak);
     const prevLevel = getLevel(score, streakDays);
 
