@@ -17,15 +17,16 @@ type WowState = {
   streak: number;
   weeklyRate: number;
   completed: boolean;
-  level: 'BRONZE' | 'SILVER' | 'GOLD';
+  level: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
+  prevLevel: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
   celebrityName: string;
   missionText: string;
 /** 미완료 저장 시 내일 루틴 관련 추천에 사용 */
   failureReason?: string;
 };
 type PromotionState = {
-  from: 'BRONZE' | 'SILVER' | 'GOLD';
-  to: 'BRONZE' | 'SILVER' | 'GOLD';
+  from: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
+  to: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
 };
 
 type DayKey = string; // YYYY-MM-DD (KST)
@@ -127,19 +128,27 @@ function trackEvent(name: EventName, payload?: Record<string, string | number | 
   }
 }
 
-function getLevel(score: number, streak: number): 'BRONZE' | 'SILVER' | 'GOLD' {
-  // 현실적인 난이도: 단발성 성공으로 골드에 도달하지 않도록 조정
-  if ((score >= 92 && streak >= 7) || streak >= 21) return 'GOLD';
-  if (score >= 68 || streak >= 4) return 'SILVER';
+function getLevel(_score: number, streak: number): 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' {
+  // 레벨 기준: 1>2 연속 3일, 2>3 연속 7일, 3>4 연속 14일
+  if (streak >= 14) return 'PLATINUM';
+  if (streak >= 7) return 'GOLD';
+  if (streak >= 3) return 'SILVER';
   return 'BRONZE';
 }
 
-function getLevelStyle(level: 'BRONZE' | 'SILVER' | 'GOLD') {
+function getLevelStyle(level: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM') {
+  if (level === 'PLATINUM') {
+    return {
+      chip: 'bg-violet-100 border-violet-300 text-violet-800',
+      title: 'text-violet-700',
+      next: '플래티넘 구간입니다. 지금 패턴을 유지해 보세요.',
+    };
+  }
   if (level === 'GOLD') {
     return {
       chip: 'bg-yellow-100 border-yellow-300 text-yellow-800',
       title: 'text-yellow-700',
-      next: '골드 구간입니다. 같은 패턴으로 이어가면 됩니다.',
+      next: '다음 단계는 플래티넘입니다.',
     };
   }
   if (level === 'SILVER') {
@@ -152,7 +161,7 @@ function getLevelStyle(level: 'BRONZE' | 'SILVER' | 'GOLD') {
   return {
     chip: 'bg-amber-50 border-amber-200 text-amber-800',
     title: 'text-amber-700',
-    next: '내일도 미션 1개만 저장하면 점수에 반영됩니다.',
+    next: '다음 단계는 실버입니다.',
   };
 }
 
@@ -194,7 +203,15 @@ function daySeed(dayKey: string) {
   return Number(dayKey.split('-').join(''));
 }
 
-function getWowHeadline(level: 'BRONZE' | 'SILVER' | 'GOLD', weeklyRate: number, celebName: string) {
+function getWowHeadline(
+  level: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM',
+  weeklyRate: number,
+  celebName: string,
+) {
+  if (level === 'PLATINUM' && weeklyRate >= 90) {
+    return `오늘 미션 완료 · ${celebName} 루틴 · 주간 ${weeklyRate}%`;
+  }
+  if (level === 'PLATINUM') return `오늘 미션 완료 · ${celebName} 루틴`;
   if (level === 'GOLD' && weeklyRate >= 85) {
     return `오늘 미션 완료 · ${celebName} 루틴 · 주간 ${weeklyRate}%`;
   }
@@ -668,6 +685,7 @@ export default function Home() {
       weeklyRate: nextWeekly,
       completed,
       level: nextLevel,
+      prevLevel,
       celebrityName: celebNameSnap,
       missionText: missionSnap,
       failureReason: failureReasonSnap,
@@ -1113,7 +1131,11 @@ export default function Home() {
                   setShowSettings(false);
                   goToTodayTab();
                 }}
-                className="px-3 py-1.5 rounded-full border text-xs font-semibold bg-white text-toss-text border-toss-border"
+                className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${
+                  !showSettings && view === 'today'
+                    ? 'bg-toss-blue text-white border-toss-blue'
+                    : 'bg-white text-toss-text border-toss-border'
+                }`}
               >
                 메인화면
               </button>
@@ -1128,7 +1150,11 @@ export default function Home() {
                   });
                 }}
                 aria-label="설정"
-                className="px-3 py-1.5 rounded-full border text-xs font-semibold bg-white text-toss-text border-toss-border"
+                className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${
+                  showSettings
+                    ? 'bg-toss-blue text-white border-toss-blue'
+                    : 'bg-white text-toss-text border-toss-border'
+                }`}
               >
                 ⚙️ 설정
               </button>
@@ -1274,7 +1300,7 @@ export default function Home() {
 
             <div className="mt-4 p-3 rounded-xl bg-white border border-toss-border">
               <p className="text-xs text-toss-sub">롤모델 사진(축하 메시지용)</p>
-              <div className="mt-2 flex items-center gap-3">
+              <div className="mt-2 flex items-center justify-center gap-3">
                 {celebrityPhotos[selectedCelebrity] ? (
                   <img
                     src={celebrityPhotos[selectedCelebrity]}
@@ -2094,28 +2120,30 @@ export default function Home() {
                     </div>
                   )}
                   {wowPhoto && (
-                    <div className="mt-3 flex items-center justify-center gap-3 p-2.5 rounded-xl bg-white border border-toss-border">
+                    <div className="mt-3 flex flex-col items-center justify-center gap-2 p-2.5 rounded-xl bg-white border border-toss-border text-center">
                       <img
                         src={wowPhoto}
                         alt={`${wow.celebrityName} 사진`}
                         className="w-16 h-16 rounded-xl object-cover border border-toss-border shrink-0"
                       />
-                      <p className="text-sm font-semibold text-toss-text text-left">{wow.celebrityName}</p>
+                      <p className="text-sm font-semibold text-toss-text text-center">{wow.celebrityName}</p>
                     </div>
                   )}
-                  {wow.completed && celebProfile.quote && (
-                    <p className="mt-3 text-sm font-medium text-toss-text text-center text-pretty break-keep max-w-[95%] mx-auto">
-                      “{celebProfile.quote}”
-                    </p>
-                  )}
                   <p className="text-sm text-toss-sub mt-3 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
-                    {wow.completed ? style.next : '내일 다시 미션을 정하면 됩니다.'}
+                    {wow.completed
+                      ? celebProfile.quote
+                        ? `“${celebProfile.quote}”`
+                        : style.next
+                      : '내일 다시 미션을 정하면 됩니다.'}
                   </p>
 
                   <div className="mt-4 grid grid-cols-3 gap-2 text-center mx-auto max-w-full">
                     <div className={`rounded-xl border p-2.5 ${style.chip}`}>
                       <p className="text-[11px]">레벨</p>
                       <p className="text-lg font-bold">{wow.level}</p>
+                      {wow.prevLevel !== wow.level && (
+                        <p className="text-[10px] mt-1 font-semibold">{wow.prevLevel} → {wow.level}</p>
+                      )}
                     </div>
                     <div className="rounded-xl bg-toss-bg border border-toss-border p-2.5">
                       <p className="text-[11px] text-toss-sub">점수</p>
