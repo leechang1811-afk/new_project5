@@ -128,8 +128,9 @@ function trackEvent(name: EventName, payload?: Record<string, string | number | 
 }
 
 function getLevel(score: number, streak: number): 'BRONZE' | 'SILVER' | 'GOLD' {
-  if (score >= 80 || streak >= 7) return 'GOLD';
-  if (score >= 50 || streak >= 3) return 'SILVER';
+  // 현실적인 난이도: 단발성 성공으로 골드에 도달하지 않도록 조정
+  if ((score >= 92 && streak >= 7) || streak >= 21) return 'GOLD';
+  if (score >= 68 || streak >= 4) return 'SILVER';
   return 'BRONZE';
 }
 
@@ -587,7 +588,8 @@ export default function Home() {
     setCheckoutOutcomeToday(outcome);
     setCheckoutResult(null);
     setFailureReason('');
-    setMorningConfirmed(false); // consume the day loop; user comes back next day.
+    setMorningConfirmed(true);
+    setEditingMorningTask(false);
   };
 
   const computeStreak = (arr: boolean[]) => {
@@ -1191,7 +1193,7 @@ export default function Home() {
         </div>
 
         {showSettings && (
-          <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
+          <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white text-center">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-toss-text">설정 바꾸기</p>
               <button
@@ -1223,7 +1225,7 @@ export default function Home() {
               <p className="text-xs text-toss-sub mb-1">알림 시간 (선택)</p>
               <p className="text-[11px] text-toss-sub mb-2">점수와 무관해요. 습관용 알림만 켜 두면 됩니다.</p>
               <div className="grid grid-cols-2 gap-3">
-                <label className="text-left">
+                <label className="text-center">
                   <span className="block text-xs text-toss-sub mb-1">아침</span>
                   <input
                     type="time"
@@ -1232,7 +1234,7 @@ export default function Home() {
                     className="w-full border border-toss-border rounded-xl px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="text-left">
+                <label className="text-center">
                   <span className="block text-xs text-toss-sub mb-1">저녁</span>
                   <input
                     type="time"
@@ -1395,7 +1397,7 @@ export default function Home() {
         ) : (
           <>
             {!showSettings && (
-            <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white">
+            <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white text-center">
               <p className="text-sm font-semibold text-toss-text mb-1">
                 {!morningConfirmed
                   ? `1) ${activeProfile.name} 루틴 1개 정하기`
@@ -1412,7 +1414,7 @@ export default function Home() {
                   <textarea
                     value={morningTask}
                     onChange={(e) => setMorningTask(clampText(e.target.value, 80))}
-                    className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30"
+                    className="w-full border border-toss-border rounded-xl p-3 text-sm min-h-[88px] resize-none focus:outline-none focus:ring-2 focus:ring-toss-blue/30 text-center"
                     placeholder={`${activeProfile.name} 루틴 예: ${todayMission}`}
                     aria-label="오늘의 1개 입력"
                   />
@@ -1522,7 +1524,7 @@ export default function Home() {
                               setTaskReplaceRoutine(r);
                               setTaskReplaceCustom('');
                             }}
-                            className={`w-full p-2.5 rounded-xl border text-sm text-left ${
+                            className={`w-full p-2.5 rounded-xl border text-sm text-center ${
                               taskReplaceRoutine === r && !taskReplaceCustom.trim()
                                 ? 'bg-toss-blue/10 border-toss-blue text-toss-text'
                                 : 'bg-white border-toss-border text-toss-text'
@@ -1579,7 +1581,7 @@ export default function Home() {
                     </div>
                   )}
 
-                  <div className="mt-3 p-3 rounded-xl border border-toss-blue/20 bg-toss-blue/5">
+                    <div className="mt-3 p-3 rounded-xl border border-toss-blue/20 bg-toss-blue/5 text-center">
                     <p className="text-sm font-semibold text-toss-text mb-2">완료 체크 (가장 중요)</p>
                     <div className="grid grid-cols-2 gap-2">
                       <button
@@ -1662,7 +1664,7 @@ export default function Home() {
             )}
 
             {!showSettings && (
-              <section className="mb-5 p-4 rounded-2xl bg-toss-bg border border-toss-border">
+              <section className="mb-5 p-4 rounded-2xl bg-toss-bg border border-toss-border text-center">
                 <p className="text-sm font-semibold text-toss-text mb-1">오늘 요약</p>
                 <p className="text-xs text-toss-sub mb-3 line-clamp-2">
                   “{activeRoutineText.length > 40 ? `${activeRoutineText.slice(0, 40)}…` : activeRoutineText}”
@@ -2161,15 +2163,13 @@ export default function Home() {
               >
                 지금 미션 그대로 유지하기
               </button>
-              {!wow.completed && (
-                <button
-                  type="button"
-                  onClick={openWowRoutineReset}
-                  className="py-3 px-2 rounded-xl border border-toss-border bg-toss-bg text-toss-text text-sm font-semibold leading-snug col-span-2"
-                >
-                  다시 세팅하기
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={openWowRoutineReset}
+                className="py-3 px-2 rounded-xl border border-toss-border bg-toss-bg text-toss-text text-sm font-semibold leading-snug col-span-2"
+              >
+                다른 루틴 선택하기
+              </button>
             </div>
             <button
               type="button"
