@@ -84,6 +84,18 @@ function readCheckoutOutcomeForToday(): ResultType | null {
   }
 }
 
+function readCompletedMissionForToday(): string {
+  try {
+    const raw = localStorage.getItem('commute-completed-mission-for-day');
+    if (!raw) return '';
+    const o = JSON.parse(raw) as { day: string; mission: string };
+    if (o.day !== kstDayKey()) return '';
+    return String(o.mission ?? '').trim();
+  } catch {
+    return '';
+  }
+}
+
 function kstNextDayKey(d = new Date()): DayKey {
   const utc = d.getTime() + d.getTimezoneOffset() * 60_000;
   const kst = new Date(utc + 9 * 60 * 60_000);
@@ -244,6 +256,9 @@ export default function Home() {
     readCheckoutOutcomeForToday(),
   );
   const [failureReason, setFailureReason] = useState('');
+  const [completedMissionToday, setCompletedMissionToday] = useState<string>(() =>
+    readCompletedMissionForToday(),
+  );
   const [history, setHistory] = useState<boolean[]>([]); // last 30 days completion
   const [reminders, setReminders] = useState(() => DEFAULT_REMINDERS);
   const [showWeekly, setShowWeekly] = useState(false);
@@ -464,8 +479,14 @@ export default function Home() {
         setCheckoutResult(null);
         setFailureReason('');
         setCheckoutOutcomeToday(null);
+        setCompletedMissionToday('');
         try {
           localStorage.removeItem('commute-checkout-outcome-for-day');
+        } catch {
+          // ignore
+        }
+        try {
+          localStorage.removeItem('commute-completed-mission-for-day');
         } catch {
           // ignore
         }
@@ -539,9 +560,12 @@ export default function Home() {
     return `${n} 루틴 · 연속 ${streakDays}일`;
   }, [activeProfile.name, streakDays]);
   const activeRoutineText = useMemo(() => {
+    if (lastCheckoutSavedDay === todayKey && completedMissionToday.trim()) {
+      return completedMissionToday.trim();
+    }
     const t = morningTask.trim();
     return t || todayMission;
-  }, [morningTask, todayMission]);
+  }, [lastCheckoutSavedDay, todayKey, completedMissionToday, morningTask, todayMission]);
   const pickerList = useMemo(() => {
     const q = pickerSearch.trim().toLowerCase();
     const all = PRESET_CELEBRITY_IDS;
@@ -580,10 +604,10 @@ export default function Home() {
   }, [isMorningSlot, morningConfirmed, activeProfile.name]);
 
   const morningTaskSummary = useMemo(() => {
-    const t = morningTask.trim();
-    if (!t) return '미입력';
+    const t = activeRoutineText.trim();
+    if (!t) return todayMission;
     return t.length > 48 ? `${t.slice(0, 48)}…` : t;
-  }, [morningTask]);
+  }, [activeRoutineText, todayMission]);
 
   const nextSuggestion = useMemo(() => {
     if (failureReason === '시간 부족') return '내일은 10분 안에 끝나는 한 줄로 줄여 보세요.';
@@ -670,6 +694,15 @@ export default function Home() {
     const celebNameSnap = getProfile(selectedCelebrity, customRoleModelName).name;
     const failureReasonSnap = !completed && failureReason ? failureReason : undefined;
     onSubmitCheckout();
+    try {
+      localStorage.setItem(
+        'commute-completed-mission-for-day',
+        JSON.stringify({ day: today, mission: missionSnap }),
+      );
+    } catch {
+      // ignore
+    }
+    setCompletedMissionToday(missionSnap);
     trackEvent(completed ? 'checkout_done_quicksave' : 'checkout_not_done_save', {
       streak: nextStreak,
       weeklyRate: nextWeekly,
@@ -935,6 +968,12 @@ export default function Home() {
     } catch {
       // ignore
     }
+    try {
+      localStorage.removeItem('commute-completed-mission-for-day');
+    } catch {
+      // ignore
+    }
+    setCompletedMissionToday('');
     setMorningConfirmed(false);
     setEditingMorningTask(true);
     setMorningTask('');
@@ -966,6 +1005,7 @@ export default function Home() {
         'commute-celebrity-photos',
         'commute-tomorrow-reservation',
         'commute-checkout-outcome-for-day',
+        'commute-completed-mission-for-day',
         'todayone-event-log',
         'commute-first-checkout-date',
         'rolemodel-picker-seen',
@@ -986,6 +1026,7 @@ export default function Home() {
     setEditingMorningTask(true);
     setCheckoutResult(null);
     setCheckoutOutcomeToday(null);
+    setCompletedMissionToday('');
     setFailureReason('');
     setHistory([]);
     setReminders(DEFAULT_REMINDERS);
@@ -1084,7 +1125,6 @@ export default function Home() {
     } catch {
       // ignore
     }
-    setMorningTask('');
     setWow(null);
     goToTodayTab();
     setToast(`${prof.name} 루틴으로 내일(${nextDay}) 미션을 예약했어요.`);
@@ -2185,6 +2225,25 @@ export default function Home() {
                       <p className="text-lg font-bold text-toss-text">{wow.weeklyRate}%</p>
                     </div>
                   </div>
+                  {wow.completed && (
+                    <div className="mt-3 p-3 rounded-xl border border-toss-blue/25 bg-white">
+                      <p className="text-xs text-toss-sub">롤모델 닮아감 지수</p>
+                      <p className="text-lg font-bold text-toss-text mt-1">{wow.score}%</p>
+                      <div className="mt-2 h-2 rounded-full bg-toss-border/60 overflow-hidden">
+                        <div
+                          className="h-full bg-toss-blue transition-all"
+                          style={{ width: `${Math.min(100, wow.score)}%` }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-toss-sub mt-2">
+                        {wow.score >= 80
+                          ? '선택한 롤모델의 실행 패턴이 습관으로 자리잡고 있어요.'
+                          : wow.score >= 50
+                            ? '좋은 흐름입니다. 같은 시간대에 1개만 더 꾸준히 저장해 보세요.'
+                            : '아주 좋아요. 매일 1개 저장만 유지해도 닮아감 지수가 빠르게 올라갑니다.'}
+                      </p>
+                    </div>
+                  )}
                   {wow.completed && (
                     <p className="mt-3 text-xs text-toss-sub text-center">
                       {(() => {
