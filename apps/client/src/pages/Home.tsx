@@ -256,6 +256,7 @@ export default function Home() {
   const [promotion, setPromotion] = useState<PromotionState | null>(null);
   const [bestStreak, setBestStreak] = useState(0);
   const [newRecord, setNewRecord] = useState<number | null>(null);
+  const [showFullResetConfirm, setShowFullResetConfirm] = useState(false);
 
   const goToTodayTab = () => {
     setShowWeekly(false);
@@ -913,6 +914,73 @@ export default function Home() {
     openRoleModelPicker('start_today');
   };
 
+  /** 설정: 앱의 모든 데이터를 완전 초기화 */
+  const performFullReset = () => {
+    try {
+      const keysToClear = [
+        'commute-celebrity',
+        'commute-custom-role-name',
+        'commute-task',
+        'commute-history',
+        'commute-morning-confirmed',
+        'commute-reminders',
+        'commute-last-saved-day',
+        'commute-last-checkout-saved-day',
+        'commute-best-streak',
+        'commute-celebrity-photos',
+        'commute-tomorrow-reservation',
+        'commute-checkout-outcome-for-day',
+        'todayone-event-log',
+        'commute-first-checkout-date',
+        'rolemodel-picker-seen',
+      ];
+      for (const k of keysToClear) {
+        localStorage.removeItem(k);
+      }
+    } catch {
+      // ignore
+    }
+
+    const today = kstDayKey();
+    setSelectedCelebrity('yoo_jae_suk');
+    setCustomRoleModelName('');
+    setCelebrityPhotos({});
+    setMorningTask('');
+    setMorningConfirmed(false);
+    setEditingMorningTask(true);
+    setCheckoutResult(null);
+    setCheckoutOutcomeToday(null);
+    setFailureReason('');
+    setHistory([]);
+    setReminders(DEFAULT_REMINDERS);
+    setShowWeekly(false);
+    setLastSavedDay(today);
+    setLastCheckoutSavedDay(null);
+    setView('today');
+    setWow(null);
+    setPromotion(null);
+    setBestStreak(0);
+    setNewRecord(null);
+    setReserveKeepSameTomorrow(false);
+    setPickerCelebrity('yoo_jae_suk');
+    setPickerOtherName('');
+    setPickerRoutine('');
+    setPickerCustomRoutine('');
+    setPickerSearch('');
+    missionForReserveRef.current = '';
+    checkoutSelectionSnapshotRef.current = null;
+    morningTaskEditSnapshotRef.current = '';
+    morningTaskBeforeRewriteRef.current = '';
+    setShowRewriteBack(false);
+    setShowSettings(false);
+    setShowIntro(true);
+    setPickerMode('start_today');
+    setShowFullResetConfirm(false);
+    goToTodayTab();
+    setToast('모든 데이터를 초기화했어요. 롤모델을 다시 선택해 주세요.');
+    window.setTimeout(() => setToast(null), 2600);
+  };
+
   const openWowRoutineReset = () => {
     if (!wow) return;
     const profile = getProfile(selectedCelebrity, customRoleModelName);
@@ -1040,6 +1108,16 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => {
+                  setShowSettings(false);
+                  goToTodayTab();
+                }}
+                className="px-3 py-1.5 rounded-full border text-xs font-semibold bg-white text-toss-text border-toss-border"
+              >
+                메인화면
+              </button>
+              <button
+                type="button"
+                onClick={() => {
                   setShowSettings((v) => {
                     const next = !v;
                     trackEvent(next ? 'open_settings' : 'close_settings');
@@ -1065,7 +1143,7 @@ export default function Home() {
             <div className="text-left min-w-0">
               <p className="text-xs text-toss-sub">{todayKey}</p>
               <p className="text-xl sm:text-2xl font-bold text-toss-text mt-1 leading-snug">
-                {activeProfile.name} 루틴 · 오늘 1미션
+                {showSettings ? '설정 화면' : `${activeProfile.name} 루틴 · 오늘 1미션`}
               </p>
             </div>
             <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-semibold ${statusPill.tone}`}>
@@ -1073,9 +1151,11 @@ export default function Home() {
             </span>
           </div>
           <p className="text-sm text-toss-sub mt-2 leading-relaxed">
-            {!morningConfirmed
-              ? '미션 한 줄을 적고 시작하면 됩니다.'
-              : '끝났으면 아래에서 완료를 저장해요.'}
+            {showSettings
+              ? '알림 시간과 롤모델, 사진을 이 화면에서 바꿀 수 있어요.'
+              : !morningConfirmed
+                ? '미션 한 줄을 적고 시작하면 됩니다.'
+                : '끝났으면 아래에서 완료를 저장해요.'}
           </p>
           <p className="text-xs text-toss-blue/90 mt-2 font-medium leading-relaxed">{resemblanceHint}</p>
         </div>
@@ -1174,6 +1254,19 @@ export default function Home() {
               </button>
               <p className="text-[11px] text-toss-sub mt-2 leading-relaxed">
                 오늘의 미션·완료 저장만 되돌립니다. 내일 예약·롤모델 사진은 그대로예요.
+              </p>
+            </div>
+
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setShowFullResetConfirm(true)}
+                className="w-full py-3 rounded-xl border border-rose-300 bg-white text-sm font-semibold text-rose-900"
+              >
+                모든 데이터 완전 초기화하기
+              </button>
+              <p className="text-[11px] text-rose-700 mt-2 leading-relaxed">
+                롤모델, 미션, 기록, 알림 시간, 사진 등 앱의 모든 데이터를 지웁니다.
               </p>
             </div>
 
@@ -1611,6 +1704,35 @@ export default function Home() {
           <div className="mx-auto max-w-md">
             <div className="rounded-xl bg-toss-text text-white text-sm px-4 py-3 shadow-lg">
               {toast}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFullResetConfirm && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-black/55 px-4">
+          <div className="w-full max-w-xs rounded-2xl bg-white border border-toss-border p-4 text-center">
+            <p className="text-sm font-semibold text-toss-text">
+              정말 모든 데이터를 초기화할까요?
+            </p>
+            <p className="mt-2 text-xs text-toss-sub leading-relaxed">
+              기록, 롤모델, 미션, 알림 시간, 사진이 모두 사라지고 처음 상태로 돌아갑니다.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setShowFullResetConfirm(false)}
+                className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+              >
+                다시 돌아가기
+              </button>
+              <button
+                type="button"
+                onClick={performFullReset}
+                className="py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold"
+              >
+                네, 초기화할게요
+              </button>
             </div>
           </div>
         </div>
