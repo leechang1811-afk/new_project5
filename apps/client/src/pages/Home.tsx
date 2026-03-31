@@ -1871,10 +1871,31 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => {
+                        setPickerCelebrity('top5_global');
+                        setPickerOtherName('');
+                        setReserveKeepSameTomorrow(false);
+                        const p = getProfile('top5_global', '');
+                        setPickerRoutine(p.routines[0] ?? '');
+                        setPickerCustomRoutine('');
+                      }}
+                      className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
+                        pickerCelebrity === 'top5_global'
+                          ? 'bg-toss-blue text-white border-toss-blue'
+                          : 'bg-white border-toss-border text-toss-text'
+                      }`}
+                    >
+                      <p className="text-sm font-semibold leading-tight">전세계 상위 5% 루틴</p>
+                      <p className={`text-[10px] mt-1 leading-snug ${pickerCelebrity === 'top5_global' ? 'text-blue-50' : 'text-toss-sub'}`}>
+                        데이터 기반 5개 습관
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
                         setPickerCelebrity('other');
                         setReserveKeepSameTomorrow(false);
                       }}
-                      className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center col-span-2 sm:col-span-1 ${
+                      className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
                         pickerCelebrity === 'other'
                           ? 'bg-toss-blue text-white border-toss-blue'
                           : 'bg-white border-toss-border text-toss-text'
@@ -1929,10 +1950,31 @@ export default function Home() {
                         <button
                           type="button"
                           onClick={() => {
+                            setPickerCelebrity('top5_global');
+                            setPickerOtherName('');
+                            setReserveKeepSameTomorrow(false);
+                            const p = getProfile('top5_global', '');
+                            setPickerRoutine(p.routines[0] ?? '');
+                            setPickerCustomRoutine('');
+                          }}
+                          className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
+                            pickerCelebrity === 'top5_global'
+                              ? 'bg-toss-blue text-white border-toss-blue'
+                              : 'bg-white border-toss-border text-toss-text'
+                          }`}
+                        >
+                          <p className="text-sm font-semibold leading-tight">전세계 상위 5% 루틴</p>
+                          <p className={`text-[10px] mt-1 leading-snug ${pickerCelebrity === 'top5_global' ? 'text-blue-50' : 'text-toss-sub'}`}>
+                            데이터 기반 5개 습관
+                          </p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
                             setPickerCelebrity('other');
                             setReserveKeepSameTomorrow(false);
                           }}
-                          className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center col-span-2 sm:col-span-1 ${
+                          className={`p-2 rounded-xl border text-left min-h-[4.5rem] flex flex-col justify-center ${
                             pickerCelebrity === 'other'
                               ? 'bg-toss-blue text-white border-toss-blue'
                               : 'bg-white border-toss-border text-toss-text'
