@@ -1247,57 +1247,6 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="mt-4">
-              <p className="text-xs text-toss-sub mb-1">알림 시간 (선택)</p>
-              <p className="text-[11px] text-toss-sub mb-2">점수와 무관해요. 습관용 알림만 켜 두면 됩니다.</p>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="text-center">
-                  <span className="block text-xs text-toss-sub mb-1">아침</span>
-                  <input
-                    type="time"
-                    value={reminders.morning}
-                    onChange={(e) => setReminders((r) => ({ ...r, morning: e.target.value }))}
-                    className="w-full border border-toss-border rounded-xl px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="text-center">
-                  <span className="block text-xs text-toss-sub mb-1">저녁</span>
-                  <input
-                    type="time"
-                    value={reminders.evening}
-                    onChange={(e) => setReminders((r) => ({ ...r, evening: e.target.value }))}
-                    className="w-full border border-toss-border rounded-xl px-3 py-2 text-sm"
-                  />
-                </label>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={resetTodayRoutine}
-                className="w-full py-3 rounded-xl border border-rose-200 bg-rose-50 text-sm font-semibold text-rose-800"
-              >
-                오늘 루틴 초기화하기
-              </button>
-              <p className="text-[11px] text-toss-sub mt-2 leading-relaxed">
-                오늘의 미션·완료 저장만 되돌립니다. 내일 예약·롤모델 사진은 그대로예요.
-              </p>
-            </div>
-
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={() => setShowFullResetConfirm(true)}
-                className="w-full py-3 rounded-xl border border-rose-300 bg-white text-sm font-semibold text-rose-900"
-              >
-                모든 데이터 완전 초기화하기
-              </button>
-              <p className="text-[11px] text-rose-700 mt-2 leading-relaxed">
-                롤모델, 미션, 기록, 알림 시간, 사진 등 앱의 모든 데이터를 지웁니다.
-              </p>
-            </div>
-
             <div className="mt-4 p-3 rounded-xl bg-white border border-toss-border">
               <p className="text-xs text-toss-sub">롤모델 사진(축하 메시지용)</p>
               <div className="mt-2 flex items-center justify-center gap-3">
@@ -1325,6 +1274,30 @@ export default function Home() {
                 </label>
               </div>
               <p className="text-[11px] text-toss-sub mt-2">완료 저장 후 축하 메시지 화면에 함께 표시돼요.</p>
+            </div>
+
+            <div className="mt-6 pt-5 border-t border-toss-border">
+              <button
+                type="button"
+                onClick={resetTodayRoutine}
+                className="w-full py-3 rounded-xl border border-rose-200 bg-rose-50 text-sm font-semibold text-rose-800"
+              >
+                오늘 루틴 초기화하기
+              </button>
+              <p className="text-[11px] text-toss-sub mt-2 leading-relaxed">
+                오늘의 미션·완료 저장만 되돌립니다. 내일 예약·롤모델 사진은 그대로예요.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setShowFullResetConfirm(true)}
+                className="mt-4 w-full py-3 rounded-xl border border-rose-300 bg-white text-sm font-semibold text-rose-900"
+              >
+                모든 데이터 완전 초기화하기
+              </button>
+              <p className="text-[11px] text-rose-700 mt-2 leading-relaxed">
+                롤모델, 미션, 기록, 알림 시간, 사진 등 앱의 모든 데이터를 지웁니다.
+              </p>
             </div>
           </section>
         )}
