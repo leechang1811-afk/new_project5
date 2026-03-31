@@ -526,6 +526,27 @@ export default function Home() {
     if (streakDays <= 0) return `${n} 루틴 · 연속 기록 시작 전`;
     return `${n} 루틴 · 연속 ${streakDays}일`;
   }, [activeProfile.name, streakDays]);
+  const resemblanceStage = useMemo(() => {
+    if (weeklyRate >= 85 && streakDays >= 14) {
+      return {
+        label: '거의 내 습관이 된 단계',
+        desc: `${activeProfile.name}의 실행 패턴이 생활 리듬으로 자리잡고 있어요.`,
+        tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      };
+    }
+    if (weeklyRate >= 60 && streakDays >= 7) {
+      return {
+        label: '닮아가는 가속 단계',
+        desc: `지금 흐름이면 ${activeProfile.name} 루틴이 빠르게 체화됩니다.`,
+        tone: 'bg-blue-50 text-blue-700 border-blue-200',
+      };
+    }
+    return {
+      label: '닮아가기 시작 단계',
+      desc: '하루 1개 저장만 유지하면 변화를 체감하기 시작해요.',
+      tone: 'bg-amber-50 text-amber-700 border-amber-200',
+    };
+  }, [weeklyRate, streakDays, activeProfile.name]);
   const activeRoutineText = useMemo(() => {
     if (lastCheckoutSavedDay === todayKey && completedMissionToday.trim()) {
       return completedMissionToday.trim();
@@ -1213,7 +1234,18 @@ export default function Home() {
               ? '롤모델과 축하 화면 사진을 이 화면에서 바꿀 수 있어요.'
               : `루틴 : ${activeRoutineText}`}
           </p>
-          <p className="text-xs text-toss-blue/90 mt-2 font-semibold leading-relaxed">{resemblanceHint}</p>
+          {!showSettings && (
+            <div className="mt-2 p-2.5 rounded-xl border border-toss-border bg-toss-bg text-left">
+              <p className="text-[11px] text-toss-sub">오늘의 닮아감 상태</p>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <p className="text-xs text-toss-blue/90 font-semibold leading-relaxed">{resemblanceHint}</p>
+                <span className={`shrink-0 inline-flex items-center px-2 py-1 rounded-full border text-[10px] font-semibold ${resemblanceStage.tone}`}>
+                  {resemblanceStage.label}
+                </span>
+              </div>
+              <p className="text-[11px] text-toss-sub mt-1">{resemblanceStage.desc}</p>
+            </div>
+          )}
         </div>
 
         {!showSettings && (
@@ -1414,6 +1446,11 @@ export default function Home() {
                 <p className="text-xs text-toss-sub">내가 선택한 롤모델 닮아가기 1개월 달성률</p>
                 <p className="text-lg font-bold text-toss-text">{weeklyRate}%</p>
               </div>
+            </div>
+            <div className="mt-3 p-3 rounded-xl border border-toss-blue/25 bg-white">
+              <p className="text-xs text-toss-sub">지금의 닮아감 단계</p>
+              <p className="text-sm font-bold text-toss-text mt-1">{resemblanceStage.label}</p>
+              <p className="text-xs text-toss-sub mt-1">{resemblanceStage.desc}</p>
             </div>
             <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
               <p className="text-xs text-toss-sub">추천 챌린지</p>
@@ -2233,7 +2270,7 @@ export default function Home() {
                   </div>
                   {wow.completed && (
                     <div className="mt-3 p-3 rounded-xl border border-toss-blue/25 bg-white">
-                      <p className="text-xs text-toss-sub">롤모델 닮아감 지수</p>
+                      <p className="text-xs text-toss-sub">나의 롤모델 체화 지수</p>
                       <p className="text-lg font-bold text-toss-text mt-1">{wow.score}%</p>
                       <div className="mt-2 h-2 rounded-full bg-toss-border/60 overflow-hidden">
                         <div
@@ -2243,10 +2280,10 @@ export default function Home() {
                       </div>
                       <p className="text-[11px] text-toss-sub mt-2">
                         {wow.score >= 80
-                          ? '선택한 롤모델의 실행 패턴이 습관으로 자리잡고 있어요.'
+                          ? `지금은 ${wow.celebrityName}의 실행 방식을 내 루틴으로 체화하는 구간입니다.`
                           : wow.score >= 50
-                            ? '좋은 흐름입니다. 같은 시간대에 1개만 더 꾸준히 저장해 보세요.'
-                            : '아주 좋아요. 매일 1개 저장만 유지해도 닮아감 지수가 빠르게 올라갑니다.'}
+                            ? `좋은 흐름입니다. ${wow.celebrityName}처럼 같은 시간대 실행을 고정해 보세요.`
+                            : '좋은 시작입니다. 매일 1개 저장만 유지해도 닮아감 체감이 빠르게 올라갑니다.'}
                       </p>
                     </div>
                   )}
@@ -2278,7 +2315,7 @@ export default function Home() {
             <div className="mt-4 p-3 rounded-xl bg-toss-blue/5 border border-toss-blue/20 text-center">
               <p className="text-sm font-semibold text-toss-text text-pretty break-keep max-w-[95%] mx-auto">
                 {wow.completed
-                  ? `내일도 ${wow.celebrityName} 루틴 미션 1개를 저장하면 됩니다.`
+                  ? `내일도 ${wow.celebrityName}처럼 미션 1개만 저장하면 닮아감이 이어집니다.`
                   : '내일은 3분짜리 미션으로 바꿔 보세요.'}
               </p>
               {wow.completed && (
