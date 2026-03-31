@@ -203,6 +203,20 @@ const CELEBRITY_SAFE_AVATARS: Record<PresetCelebrityId, string> = Object.fromEnt
   (Object.keys(CELEBRITIES) as PresetCelebrityId[]).map((id) => [id, getSafeAvatarDataUri(CELEBRITIES[id].name)]),
 ) as Record<PresetCelebrityId, string>;
 
+const CELEBRITY_CURATED_AVATAR_PHOTOS: Partial<Record<PresetCelebrityId, string>> = {
+  jobs: '/rolemodels/jobs-avatar.png',
+  musk: '/rolemodels/musk-avatar.png',
+  bezos: '/rolemodels/bezos-avatar.png',
+  buffett: '/rolemodels/buffett-avatar.png',
+  gates: '/rolemodels/gates-avatar.png',
+  zuckerberg: '/rolemodels/zuckerberg-avatar.png',
+  tim_cook: '/rolemodels/tim-cook-avatar.png',
+};
+
+function getDefaultCelebrityImage(id: PresetCelebrityId) {
+  return CELEBRITY_CURATED_AVATAR_PHOTOS[id] ?? CELEBRITY_SAFE_AVATARS[id];
+}
+
 function getDailyRewardCopy(dayKey: string) {
   const seeds = [
     '내일도 같은 시간에 알림만 켜 두면 기억하기 쉬워요.',
@@ -1864,7 +1878,7 @@ export default function Home() {
                       >
                         <div className="w-full flex-1 flex items-center justify-center mb-1">
                           <img
-                            src={CELEBRITY_SAFE_AVATARS[id]}
+                            src={getDefaultCelebrityImage(id)}
                             alt={`${CELEBRITIES[id].name} 아바타`}
                             className="w-full max-w-[72px] aspect-square rounded-xl object-cover border border-white/40"
                             loading="lazy"
@@ -1924,7 +1938,7 @@ export default function Home() {
                             >
                               <div className="w-full flex-1 flex items-center justify-center mb-1">
                                 <img
-                                  src={CELEBRITY_SAFE_AVATARS[id]}
+                                  src={getDefaultCelebrityImage(id)}
                                   alt={`${CELEBRITIES[id].name} 아바타`}
                                   className="w-full max-w-[72px] aspect-square rounded-xl object-cover border border-white/40"
                                   loading="lazy"
@@ -2146,7 +2160,7 @@ export default function Home() {
               const celebProfile = getProfile(selectedCelebrity, customRoleModelName);
               const wowPhoto =
                 celebrityPhotos[selectedCelebrity] ??
-                (selectedCelebrity === 'other' ? null : CELEBRITY_SAFE_AVATARS[selectedCelebrity]);
+                (selectedCelebrity === 'other' ? null : getDefaultCelebrityImage(selectedCelebrity));
               return (
                 <>
                   <p
