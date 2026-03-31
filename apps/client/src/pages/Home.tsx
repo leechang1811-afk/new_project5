@@ -211,6 +211,11 @@ const CELEBRITY_CURATED_AVATAR_PHOTOS: Partial<Record<PresetCelebrityId, string>
   gates: '/rolemodels/gates-avatar.png',
   zuckerberg: '/rolemodels/zuckerberg-avatar.png',
   tim_cook: '/rolemodels/tim-cook-avatar.png',
+  kim_beom_seok: '/rolemodels/kim-beom-seok-avatar.png',
+  kim_bong_jin: '/rolemodels/kim-bong-jin-avatar.png',
+  bang_si_hyuk: '/rolemodels/bang-si-hyuk-avatar.png',
+  lee_hae_jin: '/rolemodels/lee-hae-jin-avatar.png',
+  lee_jae_yong: '/rolemodels/lee-jae-yong-avatar.png',
 };
 
 function getDefaultCelebrityImage(id: PresetCelebrityId) {
