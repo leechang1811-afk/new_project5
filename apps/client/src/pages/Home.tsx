@@ -1858,19 +1858,11 @@ export default function Home() {
                           setPickerRoutine(p.routines[0] ?? '');
                           setPickerCustomRoutine('');
                         }}
-                        className={`p-2.5 rounded-xl border text-left min-h-[9rem] flex flex-col justify-between items-center ${
+                        className={`p-2.5 rounded-xl border text-left min-h-[5.2rem] flex flex-col justify-center items-center ${
                           pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                         }`}
                       >
-                        <div className="w-full flex-1 flex items-center justify-center mb-1">
-                          <img
-                            src={CELEBRITY_SAFE_AVATARS[id]}
-                            alt={`${CELEBRITIES[id].name} 아바타`}
-                            className="w-full max-w-[72px] aspect-square rounded-lg object-cover border border-white/40"
-                            loading="lazy"
-                          />
-                        </div>
-                        <div className="w-full flex-1 flex flex-col justify-center">
+                        <div className="w-full flex flex-col justify-center">
                           <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                         <p
                           className={`text-[10px] mt-1 leading-snug line-clamp-2 text-center ${
@@ -1918,19 +1910,11 @@ export default function Home() {
                                 setPickerRoutine(p.routines[0] ?? '');
                                 setPickerCustomRoutine('');
                               }}
-                              className={`p-2.5 rounded-xl border text-left min-h-[9rem] flex flex-col justify-between items-center ${
+                              className={`p-2.5 rounded-xl border text-left min-h-[5.2rem] flex flex-col justify-center items-center ${
                                 pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                               }`}
                             >
-                              <div className="w-full flex-1 flex items-center justify-center mb-1">
-                                <img
-                                  src={CELEBRITY_SAFE_AVATARS[id]}
-                                  alt={`${CELEBRITIES[id].name} 아바타`}
-                                  className="w-full max-w-[72px] aspect-square rounded-lg object-cover border border-white/40"
-                                  loading="lazy"
-                                />
-                              </div>
-                              <div className="w-full flex-1 flex flex-col justify-center">
+                              <div className="w-full flex flex-col justify-center">
                                 <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                               <p
                                 className={`text-[10px] mt-1 leading-snug line-clamp-2 text-center ${
