@@ -121,17 +121,6 @@ function clampText(s: string, max = 80) {
   return s.length > max ? s.slice(0, max) : s;
 }
 
-function isFirstCheckoutToday(): boolean {
-  const key = 'commute-first-checkout-date';
-  const today = kstDayKey();
-  const stored = localStorage.getItem(key);
-  if (stored !== today) {
-    localStorage.setItem(key, today);
-    return true;
-  }
-  return false;
-}
-
 function trackEvent(name: EventName, payload?: Record<string, string | number | boolean>) {
   try {
     const key = 'todayone-event-log';
@@ -685,16 +674,6 @@ export default function Home() {
     const nextLevel = getLevel(nextScore, nextStreak);
     const prevLevel = getLevel(score, streakDays);
 
-    try {
-      // 저녁 결과 저장 전 전면광고: 당일 첫 체크아웃은 생략(이탈 방지)
-      const skip = isFirstCheckoutToday();
-      if (!skip) {
-        setToast('광고 후 결과 화면이 열립니다.');
-        await adsService.showInterstitial();
-      }
-    } catch {
-      // ignore
-    }
     const missionSnap = morningTask.trim() || todayMission;
     const celebNameSnap = getProfile(selectedCelebrity, customRoleModelName).name;
     const failureReasonSnap = !completed && failureReason ? failureReason : undefined;
@@ -751,6 +730,12 @@ export default function Home() {
   const copyShare = async () => {
     const missionLine = activeRoutineText.trim();
     const text = `롤모델따라하기 · ${activeProfile.name} 루틴 · ${missionLine}\n달성률 ${weeklyRate}% · 연속 ${streakDays}일\n${window.location.origin}`;
+    try {
+      // 전면광고는 공유 액션에서만 노출
+      await adsService.showInterstitial();
+    } catch {
+      // ignore ad errors
+    }
     try {
       await navigator.clipboard.writeText(text);
       setToast('공유 문구를 복사했어요.');
@@ -1165,8 +1150,8 @@ export default function Home() {
       {/* 헤더: 스크롤 영역 밖, 짧은 화면에서도 상단 고정 */}
       <div className="sticky top-0 z-50 shrink-0 w-full bg-white border-b border-toss-border px-4 sm:px-6">
         <div className="py-2.5 sm:py-3">
-          <div className="flex items-center justify-between gap-2 sm:gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex flex-col items-start gap-2">
+            <div className="flex items-center gap-2.5 min-w-0 w-full">
               {logoError ? (
                 <div className="w-7 h-7 rounded-lg border border-toss-border bg-toss-blue/10 flex items-center justify-center text-[12px]">
                   ✅
@@ -1183,9 +1168,9 @@ export default function Home() {
                   decoding="async"
                 />
               )}
-              <span className="text-sm font-semibold text-toss-text truncate">롤모델따라하기</span>
+              <span className="text-sm font-semibold text-toss-text truncate pr-2">롤모델따라하기</span>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0 w-full justify-start">
               <button
                 type="button"
                 onClick={() => {
@@ -1431,7 +1416,7 @@ export default function Home() {
                 <p className="text-lg font-bold text-toss-text">{streakDays}일</p>
               </div>
               <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                <p className="text-xs text-toss-sub">1개월 달성률</p>
+                <p className="text-xs text-toss-sub">내가 선택한 롤모델 닮아가기 1개월 달성률</p>
                 <p className="text-lg font-bold text-toss-text">{weeklyRate}%</p>
               </div>
             </div>
@@ -1501,7 +1486,7 @@ export default function Home() {
                   ? `1) ${activeProfile.name} 루틴 1개 정하기`
                   : `2) ${activeProfile.name} 루틴, 끝났나요?`}
               </p>
-              {!simpleTodayView && (
+              {!simpleTodayView && (!morningConfirmed || !savedToday) && (
                 <p className="text-xs text-toss-sub mb-3">
                   {!morningConfirmed
                     ? '미션을 적거나, 플레이스홀더 추천을 참고해 시작해요.'
