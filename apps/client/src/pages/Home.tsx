@@ -305,6 +305,7 @@ export default function Home() {
   const [bestStreak, setBestStreak] = useState(0);
   const [newRecord, setNewRecord] = useState<number | null>(null);
   const [showFullResetConfirm, setShowFullResetConfirm] = useState(false);
+  const [simpleTodayView, setSimpleTodayView] = useState(false);
 
   const goToTodayTab = () => {
     setShowWeekly(false);
@@ -1247,7 +1248,7 @@ export default function Home() {
         </div>
 
         {!showSettings && (
-          <section className="mb-3 p-2.5 rounded-2xl border border-toss-border bg-white shadow-sm">
+          <section className="mb-3 p-2.5 rounded-2xl border-2 border-toss-blue bg-white shadow-sm">
             <p className="text-xs font-semibold text-toss-sub text-center">오늘 진행 상태</p>
             <div className="mt-2 grid grid-cols-3 gap-2 text-center">
               {[
@@ -1306,6 +1307,17 @@ export default function Home() {
             내 기록 보기
           </button>
         </div>
+        {!showSettings && view === 'today' && (
+          <div className="mb-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setSimpleTodayView((v) => !v)}
+              className="px-3 py-1.5 rounded-full border border-toss-border bg-white text-[11px] font-semibold text-toss-sub"
+            >
+              {simpleTodayView ? '기본 보기' : '간단 보기'}
+            </button>
+          </div>
+        )}
 
         {showSettings && (
           <section className="mb-4 p-4 rounded-2xl border border-toss-border bg-white text-center shadow-sm">
@@ -1493,11 +1505,13 @@ export default function Home() {
                   ? `1) ${activeProfile.name} 루틴 1개 정하기`
                   : `2) ${activeProfile.name} 루틴, 끝났나요?`}
               </p>
-              <p className="text-xs text-toss-sub mb-3">
-                {!morningConfirmed
-                  ? '미션을 적거나, 플레이스홀더 추천을 참고해 시작해요.'
-                  : '끝났으면 완료를 눌러 저장해요.'}
-              </p>
+              {!simpleTodayView && (
+                <p className="text-xs text-toss-sub mb-3">
+                  {!morningConfirmed
+                    ? '미션을 적거나, 플레이스홀더 추천을 참고해 시작해요.'
+                    : '끝났으면 완료를 눌러 저장해요.'}
+                </p>
+              )}
 
               {!morningConfirmed ? (
                 <>
@@ -1562,39 +1576,41 @@ export default function Home() {
                   <div className="mb-3 p-3 rounded-xl border border-sky-200 bg-gradient-to-b from-sky-100 to-slate-100">
                     <p className="text-xs text-toss-sub">오늘의 미션</p>
                     <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
-                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          morningTaskEditSnapshotRef.current = morningTask;
-                          const rList = activeProfile.routines;
-                          const m = morningTask.trim();
-                          if (m && rList.includes(m)) {
-                            setTaskReplaceRoutine(m);
-                            setTaskReplaceCustom('');
-                          } else if (m) {
-                            setTaskReplaceCustom(m);
-                            setTaskReplaceRoutine(rList[0] ?? '');
-                          } else {
-                            setTaskReplaceRoutine(rList[0] ?? '');
-                            setTaskReplaceCustom('');
-                          }
-                          setEditingMorningTask(true);
-                        }}
-                        className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
-                      >
-                        할 일 바꾸기
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          openRoleModelPicker('start_today', { fromSettings: true });
-                        }}
-                        className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
-                      >
-                        롤모델 다시 선택하기
-                      </button>
-                    </div>
+                    {!simpleTodayView && (
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            morningTaskEditSnapshotRef.current = morningTask;
+                            const rList = activeProfile.routines;
+                            const m = morningTask.trim();
+                            if (m && rList.includes(m)) {
+                              setTaskReplaceRoutine(m);
+                              setTaskReplaceCustom('');
+                            } else if (m) {
+                              setTaskReplaceCustom(m);
+                              setTaskReplaceRoutine(rList[0] ?? '');
+                            } else {
+                              setTaskReplaceRoutine(rList[0] ?? '');
+                              setTaskReplaceCustom('');
+                            }
+                            setEditingMorningTask(true);
+                          }}
+                          className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                        >
+                          할 일 바꾸기
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            openRoleModelPicker('start_today', { fromSettings: true });
+                          }}
+                          className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                        >
+                          롤모델 다시 선택하기
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {editingMorningTask && (
