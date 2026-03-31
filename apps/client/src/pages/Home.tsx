@@ -1179,6 +1179,17 @@ export default function Home() {
     reader.readAsDataURL(file);
   };
 
+  const onRemoveCelebrityPhoto = (celebrity: CelebrityId, customNameForOther?: string) => {
+    setCelebrityPhotos((prev) => {
+      if (!prev[celebrity]) return prev;
+      const { [celebrity]: _removed, ...rest } = prev;
+      return rest;
+    });
+    const label = getProfile(celebrity, customNameForOther ?? '').name;
+    setToast(`${label} 사진을 삭제했어요.`);
+    window.setTimeout(() => setToast(null), 2000);
+  };
+
   return (
     <div className="flex h-[100svh] max-h-[100dvh] min-h-0 w-full max-w-lg mx-auto flex-col overflow-hidden bg-white">
       {/* 헤더: 스크롤 영역 밖, 짧은 화면에서도 상단 고정 */}
@@ -1392,6 +1403,15 @@ export default function Home() {
                     }
                   />
                 </label>
+                {celebrityPhotos[selectedCelebrity] && (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveCelebrityPhoto(selectedCelebrity, customRoleModelName)}
+                    className="inline-flex items-center px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 text-sm font-semibold text-rose-700"
+                  >
+                    사진 삭제
+                  </button>
+                )}
               </div>
               <p className="text-[11px] font-semibold text-toss-blue mt-2">
                 롤모델 사진을 넣으면 축하 메시지에 롤모델이 반영됩니다.
@@ -2083,6 +2103,15 @@ export default function Home() {
                     }
                   />
                 </label>
+                {celebrityPhotos[pickerCelebrity] && (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveCelebrityPhoto(pickerCelebrity, pickerOtherName)}
+                    className="inline-flex items-center px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 text-xs font-semibold text-rose-700"
+                  >
+                    사진 삭제
+                  </button>
+                )}
               </div>
             </div>
 
