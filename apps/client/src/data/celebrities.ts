@@ -366,16 +366,6 @@ export const CELEBRITIES = {
       '컨디션·기분 한 줄 기록',
     ],
   },
-  ryu_hyun_jin: {
-    name: '류현진',
-    oneLine: '투구 루틴과 회복',
-    mediaNote: '※ 투구 전 준비·루틴이 야구 보도·인터뷰에서 반복 언급돼요.',
-    routines: [
-      '스트레칭·롱토스 준비 15분',
-      '집중 피칭·모의투구 20분',
-      '수분·수면·어깨 상태 체크 한 줄',
-    ],
-  },
 } as const;
 
 export type PresetCelebrityId = keyof typeof CELEBRITIES;
@@ -431,7 +421,6 @@ export const PRESET_CELEBRITY_GROUPS: { label: string; ids: PresetCelebrityId[] 
       'kim_yuna',
       'park_ji_sung',
       'kim_young_kyung',
-      'ryu_hyun_jin',
     ],
   },
 ];
