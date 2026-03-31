@@ -209,6 +209,10 @@ const CELEBRITY_STATIC_PHOTOS: Partial<Record<CelebrityId, string>> = {
   buffett: '/rolemodels/___________2026-03-31______4.05.57-d51304f2-0a77-4338-8709-7182937670bf.png',
   lee_hae_jin: '/rolemodels/___________2026-03-31______4.06.47-143a4d50-3f4f-4ada-abc9-f1fa4f7e89a6.png',
   kim_beom_seok: '/rolemodels/___________2026-03-31______4.06.52-0e844e01-60bf-4bb9-bb30-ce3ac9d1d17d.png',
+  tim_cook: '/rolemodels/tim-cook-2026-04-01.png',
+  yun_dong_ju: '/rolemodels/yun-dong-ju-2026-04-01.png',
+  king_sejong: '/rolemodels/king-sejong-2026-04-01.png',
+  kim_gu: '/rolemodels/kim-gu-2026-04-01.png',
 };
 
 function getDailyRewardCopy(dayKey: string) {
