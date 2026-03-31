@@ -49,6 +49,7 @@ const HISTORY_WINDOW_DAYS = 30;
 const LEVEL_SILVER_STREAK = 7;
 const LEVEL_GOLD_STREAK = 14;
 const LEVEL_PLATINUM_STREAK = 21;
+const LEVEL_MONTH_STREAK = 30;
 
 function getSuggestedNextTaskForReason(reason: string | undefined): string {
   if (!reason) return '';
@@ -268,6 +269,7 @@ export default function Home() {
   const [newRecord, setNewRecord] = useState<number | null>(null);
   const [showFullResetConfirm, setShowFullResetConfirm] = useState(false);
   const [simpleTodayView, setSimpleTodayView] = useState(false);
+  const [badgeShowcaseIndex, setBadgeShowcaseIndex] = useState(0);
 
   const goToTodayTab = () => {
     setShowWeekly(false);
@@ -505,8 +507,15 @@ export default function Home() {
     if (streakDays >= 1) list.push('첫 저장');
     if (streakDays >= LEVEL_SILVER_STREAK) list.push('7일 연속');
     if (streakDays >= LEVEL_GOLD_STREAK) list.push('14일 연속');
+    if (streakDays >= LEVEL_MONTH_STREAK) list.push('1개월 연속');
     return list;
   }, [streakDays]);
+  const badgeShowcase = useMemo(
+    () => ['첫 저장', '7일 연속', '14일 연속', '1개월 연속'],
+    [],
+  );
+  const currentBadge = badgeShowcase[badgeShowcaseIndex % badgeShowcase.length] ?? '첫 저장';
+  const currentBadgeUnlocked = unlockedBadges.includes(currentBadge);
   const hour = new Date().getHours();
   const isMorningSlot = hour < 15;
   const slotLabel = isMorningSlot ? '출근 전 체크인 시간' : '퇴근 후 체크아웃 시간';
@@ -561,6 +570,7 @@ export default function Home() {
   }, [completedDaysCount, todayKey]);
   const milestoneWow = useMemo(() => {
     if (!savedToday) return null;
+    if (streakDays === LEVEL_MONTH_STREAK) return '1개월 연속 달성! 이제 롤모델 루틴이 완전히 생활화됐어요.';
     if (streakDays === LEVEL_GOLD_STREAK) return '14일 연속 달성! 이제 닮아감이 생활 패턴으로 굳어집니다.';
     if (streakDays === LEVEL_SILVER_STREAK) return '7일 연속 달성! 닮아가는 흐름이 눈에 띄게 안정화됐어요.';
     return null;
@@ -1469,7 +1479,7 @@ export default function Home() {
                 <p className="text-lg font-bold text-toss-text">{streakDays}일</p>
               </div>
               <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                <p className="text-xs text-toss-sub">내가 선택한 롤모델 닮아가기 1개월 달성률</p>
+                <p className="text-xs text-toss-sub">{`${activeProfile.name.replace(/\s+/g, '')} 닮아가기 1개월 달성률`}</p>
                 <p className="text-lg font-bold text-toss-text">{weeklyRate}%</p>
               </div>
             </div>
@@ -1493,23 +1503,37 @@ export default function Home() {
             </div>
             <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
               <p className="text-xs text-toss-sub">배지 진열장</p>
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {['첫 저장', '7일 연속', '14일 연속'].map((badge) => {
-                  const active = unlockedBadges.includes(badge);
-                  return (
-                    <div
-                      key={badge}
-                      className={`rounded-xl border px-2 py-2 text-center text-xs font-semibold ${
-                        active ? 'bg-yellow-50 border-yellow-200 text-yellow-800' : 'bg-white border-toss-border text-toss-sub'
-                      }`}
-                    >
-                      {active ? '🏅 ' : '🔒 '}
-                      {badge}
-                    </div>
-                  );
-                })}
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBadgeShowcaseIndex((prev) => (prev - 1 + badgeShowcase.length) % badgeShowcase.length)}
+                  className="w-9 h-9 rounded-lg border border-toss-border bg-white text-toss-text font-bold"
+                  aria-label="이전 배지"
+                >
+                  &lt;
+                </button>
+                <div
+                  className={`flex-1 rounded-xl border px-3 py-3 text-center text-sm font-semibold ${
+                    currentBadgeUnlocked
+                      ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                      : 'bg-white border-toss-border text-toss-sub'
+                  }`}
+                >
+                  {currentBadgeUnlocked ? '🏅 ' : '🔒 '}
+                  {currentBadge}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBadgeShowcaseIndex((prev) => (prev + 1) % badgeShowcase.length)}
+                  className="w-9 h-9 rounded-lg border border-toss-border bg-white text-toss-text font-bold"
+                  aria-label="다음 배지"
+                >
+                  &gt;
+                </button>
               </div>
-              <p className="mt-2 text-xs text-toss-sub">내 최고 연속 기록: {bestStreak}일</p>
+              <p className="mt-2 text-xs text-toss-sub">
+                {badgeShowcaseIndex + 1}/{badgeShowcase.length} · 내 최고 연속 기록: {bestStreak}일
+              </p>
             </div>
             {streakDays >= LEVEL_GOLD_STREAK && (
               <div className="mt-3 p-3 rounded-xl bg-yellow-50 border border-yellow-200">
