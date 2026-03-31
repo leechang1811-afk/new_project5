@@ -235,6 +235,8 @@ export default function Home() {
   const missionForReserveRef = useRef('');
   /** 롤모델 선택 모달: 루틴 선택 영역 스크롤링용 */
   const pickerRoutineRef = useRef<HTMLDivElement | null>(null);
+  /** 2단계에서 롤모델 변경 시 완료체크 상태 복구용 */
+  const checkoutSelectionSnapshotRef = useRef<{ result: ResultType | null; reason: string } | null>(null);
   /** 미션 수정 화면: 취소 시 복원용 */
   const morningTaskEditSnapshotRef = useRef('');
   /** 「다시 적기」로 1단계 복귀 시, 2단계로 되돌릴 미션 스냅샷 */
@@ -699,6 +701,14 @@ export default function Home() {
     opts?: { fromSettings?: boolean },
   ) => {
     setPickerLaunchedFromSettings(opts?.fromSettings ?? false);
+    if (mode === 'start_today' && morningConfirmed) {
+      checkoutSelectionSnapshotRef.current = {
+        result: checkoutResult,
+        reason: failureReason,
+      };
+    } else {
+      checkoutSelectionSnapshotRef.current = null;
+    }
     setShowSettings(false);
     setPickerMode(mode);
     if (mode === 'start_today') {
@@ -850,9 +860,19 @@ export default function Home() {
     setMorningConfirmed(true);
     setEditingMorningTask(false);
     setShowRewriteBack(false);
-    setCheckoutResult(null);
-    setFailureReason('');
+    if (checkoutSelectionSnapshotRef.current) {
+      setCheckoutResult(checkoutSelectionSnapshotRef.current.result);
+      setFailureReason(
+        checkoutSelectionSnapshotRef.current.result === 'not_done'
+          ? checkoutSelectionSnapshotRef.current.reason
+          : '',
+      );
+    } else {
+      setCheckoutResult(null);
+      setFailureReason('');
+    }
     setPickerLaunchedFromSettings(false);
+    checkoutSelectionSnapshotRef.current = null;
     closeIntro();
     setToast(`${profile.name} 루틴으로 시작했어요.`);
     window.setTimeout(() => setToast(null), 2200);
@@ -1383,11 +1403,6 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => {
-                          if (checkoutResult !== null) {
-                            setToast('내일부터 체크할 수 있어요.');
-                            window.setTimeout(() => setToast(null), 2200);
-                            return;
-                          }
                           openRoleModelPicker('start_today', { fromSettings: true });
                         }}
                         className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
