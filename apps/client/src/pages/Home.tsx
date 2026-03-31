@@ -226,7 +226,13 @@ const CELEBRITY_CURATED_AVATAR_PHOTOS: Partial<Record<PresetCelebrityId, string>
   churchill: '/rolemodels/churchill-avatar.png',
   einstein: '/rolemodels/einstein-avatar.png',
   king_sejong: '/rolemodels/king-sejong-avatar.png',
+  yun_dong_ju: '/rolemodels/yun-dong-ju-avatar.png',
+  kim_gu: '/rolemodels/kim-gu-avatar.png',
 };
+
+const TEXT_ONLY_CELEBRITY_IDS = new Set<PresetCelebrityId>(
+  PRESET_CELEBRITY_GROUPS.find((group) => group.label === '연예인·가수')?.ids ?? [],
+);
 
 function getDefaultCelebrityImage(id: PresetCelebrityId) {
   return CELEBRITY_CURATED_AVATAR_PHOTOS[id] ?? CELEBRITY_SAFE_AVATARS[id];
@@ -1891,14 +1897,16 @@ export default function Home() {
                           pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                         }`}
                       >
-                        <div className="w-full flex-1 flex items-center justify-center mb-1">
-                          <img
-                            src={getDefaultCelebrityImage(id)}
-                            alt={`${CELEBRITIES[id].name} 아바타`}
-                            className="w-full max-w-[72px] aspect-square rounded-xl object-cover border border-white/40"
-                            loading="lazy"
-                          />
-                        </div>
+                        {!TEXT_ONLY_CELEBRITY_IDS.has(id) && (
+                          <div className="w-full flex-1 flex items-center justify-center mb-1">
+                            <img
+                              src={getDefaultCelebrityImage(id)}
+                              alt={`${CELEBRITIES[id].name} 아바타`}
+                              className="w-full max-w-[72px] aspect-square rounded-xl object-cover border border-white/40"
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
                         <div className="w-full flex-1 flex flex-col justify-center">
                           <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                         <p
@@ -1951,14 +1959,16 @@ export default function Home() {
                                 pickerCelebrity === id ? 'bg-toss-blue text-white border-toss-blue' : 'bg-white border-toss-border text-toss-text'
                               }`}
                             >
-                              <div className="w-full flex-1 flex items-center justify-center mb-1">
-                                <img
-                                  src={getDefaultCelebrityImage(id)}
-                                  alt={`${CELEBRITIES[id].name} 아바타`}
-                                  className="w-full max-w-[72px] aspect-square rounded-xl object-cover border border-white/40"
-                                  loading="lazy"
-                                />
-                              </div>
+                              {!TEXT_ONLY_CELEBRITY_IDS.has(id) && (
+                                <div className="w-full flex-1 flex items-center justify-center mb-1">
+                                  <img
+                                    src={getDefaultCelebrityImage(id)}
+                                    alt={`${CELEBRITIES[id].name} 아바타`}
+                                    className="w-full max-w-[72px] aspect-square rounded-xl object-cover border border-white/40"
+                                    loading="lazy"
+                                  />
+                                </div>
+                              )}
                               <div className="w-full flex-1 flex flex-col justify-center">
                                 <p className="text-sm font-semibold leading-tight line-clamp-2 text-center">{CELEBRITIES[id].name}</p>
                               <p
