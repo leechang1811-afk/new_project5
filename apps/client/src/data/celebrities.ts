@@ -440,6 +440,7 @@ export type CelebrityProfile = {
   oneLine: string;
   routines: string[];
   mediaNote: string;
+  quote?: string;
 };
 
 export function getProfile(id: CelebrityId, customName: string): CelebrityProfile {

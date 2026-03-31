@@ -20,7 +20,7 @@ type WowState = {
   level: 'BRONZE' | 'SILVER' | 'GOLD';
   celebrityName: string;
   missionText: string;
-  /** 미완료 저장 시 내일 더 쉽게 바꾸기에 사용 */
+/** 미완료 저장 시 내일 루틴 관련 추천에 사용 */
   failureReason?: string;
 };
 type PromotionState = {
@@ -247,8 +247,6 @@ export default function Home() {
   const [logoError, setLogoError] = useState(false);
   const [view, setView] = useState<'today' | 'weekly'>('today');
   const [wow, setWow] = useState<WowState | null>(null);
-  /** 결과 팝업: 내일 더 쉽게 바꾸기 1회만 */
-  const [wowEasierUsed, setWowEasierUsed] = useState(false);
   /** 결과 팝업: 다시 세팅 → 루틴 선택 서브화면 */
   const [wowRoutineResetOpen, setWowRoutineResetOpen] = useState(false);
   const [wowResetRoutine, setWowResetRoutine] = useState('');
@@ -397,13 +395,6 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem('commute-best-streak', String(bestStreak));
   }, [bestStreak]);
-
-  useEffect(() => {
-    if (wow) {
-      setWowEasierUsed(false);
-      setWowRoutineResetOpen(false);
-    }
-  }, [wow]);
 
   useEffect(() => {
     if (!morningConfirmed || !checkoutOutcomeToday) return;
@@ -975,36 +966,6 @@ export default function Home() {
     setToast(`${prof.name} 루틴으로 내일(${nextDay}) 미션을 예약했어요.`);
     window.setTimeout(() => setToast(null), 2200);
     trackEvent('reserve_tomorrow', { keepSame: true });
-  };
-
-  const reserveTomorrowEasier = () => {
-    if (!wow || wowEasierUsed) return;
-    const prof = getProfile(selectedCelebrity, customRoleModelName);
-    const rList = prof.routines;
-    const fallbackMission = rList[daySeed(kstDayKey()) % rList.length];
-    const base = wow.missionText.trim() || morningTask.trim() || fallbackMission;
-    const sug =
-      getSuggestedNextTaskForReason(wow.failureReason) || '3분만: 시작만 하기';
-    const nextLine = clampText(`${base} · ${sug}`, 80);
-    const nextDay = kstNextDayKey();
-    try {
-      localStorage.setItem(
-        'commute-tomorrow-reservation',
-        JSON.stringify({
-          forDay: nextDay,
-          celebrityId: selectedCelebrity,
-          customRoleModelName: selectedCelebrity === 'other' ? customRoleModelName.trim() : '',
-          morningTask: nextLine,
-        }),
-      );
-    } catch {
-      // ignore
-    }
-    setMorningTask('');
-    setWowEasierUsed(true);
-    setToast(`${prof.name} 루틴으로 내일(${nextDay}) 더 쉬운 미션을 예약했어요.`);
-    window.setTimeout(() => setToast(null), 2200);
-    trackEvent('reserve_tomorrow', { easier: true });
   };
 
   const onUploadCelebrityPhoto = (
@@ -1973,6 +1934,8 @@ export default function Home() {
               <>
             {(() => {
               const style = getLevelStyle(wow.level);
+              const celebProfile = getProfile(selectedCelebrity, customRoleModelName);
+              const wowPhoto = celebrityPhotos[selectedCelebrity] ?? CELEBRITY_STATIC_PHOTOS[selectedCelebrity];
               return (
                 <>
                   <p
@@ -1991,19 +1954,24 @@ export default function Home() {
                       ))}
                     </div>
                   )}
-                  <p className="text-sm text-toss-sub mt-3 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
-                    {wow.completed ? style.next : '내일 다시 미션을 정하면 됩니다.'}
-                  </p>
-                  {wow.completed && celebrityPhotos[selectedCelebrity] && (
+                  {wowPhoto && (
                     <div className="mt-3 flex items-center justify-center gap-3 p-2.5 rounded-xl bg-white border border-toss-border">
                       <img
-                        src={celebrityPhotos[selectedCelebrity]}
-                        alt=""
-                        className="w-14 h-14 rounded-xl object-cover border border-toss-border shrink-0"
+                        src={wowPhoto}
+                        alt={`${wow.celebrityName} 사진`}
+                        className="w-16 h-16 rounded-xl object-cover border border-toss-border shrink-0"
                       />
                       <p className="text-sm font-semibold text-toss-text text-left">{wow.celebrityName}</p>
                     </div>
                   )}
+                  {wow.completed && celebProfile.quote && (
+                    <p className="mt-3 text-sm font-medium text-toss-text text-center text-pretty break-keep max-w-[95%] mx-auto">
+                      “{celebProfile.quote}”
+                    </p>
+                  )}
+                  <p className="text-sm text-toss-sub mt-3 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
+                    {wow.completed ? style.next : '내일 다시 미션을 정하면 됩니다.'}
+                  </p>
 
                   <div className="mt-4 grid grid-cols-3 gap-2 text-center mx-auto max-w-full">
                     <div className={`rounded-xl border p-2.5 ${style.chip}`}>
@@ -2057,23 +2025,13 @@ export default function Home() {
                 지금 미션 그대로 유지하기
               </button>
               {!wow.completed && (
-                <>
-                  <button
-                    type="button"
-                    onClick={reserveTomorrowEasier}
-                    disabled={wowEasierUsed}
-                    className="py-3 px-2 rounded-xl border border-toss-border bg-white text-toss-text text-sm font-semibold leading-snug disabled:opacity-40 disabled:pointer-events-none"
-                  >
-                    내일 더 쉽게 바꾸기
-                  </button>
-                  <button
-                    type="button"
-                    onClick={openWowRoutineReset}
-                    className="py-3 px-2 rounded-xl border border-toss-border bg-toss-bg text-toss-text text-sm font-semibold leading-snug"
-                  >
-                    다시 세팅하기
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={openWowRoutineReset}
+                  className="py-3 px-2 rounded-xl border border-toss-border bg-toss-bg text-toss-text text-sm font-semibold leading-snug col-span-2"
+                >
+                  다시 세팅하기
+                </button>
               )}
             </div>
             <button
