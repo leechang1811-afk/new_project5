@@ -165,6 +165,13 @@ function getLevelStyle(level: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM') {
   };
 }
 
+function getRemainingToNextLevel(level: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM', streak: number) {
+  if (level === 'BRONZE') return Math.max(0, 3 - streak);
+  if (level === 'SILVER') return Math.max(0, 7 - streak);
+  if (level === 'GOLD') return Math.max(0, 14 - streak);
+  return 0;
+}
+
 const CELEBRITY_STATIC_PHOTOS: Partial<Record<CelebrityId, string>> = {
   jobs: '/rolemodels/___________2026-03-31______4.05.40-b176ce7f-2c75-4820-a3bb-8a27ed773792.png',
   musk: '/rolemodels/___________2026-03-31______4.05.35-f4f6106c-48bf-42c4-bf5a-ef5084a04496.png',
@@ -1171,7 +1178,7 @@ export default function Home() {
             <div className="text-left min-w-0">
               <p className="text-xs text-toss-sub">{todayKey}</p>
               <p className="text-xl sm:text-2xl font-bold text-toss-text mt-1 leading-snug">
-                {showSettings ? '설정 화면' : `${activeProfile.name} 루틴 · 오늘 1미션`}
+                {showSettings ? '설정 화면' : `${activeProfile.name} 루틴`}
               </p>
             </div>
             <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-semibold ${statusPill.tone}`}>
@@ -1180,10 +1187,8 @@ export default function Home() {
           </div>
           <p className="text-sm text-toss-sub mt-2 leading-relaxed">
             {showSettings
-              ? '알림 시간과 롤모델, 사진을 이 화면에서 바꿀 수 있어요.'
-              : !morningConfirmed
-                ? '미션 한 줄을 적고 시작하면 됩니다.'
-                : '끝났으면 아래에서 완료를 저장해요.'}
+              ? '롤모델과 축하 화면 사진을 이 화면에서 바꿀 수 있어요.'
+              : `루틴 : ${activeRoutineText}`}
           </p>
           <p className="text-xs text-toss-blue/90 mt-2 font-medium leading-relaxed">{resemblanceHint}</p>
         </div>
@@ -1656,7 +1661,6 @@ export default function Home() {
                   >
                     오늘 결과 저장하기
                   </button>
-                  <p className="mt-2 text-xs text-toss-sub">하루 1번만 저장돼요. 광고가 나와도 저장은 됩니다.</p>
                 </>
               )}
             </section>
@@ -2102,16 +2106,16 @@ export default function Home() {
                       <p className="text-sm font-semibold text-toss-text text-center">{wow.celebrityName}</p>
                     </div>
                   )}
-                  <p className="text-sm text-toss-sub mt-3 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
-                    {wow.completed
-                      ? (() => {
-                          const quotes = celebProfile.quotes ?? [];
-                          if (quotes.length === 0) return style.next;
-                          const idx = Math.max(0, wow.streak - 1) % quotes.length;
-                          return `“${quotes[idx]}”`;
-                        })()
-                      : '내일 다시 미션을 정하면 됩니다.'}
-                  </p>
+                  {wow.completed && (() => {
+                    const quotes = celebProfile.quotes ?? [];
+                    if (quotes.length === 0) return null;
+                    const idx = Math.max(0, wow.streak - 1) % quotes.length;
+                    return (
+                      <p className="text-sm text-toss-sub mt-3 leading-relaxed text-center text-pretty break-keep max-w-[95%] mx-auto">
+                        “{quotes[idx]}”
+                      </p>
+                    );
+                  })()}
 
                   <div className="mt-4 grid grid-cols-3 gap-2 text-center mx-auto max-w-full">
                     <div className={`rounded-xl border p-2.5 ${style.chip}`}>
@@ -2134,6 +2138,13 @@ export default function Home() {
                       <p className="text-lg font-bold text-toss-text">{wow.weeklyRate}%</p>
                     </div>
                   </div>
+                  {wow.completed && (
+                    <p className="mt-3 text-xs text-toss-sub text-center">
+                      {wow.level === 'PLATINUM'
+                        ? '이미 최고 단계입니다.'
+                        : `연속 ${getRemainingToNextLevel(wow.level, wow.streak)}번 하면 다음 단계로 넘어갑니다.`}
+                    </p>
+                  )}
                   {wow.completed && (
                     <div className="mt-3 p-3 rounded-xl bg-white border border-yellow-200">
                       <p className="text-xs text-yellow-700">오늘의 팁</p>
