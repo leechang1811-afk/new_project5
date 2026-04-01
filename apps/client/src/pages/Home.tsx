@@ -64,7 +64,7 @@ export default function Home() {
   const streakBadge = streakCount >= 30 ? '🏆' : streakCount >= 14 ? '⭐' : streakCount >= 7 ? '🎖️' : null;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(7rem+env(safe-area-inset-bottom))] relative">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(5.25rem+env(safe-area-inset-bottom))] relative">
       <img
         src="/brand-logo.png"
         alt="내 두뇌 몇 등? 로고"

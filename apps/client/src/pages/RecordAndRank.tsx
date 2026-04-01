@@ -114,7 +114,7 @@ export default function RecordAndRank() {
     streakCount > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white p-4 sm:p-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white p-4 sm:p-6 pb-[calc(5.25rem+env(safe-area-inset-bottom))]">
       <div className="max-w-md mx-auto w-full">
         <h1 className="text-center text-xl sm:text-2xl font-bold text-toss-text mb-4 sm:mb-6">기록 & 순위</h1>
 

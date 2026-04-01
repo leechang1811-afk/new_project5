@@ -166,7 +166,7 @@ export default function Result() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="relative min-h-screen bg-gradient-to-b from-slate-50 to-white pb-[calc(7rem+env(safe-area-inset-bottom))]"
+      className="relative min-h-screen bg-gradient-to-b from-slate-50 to-white pb-[calc(5.25rem+env(safe-area-inset-bottom))]"
     >
       <img
         src="/brand-logo.png"

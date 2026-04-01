@@ -39,7 +39,6 @@ export default function BannerAd() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const destroyRef = useRef<(() => void) | null>(null);
-  const BANNER_HEIGHT_PX = 96;
 
   useEffect(() => {
     if (!AD_GROUP_BANNER) return;
@@ -80,18 +79,14 @@ export default function BannerAd() {
   if (!AD_GROUP_BANNER) return null;
 
   return (
-    <>
-      {/* 콘텐츠가 배너에 가려지지 않도록 공간 확보 */}
-      <div style={{ height: `calc(${BANNER_HEIGHT_PX}px + env(safe-area-inset-bottom))` }} aria-hidden="true" />
-      <div className="fixed left-0 right-0 bottom-0 z-40 pointer-events-none">
-        <div className="mx-auto max-w-md px-4 sm:px-6 pb-[env(safe-area-inset-bottom)] pointer-events-auto">
-          <div
-            ref={containerRef}
-            className="w-full min-h-[96px] rounded-t-xl border border-slate-200 bg-slate-50/90"
-            aria-label="광고"
-          />
-        </div>
+    <div className="fixed left-0 right-0 bottom-0 z-40 pointer-events-none">
+      <div className="mx-auto max-w-md px-4 sm:px-6 pb-[env(safe-area-inset-bottom)] pointer-events-auto">
+        <div
+          ref={containerRef}
+          className="w-full min-h-[96px] rounded-t-xl border border-slate-200 bg-slate-50/90"
+          aria-label="광고"
+        />
       </div>
-    </>
+    </div>
   );
 }
