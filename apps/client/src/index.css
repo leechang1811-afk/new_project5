@@ -13,10 +13,12 @@ html {
   height: 100%;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 body {
   @apply bg-white text-toss-text antialiased;
+  touch-action: manipulation;
   padding-top: var(--sat);
   padding-right: var(--sar);
   padding-bottom: var(--sab);
