@@ -79,7 +79,7 @@ export default function ScreenshotCombo() {
               type="button"
               className="mt-4 px-5 py-2 rounded-lg bg-white/20 text-white font-semibold text-xs"
             >
-              링크 복사
+              내 기록 자랑하기
             </button>
           </div>
 
