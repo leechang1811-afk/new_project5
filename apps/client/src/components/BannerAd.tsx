@@ -20,7 +20,15 @@ function ensureTossAdsInit(sdk: typeof import('@apps-in-toss/web-framework')): P
     sdk.TossAds.initialize({
       callbacks: {
         onInitialized: () => resolve(true),
-        onInitializationFailed: () => resolve(false),
+        onInitializationFailed: (err) => {
+          const message = String((err as { message?: string })?.message ?? err ?? '');
+          // 이미 초기화된 상태면 정상으로 간주 (페이지 이동 시 재호출 케이스)
+          if (message.includes('Already initialized')) {
+            resolve(true);
+            return;
+          }
+          resolve(false);
+        },
       },
     });
   });
@@ -35,6 +43,8 @@ export default function BannerAd() {
 
   useEffect(() => {
     if (!AD_GROUP_BANNER) return;
+    if (typeof window === 'undefined') return;
+    if (!(window as Window & { ReactNativeWebView?: unknown }).ReactNativeWebView) return;
     // 첫 페인트 후 배너 SDK 로딩 (초기 체감 로딩 개선)
     const timer = setTimeout(() => {
       getBannerSdk().then((sdk) => {
@@ -46,6 +56,10 @@ export default function BannerAd() {
               theme: 'light',
               tone: 'grey',
               variant: 'card',
+              callbacks: {
+                onNoFill: () => {},
+                onAdFailedToRender: () => {},
+              },
             });
             destroyRef.current = result?.destroy ?? null;
           } catch {
@@ -55,7 +69,7 @@ export default function BannerAd() {
       }).catch(() => {
         // ignore
       });
-    }, 600);
+    }, 250);
     return () => {
       clearTimeout(timer);
       destroyRef.current?.();

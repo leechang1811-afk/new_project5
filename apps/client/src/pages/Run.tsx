@@ -295,7 +295,7 @@ export default function Run() {
             className={
               gameType === 'PAINT'
                 ? 'flex min-h-0 flex-1 flex-col pt-5 pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))]'
-                : 'flex min-h-0 flex-1 flex-col pt-0 pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))]'
+                : 'flex min-h-0 flex-1 flex-col pt-0 pb-[calc(clamp(3.25rem,5vh,4.25rem)+env(safe-area-inset-bottom,0px))]'
             }
           >
             {gameType === 'REACTION' && (
