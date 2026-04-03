@@ -1237,10 +1237,10 @@ export default function Home() {
         <div className="px-4 sm:px-6 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2.5 sm:pb-3">
           <div className="flex items-center justify-between gap-3 min-w-0">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="shrink-0 rounded-2xl bg-slate-100 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+              <div className="shrink-0 rounded-2xl bg-[#F2F4F6] p-1">
                 <div className="relative">
                   {logoError ? (
-                    <div className="w-9 h-9 rounded-xl bg-[#3182F6] flex items-center justify-center text-white text-base font-bold leading-none">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-toss-blue text-base font-bold leading-none text-white">
                       ✓
                     </div>
                   ) : (
@@ -1266,7 +1266,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="min-w-0 py-0.5">
-                <p className="text-[15px] font-bold text-toss-text leading-snug tracking-tight truncate">
+                <p className="text-[16px] font-bold text-toss-text leading-snug tracking-tight truncate">
                   롤모델따라하기
                 </p>
                 <p className="text-[12px] text-toss-sub mt-0.5 truncate">
@@ -1282,9 +1282,9 @@ export default function Home() {
                   navigate('/settings');
                 }}
                 aria-label="설정"
-                className="shrink-0 rounded-full border border-toss-border/90 bg-white px-3 py-1.5 text-[12px] font-semibold text-toss-text active:bg-toss-bg"
+                className="shrink-0 rounded-full border border-toss-border bg-white px-3.5 py-2 text-[13px] font-semibold text-toss-text active:bg-toss-bg/80 min-h-[40px] min-w-[4.5rem]"
               >
-                ⚙️ 설정
+                설정
               </button>
             ) : (
               <div className="w-[4.5rem] shrink-0" aria-hidden />
@@ -1320,16 +1320,15 @@ export default function Home() {
       >
         {isHub && (
           <>
-            <div className="mb-4 rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/90 p-4 text-left shadow-[0_8px_30px_-12px_rgba(15,23,42,0.12)] ring-1 ring-slate-100">
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF6FF] via-white to-sky-50/70 py-4 pl-4 pr-3 shadow-[inset_4px_0_0_0_#3182F6] ring-1 ring-toss-blue/15">
-                <div className="pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full bg-toss-blue/[0.07] blur-2xl" aria-hidden />
-                <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="mb-5 rounded-2xl border border-toss-border bg-white p-4 text-left shadow-sm">
+              <div className="rounded-2xl bg-toss-bg/45 px-4 py-4 sm:px-5 sm:py-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-toss-blue">오늘 따라하기</p>
-                    <p className="mt-2 inline-flex max-w-full items-center rounded-lg bg-white/95 px-2.5 py-1 text-[12px] font-bold text-slate-800 shadow-sm ring-1 ring-slate-200/90">
+                    <p className="text-[11px] font-semibold text-toss-blue">오늘 따라하기</p>
+                    <p className="mt-2 inline-flex max-w-full items-center rounded-full border border-toss-border bg-white px-3 py-1.5 text-[12px] font-bold text-toss-text">
                       {activeProfile.name} 루틴
                     </p>
-                    <p className="mt-3 text-[17px] font-extrabold leading-[1.45] tracking-tight text-slate-900 sm:text-[18px] sm:leading-[1.35] break-keep [text-wrap:balance]">
+                    <p className="mt-3 text-[17px] font-extrabold leading-[1.45] tracking-tight text-toss-text sm:text-[18px] sm:leading-[1.35] break-keep [text-wrap:balance]">
                       {activeRoutineText}
                     </p>
                   </div>
@@ -1341,83 +1340,85 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative z-0 mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl bg-[#F7F9FC] p-3 ring-1 ring-slate-200/80">
+              <div className="relative z-0 mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                <div className="rounded-2xl border border-toss-border bg-toss-bg/35 p-3.5">
                   <div className="flex items-baseline justify-between gap-2">
-                    <p className="text-[12px] font-semibold text-slate-700">따라한 정도</p>
+                    <p className="text-[12px] font-semibold text-toss-text">따라한 정도</p>
                     <p className="text-[22px] font-extrabold tabular-nums text-toss-blue leading-none">
                       {weeklyRate}
                       <span className="text-[14px] font-bold">%</span>
                     </p>
                   </div>
                   <p className="text-[11px] text-toss-sub mt-1">최근 30일 · 롤모델 루틴을 실행한 비율</p>
-                  <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-white ring-1 ring-slate-200/90">
+                  <div className="mt-2.5 h-2.5 overflow-hidden rounded-full border border-toss-border bg-white">
                     <div
                       className="h-full rounded-full bg-toss-blue transition-[width] duration-300"
                       style={{ width: `${weeklyRate}%` }}
                     />
                   </div>
-                  <p className="text-[11px] font-medium text-slate-600 mt-1.5">
-                    30일 중 <span className="text-toss-text">{last30DoneCount}</span>일 완료
+                  <p className="text-[11px] font-medium text-toss-sub mt-1.5">
+                    30일 중 <span className="text-toss-text font-semibold">{last30DoneCount}</span>일 완료
                   </p>
                   <button
                     type="button"
                     onClick={() => navigate('/report')}
-                    className="mt-2.5 flex w-full items-center justify-between border-t border-slate-200/90 pt-2.5 text-left active:opacity-80"
+                    className="mt-3 flex min-h-[44px] w-full items-center justify-between border-t border-toss-border pt-3 text-left active:bg-toss-bg/40 -mx-0.5 px-0.5 rounded-lg"
                   >
                     <span className="text-[12px] font-bold text-toss-blue">내 기록 보기</span>
-                    <span className="text-base font-light text-toss-blue" aria-hidden>
+                    <span className="text-lg font-light text-toss-blue/85" aria-hidden>
                       ›
                     </span>
                   </button>
                 </div>
 
-                <div className="rounded-2xl bg-amber-50/80 p-3 ring-1 ring-amber-200/90">
+                <div className="rounded-2xl border border-[#EDE6DC] bg-[#FFFBF8] p-3.5">
                   <div className="flex items-baseline justify-between gap-2">
-                    <p className="text-[12px] font-semibold text-amber-900">닮아가는 정도</p>
-                    <p className="text-[22px] font-extrabold tabular-nums text-amber-800 leading-none">
+                    <p className="text-[12px] font-semibold text-toss-text">닮아가는 정도</p>
+                    <p className="text-[22px] font-extrabold tabular-nums text-[#C45C1A] leading-none">
                       {resemblancePercent}
                       <span className="text-[14px] font-bold">%</span>
                     </p>
                   </div>
-                  <p className="text-[11px] text-amber-900/75 mt-1 line-clamp-2">{resemblanceStage.label}</p>
-                  <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-white/90 ring-1 ring-amber-200/80">
+                  <p className="text-[11px] text-toss-sub mt-1 line-clamp-2">{resemblanceStage.label}</p>
+                  <div className="mt-2.5 h-2.5 overflow-hidden rounded-full border border-[#F0E4D8] bg-white">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-[width] duration-300"
+                      className="h-full rounded-full bg-gradient-to-r from-[#FFB86C] to-[#FF9A4A] transition-[width] duration-300"
                       style={{ width: `${resemblancePercent}%` }}
                     />
                   </div>
-                  <p className="text-[10px] font-semibold text-amber-900/85 mt-1.5">연속 기록 {streakDays}일</p>
-                  <p className="text-[10px] text-amber-900/70 leading-snug line-clamp-2">{resemblanceStage.desc}</p>
+                  <p className="text-[10px] font-semibold text-toss-text mt-1.5">연속 기록 {streakDays}일</p>
+                  <p className="text-[10px] text-toss-sub leading-snug line-clamp-2">{resemblanceStage.desc}</p>
                 </div>
               </div>
 
               {onboardingCoachCopy && (
-                <p className="text-[11px] text-toss-sub mt-3 rounded-xl bg-toss-bg px-3 py-2 leading-relaxed">
+                <p className="text-[11px] text-toss-sub mt-4 rounded-xl border border-toss-border/60 bg-toss-bg/50 px-3 py-2.5 leading-relaxed">
                   {onboardingCoachCopy}
                 </p>
               )}
             </div>
 
-            <div className="mb-4">
+            <div className="mb-5">
               <button
                 type="button"
                 onClick={() => navigate('/mission')}
-                className="relative z-0 flex w-full items-center justify-between gap-3 rounded-2xl border border-toss-border bg-white p-4 text-left shadow-sm active:bg-toss-bg"
+                className="relative z-0 flex min-h-[56px] w-full items-center justify-between gap-3 rounded-2xl border border-toss-border bg-white p-4 text-left shadow-[0_1px_2px_rgba(11,18,32,0.04)] active:bg-toss-bg/50"
               >
                 <div className="min-w-0">
-                  <p className="text-[15px] font-bold text-toss-text">오늘 미션</p>
-                  <p className="text-xs text-toss-sub mt-0.5">{missionHubSubtitle}</p>
+                  <p className="text-[16px] font-bold text-toss-text">오늘 미션</p>
+                  <p className="mt-0.5 text-[13px] text-toss-sub">{missionHubSubtitle}</p>
                 </div>
-                <span className="text-xl font-light text-toss-blue/80 shrink-0" aria-hidden>
+                <span className="shrink-0 text-2xl font-light leading-none text-toss-blue/75" aria-hidden>
                   ›
                 </span>
               </button>
             </div>
 
-            <section className="relative z-0 mb-6 rounded-2xl border-2 border-toss-blue bg-white p-2.5 shadow-sm">
-              <p className="text-xs font-semibold text-toss-sub text-center">오늘 진행 상태</p>
-              <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+            <section className="relative z-0 mb-6 rounded-2xl border border-toss-border bg-toss-bg/30 p-3 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-toss-sub text-center">
+                오늘 진행 상태
+              </p>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center sm:gap-2.5">
                 {[
                   { step: 1, label: '루틴 정하기' },
                   { step: 2, label: '완료 체크' },
@@ -1428,12 +1429,12 @@ export default function Home() {
                   return (
                     <div
                       key={item.step}
-                      className={`rounded-xl border px-2 py-2 text-[11px] font-semibold ${
+                      className={`min-h-[44px] rounded-xl border px-1.5 py-2 text-[11px] font-semibold leading-tight ${
                         active
-                          ? 'bg-toss-blue text-white border-toss-blue'
+                          ? 'border-toss-blue bg-toss-blue text-white shadow-sm'
                           : done
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-white text-toss-sub border-toss-border'
+                            ? 'border-[#C8E6D4] bg-[#F0FAF4] text-[#1E6B4E]'
+                            : 'border-toss-border bg-white text-toss-sub'
                       }`}
                     >
                       {done ? '✓ ' : ''}
@@ -1443,7 +1444,7 @@ export default function Home() {
                 })}
               </div>
               {milestoneWow && (
-                <div className="mt-2 rounded-xl border border-toss-blue/30 bg-blue-50 px-2.5 py-2 text-[11px] font-semibold text-blue-700 animate-pulse">
+                <div className="mt-3 rounded-xl border border-toss-blue/20 bg-white px-3 py-2.5 text-center text-[11px] font-semibold leading-snug text-toss-blue">
                   {milestoneWow}
                 </div>
               )}
