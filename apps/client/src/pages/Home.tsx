@@ -1439,7 +1439,7 @@ export default function Home() {
                       <p className="mt-0.5 text-[13px] text-toss-sub">{missionHubSubtitle}</p>
                     </div>
                     <span
-                      className="shrink-0 text-2xl font-light leading-none text-toss-blue/75 sm:hidden"
+                      className="shrink-0 pr-0.5 text-2xl font-light leading-none text-toss-blue/75 sm:hidden"
                       aria-hidden
                     >
                       ›
@@ -1478,7 +1478,7 @@ export default function Home() {
                     </div>
                   </div>
                   <span
-                    className="hidden shrink-0 self-center text-2xl font-light leading-none text-toss-blue/75 sm:block"
+                    className="hidden shrink-0 self-center pr-1 text-2xl font-light leading-none text-toss-blue/75 sm:block"
                     aria-hidden
                   >
                     ›
