@@ -1,0 +1,23 @@
+---
+description: Do not change other standalone apps; primary work is new_project5
+alwaysApply: true
+---
+
+# Other apps in this workspace (do not touch)
+
+This monorepo folder contains several **separate products**. Unless the user explicitly asks to work on one of them, **do not read, edit, refactor, move, delete, or commit changes** under:
+
+- `korea-bible-work/` — Korea Bible app (nested git repo)
+- `korea-habits-fix/` — Korea habits app (nested git repo)
+- `korea-quiz-toss/` — Korea quiz / Toss app
+- `mafia-release/` — Mafia game app
+
+## Default focus
+
+- **Primary remote**: `origin` → `leechang1811-afk/new_project5` on branch **`main`**.
+- Prefer changes under `apps/` (e.g. `apps/client`) and shared root config only when it serves **new_project5**.
+
+## Git
+
+- Do not add remotes pointing at korea-quiz, mafia-game, or other repos for routine work.
+- Do not `git push` to remotes other than `origin` unless the user names a specific remote and purpose.
