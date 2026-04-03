@@ -669,12 +669,16 @@ export default function Home() {
     return isMorningSlot ? '저녁에 완료 저장' : '오늘 루틴 결과 저장하기';
   }, [isMorningSlot, morningConfirmed, activeProfile.name]);
 
+  /** 하단 「오늘 진행」 단계(1·2·3)와 동일한 의미로 표시 */
   const statusPill = useMemo(() => {
-    if (!morningConfirmed) return { label: '지금: 루틴 정하기', tone: 'bg-amber-50 text-amber-700 border-amber-200' };
-    if (morningConfirmed && isMorningSlot)
-      return { label: `오늘: ${activeProfile.name} 루틴 중`, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
-    return { label: '지금: 완료 저장', tone: 'bg-toss-blue/5 text-toss-blue border-toss-blue/20' };
-  }, [isMorningSlot, morningConfirmed, activeProfile.name]);
+    if (journeyStep === 1) {
+      return { label: '지금: 루틴 정하기', tone: 'bg-amber-50 text-amber-700 border-amber-200' };
+    }
+    if (journeyStep === 2) {
+      return { label: '지금: 완료 체크', tone: 'bg-toss-blue/5 text-toss-blue border-toss-blue/20' };
+    }
+    return { label: '오늘 저장 완료', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+  }, [journeyStep]);
 
   const missionHubSubtitle = useMemo(() => {
     if (savedToday) return '오늘 결과 저장 완료';
@@ -1430,59 +1434,61 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => navigate('/mission')}
-                className="relative z-0 w-full rounded-2xl border border-toss-border bg-white p-4 text-left shadow-[0_1px_2px_rgba(11,18,32,0.04)] active:bg-toss-bg/50"
+                className="relative z-0 w-full min-w-0 rounded-2xl border border-toss-border bg-white p-4 text-left shadow-[0_1px_2px_rgba(11,18,32,0.04)] active:bg-toss-bg/50"
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                  <div className="flex min-w-0 flex-1 items-start justify-between gap-2 sm:max-w-[11.5rem] sm:flex-none sm:shrink-0">
+                <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-3">
+                  <div className="flex min-w-0 items-start justify-between gap-2 sm:w-[10.5rem] sm:max-w-[11rem] sm:flex-shrink-0 sm:justify-start sm:gap-0">
                     <div className="min-w-0">
                       <p className="text-[16px] font-bold text-toss-text">오늘 미션</p>
                       <p className="mt-0.5 text-[13px] text-toss-sub">{missionHubSubtitle}</p>
                     </div>
                     <span
-                      className="shrink-0 pr-0.5 text-2xl font-light leading-none text-toss-blue/75 sm:hidden"
+                      className="flex h-9 w-8 shrink-0 items-center justify-center text-2xl font-light leading-none text-toss-blue/75 sm:hidden"
                       aria-hidden
                     >
                       ›
                     </span>
                   </div>
-                  <div className="min-w-0 w-full flex-1 sm:min-w-[19.5rem]">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-toss-sub mb-1.5 pl-0.5 text-left">
-                      오늘 진행
-                    </p>
-                    <div className="grid w-full grid-cols-3 gap-2 text-center">
-                      {[
-                        { step: 1, label: '루틴 정하기' },
-                        { step: 2, label: '완료 체크' },
-                        { step: 3, label: '저장 완료' },
-                      ].map((item) => {
-                        const active = journeyStep === item.step;
-                        const done = journeyStep > item.step;
-                        return (
-                          <div
-                            key={item.step}
-                            className={`flex min-h-[44px] min-w-0 items-center justify-center rounded-xl border px-2 py-2 text-[11px] font-semibold leading-snug sm:min-h-[46px] sm:px-2.5 ${
-                              active
-                                ? 'border-toss-blue bg-toss-blue text-white shadow-sm'
-                                : done
-                                  ? 'border-[#C8E6D4] bg-[#F0FAF4] text-[#1E6B4E]'
-                                  : 'border-toss-border bg-toss-bg/35 text-toss-sub'
-                            }`}
-                          >
-                            <span className="break-keep text-center whitespace-nowrap">
-                              {done ? '✓ ' : ''}
-                              {item.label}
-                            </span>
-                          </div>
-                        );
-                      })}
+                  <div className="flex min-w-0 flex-1 items-stretch gap-1.5 sm:gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-toss-sub mb-1.5 pl-0.5 text-left">
+                        오늘 진행
+                      </p>
+                      <div className="grid w-full min-w-0 grid-cols-3 gap-1.5 text-center sm:gap-1.5">
+                        {[
+                          { step: 1, label: '루틴 정하기' },
+                          { step: 2, label: '완료 체크' },
+                          { step: 3, label: '저장 완료' },
+                        ].map((item) => {
+                          const active = journeyStep === item.step;
+                          const done = journeyStep > item.step;
+                          return (
+                            <div
+                              key={item.step}
+                              className={`flex min-h-[42px] min-w-0 items-center justify-center rounded-xl border px-1.5 py-1.5 text-[10px] font-semibold leading-snug sm:min-h-[44px] sm:px-2 sm:text-[11px] ${
+                                active
+                                  ? 'border-toss-blue bg-toss-blue text-white shadow-sm'
+                                  : done
+                                    ? 'border-[#C8E6D4] bg-[#F0FAF4] text-[#1E6B4E]'
+                                    : 'border-toss-border bg-toss-bg/35 text-toss-sub'
+                              }`}
+                            >
+                              <span className="break-keep text-center whitespace-nowrap">
+                                {done ? '✓ ' : ''}
+                                {item.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
+                    <span
+                      className="hidden h-auto min-h-[44px] w-7 shrink-0 items-center justify-center self-center text-2xl font-light leading-none text-toss-blue/75 sm:flex"
+                      aria-hidden
+                    >
+                      ›
+                    </span>
                   </div>
-                  <span
-                    className="hidden shrink-0 self-center pr-1 text-2xl font-light leading-none text-toss-blue/75 sm:block"
-                    aria-hidden
-                  >
-                    ›
-                  </span>
                 </div>
               </button>
               {milestoneWow && (
