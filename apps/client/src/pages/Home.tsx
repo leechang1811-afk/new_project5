@@ -1414,8 +1414,8 @@ export default function Home() {
                 onClick={() => navigate('/mission')}
                 className="relative z-0 w-full rounded-2xl border border-toss-border bg-white p-4 text-left shadow-[0_1px_2px_rgba(11,18,32,0.04)] active:bg-toss-bg/50"
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-                  <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                  <div className="flex min-w-0 flex-1 items-start justify-between gap-2 sm:max-w-[11.5rem] sm:flex-none sm:shrink-0">
                     <div className="min-w-0">
                       <p className="text-[16px] font-bold text-toss-text">오늘 미션</p>
                       <p className="mt-0.5 text-[13px] text-toss-sub">{missionHubSubtitle}</p>
@@ -1427,11 +1427,11 @@ export default function Home() {
                       ›
                     </span>
                   </div>
-                  <div className="min-w-0 flex-1 sm:max-w-[14rem]">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-toss-sub mb-1.5 text-center sm:text-right">
+                  <div className="min-w-0 w-full flex-1 sm:min-w-[19.5rem]">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-toss-sub mb-1.5 pl-0.5 text-left">
                       오늘 진행
                     </p>
-                    <div className="grid grid-cols-3 gap-1.5 text-center sm:gap-2">
+                    <div className="grid w-full grid-cols-3 gap-2 text-center">
                       {[
                         { step: 1, label: '루틴 정하기' },
                         { step: 2, label: '완료 체크' },
@@ -1442,7 +1442,7 @@ export default function Home() {
                         return (
                           <div
                             key={item.step}
-                            className={`flex min-h-[40px] items-center justify-center rounded-xl border px-1 py-1.5 text-[10px] font-semibold leading-tight sm:min-h-[44px] sm:px-1.5 sm:py-2 sm:text-[11px] ${
+                            className={`flex min-h-[44px] min-w-0 items-center justify-center rounded-xl border px-2 py-2 text-[11px] font-semibold leading-snug sm:min-h-[46px] sm:px-2.5 ${
                               active
                                 ? 'border-toss-blue bg-toss-blue text-white shadow-sm'
                                 : done
@@ -1450,7 +1450,7 @@ export default function Home() {
                                   : 'border-toss-border bg-toss-bg/35 text-toss-sub'
                             }`}
                           >
-                            <span className="line-clamp-2">
+                            <span className="break-keep text-center whitespace-nowrap">
                               {done ? '✓ ' : ''}
                               {item.label}
                             </span>
