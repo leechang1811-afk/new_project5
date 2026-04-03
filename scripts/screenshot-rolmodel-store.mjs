@@ -30,6 +30,15 @@ async function main() {
   const page = await browser.newPage();
   await page.setViewport({ width: 636, height: 1048, deviceScaleFactor: 1 });
 
+  /** 롤모델 선택 풀스크린 모달이 본문을 가림 → React mount 전에 플래그 주입 */
+  await page.evaluateOnNewDocument(() => {
+    try {
+      localStorage.setItem('rolemodel-picker-seen', 'true');
+    } catch {
+      /* ignore */
+    }
+  });
+
   for (const shot of SHOTS) {
     const url = `${BASE}${shot.path}`;
     try {
@@ -40,7 +49,20 @@ async function main() {
       process.exitCode = 1;
       return;
     }
-    await new Promise((r) => setTimeout(r, 1200));
+    const introOpen = await page.evaluate(() =>
+      Boolean(document.body?.innerText?.includes('닮고 싶은 롤모델을 선택해주세요.')),
+    );
+    if (introOpen) {
+      await page.evaluate(() => {
+        try {
+          localStorage.setItem('rolemodel-picker-seen', 'true');
+        } catch {
+          /* ignore */
+        }
+      });
+      await page.reload({ waitUntil: 'networkidle2', timeout: 45_000 });
+    }
+    await new Promise((r) => setTimeout(r, 1500));
     const outPath = path.join(outDir, shot.file);
     await page.screenshot({ path: outPath, type: 'png' });
     console.log('저장:', outPath, `(${shot.label})`);
