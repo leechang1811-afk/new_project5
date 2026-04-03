@@ -370,6 +370,27 @@ export default function Home() {
     }
   }, []);
 
+  /** 스토어 스크린샷·미리보기: ?previewWow=1 이면 달성 축하 모달만 데모 (저장·광고 없음) */
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('previewWow') !== '1') return;
+    const timer = window.setTimeout(() => {
+      setShowIntro(false);
+      const profile = getProfile(selectedCelebrity, customRoleModelName);
+      const mission = (profile.routines[0] ?? '하루 1개 루틴을 끝까지 실행하기').slice(0, 80);
+      setWow({
+        score: 72,
+        streak: 7,
+        weeklyRate: 65,
+        completed: true,
+        level: 'SILVER',
+        prevLevel: 'BRONZE',
+        celebrityName: profile.name,
+        missionText: mission,
+      });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [location.search, selectedCelebrity, customRoleModelName]);
+
   useEffect(() => {
     localStorage.setItem('commute-celebrity', selectedCelebrity);
   }, [selectedCelebrity]);

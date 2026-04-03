@@ -1,5 +1,5 @@
 /**
- * 앱인토스 스토어용 세로 스크린샷 3장 (636×1048 PNG)
+ * 앱인토스 스토어용 세로 스크린샷 4장 (636×1048 PNG) — 4번째는 ?previewWow=1 달성 축하 모달
  * 기본: 프로덕션 (https://new-project5-six.vercel.app)
  * 로컬: STORE_SHOT_BASE=http://127.0.0.1:5010 npm run screenshot:rolmodel-store
  * 저장: 프로젝트 루트 assets/store-636x1048-rolmodel/
@@ -21,6 +21,7 @@ const SHOTS = [
   { path: '/', file: '01-home-636x1048.png', label: '홈' },
   { path: '/mission', file: '02-mission-636x1048.png', label: '오늘 미션' },
   { path: '/report', file: '03-report-636x1048.png', label: '1개월 리포트' },
+  { path: '/?previewWow=1', file: '04-wow-celebration-636x1048.png', label: '달성 축하' },
 ];
 
 async function main() {
@@ -62,7 +63,8 @@ async function main() {
       });
       await page.reload({ waitUntil: 'networkidle2', timeout: 45_000 });
     }
-    await new Promise((r) => setTimeout(r, 1500));
+    const waitMs = shot.path.includes('previewWow') ? 2200 : 1500;
+    await new Promise((r) => setTimeout(r, waitMs));
     const outPath = path.join(outDir, shot.file);
     await page.screenshot({ path: outPath, type: 'png' });
     console.log('저장:', outPath, `(${shot.label})`);
