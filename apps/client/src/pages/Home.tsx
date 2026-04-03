@@ -505,6 +505,11 @@ export default function Home() {
     const doneCount = last30.filter(Boolean).length;
     return Math.round((doneCount / HISTORY_WINDOW_DAYS) * 100);
   }, [history]);
+  /** 최근 30일 중 완료 저장한 일수 — 허브 ‘따라한 정도’ 표시용 */
+  const last30DoneCount = useMemo(
+    () => history.slice(-HISTORY_WINDOW_DAYS).filter(Boolean).length,
+    [history],
+  );
   const completedDaysCount = useMemo(() => history.filter(Boolean).length, [history]);
 
   // 실행점수 = 최근 1개월 실행률(0~100)
@@ -538,11 +543,55 @@ export default function Home() {
     const r = activeProfile.routines;
     return r[daySeed(todayKey) % r.length];
   }, [activeProfile, todayKey]);
-  const resemblanceHint = useMemo(() => {
-    const n = activeProfile.name;
-    if (streakDays <= 0) return `${n} 루틴 · 연속 기록 시작 전`;
-    return `${n} 루틴 · 연속 ${streakDays}일`;
-  }, [activeProfile.name, streakDays]);
+  /**
+   * 닮아가는 정도(0~100): 아래 `resemblanceStage`와 같은 임계로 구간을 나눔.
+   * - 시작: 0~39 (7일·60% 미만에서 연속·달성률 혼합)
+   * - 가속: 40~69 (7일·60% 이상 ~ 14일·85% 미만 구간에서 보간)
+   * - 습관화: 70~100 (14일·85% 이상에서 30일·100%에 가까워질수록 상승)
+   */
+  const resemblancePercent = useMemo(() => {
+    const w = weeklyRate;
+    const s = streakDays;
+    const inHabit = w >= 85 && s >= 14;
+    const inAccel = w >= 60 && s >= 7;
+    const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+
+    if (inHabit) {
+      const streakT = clamp01((s - 14) / (LEVEL_MONTH_STREAK - 14));
+      const weeklyT = clamp01((w - 85) / (100 - 85));
+      const blend = streakT * 0.55 + weeklyT * 0.45;
+      return Math.round(70 + blend * 30);
+    }
+    if (inAccel) {
+      const streakT = clamp01((s - 7) / (14 - 7));
+      const weeklyT = clamp01((w - 60) / (85 - 60));
+      const blend = streakT * 0.5 + weeklyT * 0.5;
+      return Math.round(40 + blend * 29);
+    }
+    const streakT = clamp01(s / 7);
+    const weeklyT = clamp01(w / 60);
+    const blend = streakT * 0.5 + weeklyT * 0.5;
+    return Math.round(blend * 39);
+  }, [streakDays, weeklyRate]);
+
+  /** 리포트 상단 SVG: 최근 30일 누적 완료 일수 추이(선만) */
+  const reportCumulativePath = useMemo(() => {
+    const slice = history.slice(-HISTORY_WINDOW_DAYS);
+    if (slice.length === 0) return '';
+    const w = 100;
+    const h = 44;
+    let acc = 0;
+    const maxY = Math.max(1, slice.filter(Boolean).length);
+    const parts: string[] = [];
+    slice.forEach((done, i) => {
+      if (done) acc += 1;
+      const x = slice.length <= 1 ? 50 : (i / (slice.length - 1)) * w;
+      const y = h - 6 - (acc / maxY) * (h - 12);
+      parts.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`);
+    });
+    return parts.join(' ');
+  }, [history]);
+
   const resemblanceStage = useMemo(() => {
     if (weeklyRate >= 85 && streakDays >= 14) {
       return {
@@ -759,7 +808,7 @@ export default function Home() {
 
   const copyShare = async () => {
     const missionLine = activeRoutineText.trim();
-    const text = `롤모델따라하기 · ${activeProfile.name} 루틴 · ${missionLine}\n달성률 ${weeklyRate}% · 연속 ${streakDays}일 · ${resemblanceStage.label}\n${window.location.origin}`;
+    const text = `롤모델따라하기 · ${activeProfile.name} 닮아가기 달성률 ${weeklyRate}% · 연속 ${streakDays}일 · ${missionLine}\n${resemblanceStage.label}\n${window.location.origin}`;
     try {
       // 전면광고는 공유 액션에서만 노출
       await adsService.showInterstitial();
@@ -1269,61 +1318,128 @@ export default function Home() {
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full pt-3 sm:pt-4 pb-2 sm:pb-3">
         {isHub && (
           <>
-            <div className="mb-4 rounded-2xl border border-toss-border bg-white p-4 text-center">
-              <p className="text-xs text-toss-sub">{activeProfile.name} 루틴</p>
-              <p className="text-base font-semibold text-toss-text mt-1 leading-snug line-clamp-3 break-keep">
-                {activeRoutineText}
-              </p>
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                <span
-                  className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-semibold ${statusPill.tone}`}
-                >
-                  {statusPill.label}
-                </span>
-                <span
-                  className={`inline-flex items-center px-2 py-1 rounded-full border text-[10px] font-semibold ${resemblanceStage.tone}`}
-                >
-                  {resemblanceStage.label}
-                </span>
+            <div className="mb-4 rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/90 p-4 text-left shadow-[0_8px_30px_-12px_rgba(15,23,42,0.12)] ring-1 ring-slate-100">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF6FF] via-white to-sky-50/70 py-4 pl-4 pr-3 shadow-[inset_4px_0_0_0_#3182F6] ring-1 ring-toss-blue/15">
+                <div className="pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full bg-toss-blue/[0.07] blur-2xl" aria-hidden />
+                <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-toss-blue">오늘 따라하기</p>
+                    <p className="mt-2 inline-flex max-w-full items-center rounded-lg bg-white/95 px-2.5 py-1 text-[12px] font-bold text-slate-800 shadow-sm ring-1 ring-slate-200/90">
+                      {activeProfile.name} 루틴
+                    </p>
+                    <p className="mt-3 text-[17px] font-extrabold leading-[1.45] tracking-tight text-slate-900 sm:text-[18px] sm:leading-[1.35] break-keep [text-wrap:balance]">
+                      {activeRoutineText}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 self-start sm:mt-7 inline-flex max-w-full sm:max-w-[11rem] items-center justify-center rounded-full border px-3 py-1.5 text-[10px] font-bold leading-tight sm:text-right ${statusPill.tone}`}
+                  >
+                    {statusPill.label}
+                  </span>
+                </div>
               </div>
-              <p className="text-[11px] text-toss-sub mt-2 leading-relaxed">{resemblanceHint}</p>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl bg-[#F7F9FC] p-3 ring-1 ring-slate-200/80">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-[12px] font-semibold text-slate-700">따라한 정도</p>
+                    <p className="text-[22px] font-extrabold tabular-nums text-toss-blue leading-none">
+                      {weeklyRate}
+                      <span className="text-[14px] font-bold">%</span>
+                    </p>
+                  </div>
+                  <p className="text-[11px] text-toss-sub mt-1">최근 30일 · 롤모델 루틴을 실행한 비율</p>
+                  <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-white ring-1 ring-slate-200/90">
+                    <div
+                      className="h-full rounded-full bg-toss-blue transition-[width] duration-300"
+                      style={{ width: `${weeklyRate}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] font-medium text-slate-600 mt-1.5">
+                    30일 중 <span className="text-toss-text">{last30DoneCount}</span>일 완료
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-amber-50/80 p-3 ring-1 ring-amber-200/90">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-[12px] font-semibold text-amber-900">닮아가는 정도</p>
+                    <p className="text-[22px] font-extrabold tabular-nums text-amber-800 leading-none">
+                      {resemblancePercent}
+                      <span className="text-[14px] font-bold">%</span>
+                    </p>
+                  </div>
+                  <p className="text-[11px] text-amber-900/75 mt-1 line-clamp-2">{resemblanceStage.label}</p>
+                  <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-white/90 ring-1 ring-amber-200/80">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-[width] duration-300"
+                      style={{ width: `${resemblancePercent}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] font-semibold text-amber-900/85 mt-1.5">연속 기록 {streakDays}일</p>
+                  <p className="text-[10px] text-amber-900/70 leading-snug line-clamp-2">{resemblanceStage.desc}</p>
+                </div>
+              </div>
+
               {onboardingCoachCopy && (
-                <p className="text-[11px] text-toss-sub mt-2 leading-relaxed">{onboardingCoachCopy}</p>
+                <p className="text-[11px] text-toss-sub mt-3 rounded-xl bg-toss-bg px-3 py-2 leading-relaxed">
+                  {onboardingCoachCopy}
+                </p>
               )}
             </div>
 
-            <div className="mb-4 space-y-2.5">
+            <div className="mb-4 space-y-3">
               <button
                 type="button"
                 onClick={() => navigate('/mission')}
-                className="w-full flex items-center justify-between gap-3 p-4 rounded-2xl border border-toss-border bg-white text-left active:bg-toss-bg"
+                className="w-full flex items-center justify-between gap-3 rounded-2xl border border-toss-border bg-white p-4 text-left shadow-sm active:bg-toss-bg"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-toss-text">오늘 미션</p>
+                  <p className="text-[15px] font-bold text-toss-text">오늘 미션</p>
                   <p className="text-xs text-toss-sub mt-0.5">{missionHubSubtitle}</p>
                 </div>
-                <span className="text-lg text-toss-sub shrink-0" aria-hidden>
+                <span className="text-xl font-light text-toss-blue/80 shrink-0" aria-hidden>
                   ›
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/report')}
-                className="w-full flex items-center justify-between gap-3 p-4 rounded-2xl border border-toss-border bg-white text-left active:bg-toss-bg"
+                className="group w-full overflow-hidden rounded-2xl border-2 border-toss-blue/90 bg-gradient-to-br from-[#E8F3FF] via-white to-sky-50/90 p-4 text-left shadow-[0_10px_36px_-14px_rgba(49,130,246,0.35)] ring-1 ring-toss-blue/15 active:scale-[0.99] transition-transform"
               >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-toss-text">1개월 리포트</p>
-                  <p className="text-xs text-toss-sub mt-0.5">
-                    달성률 {weeklyRate}% · 연속 {streakDays}일
-                  </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-toss-blue">1개월 리포트</p>
+                    <p className="mt-1.5 text-[17px] font-extrabold leading-snug text-toss-text break-keep">
+                      <span className="text-toss-text">{activeProfile.name.replace(/\s+/g, '')}</span>
+                      <span className="text-toss-sub font-bold"> 닮아가기 달성률 </span>
+                      <span className="tabular-nums text-toss-blue">{weeklyRate}%</span>
+                    </p>
+                    <p className="mt-1 text-[13px] font-bold tabular-nums text-slate-700">
+                      연속 {streakDays}일
+                    </p>
+                  </div>
+                  <span className="text-2xl font-light text-toss-blue shrink-0 pt-0.5" aria-hidden>
+                    ›
+                  </span>
                 </div>
-                <span className="text-lg text-toss-sub shrink-0" aria-hidden>
-                  ›
-                </span>
+                <div
+                  className="mt-3 flex h-2 gap-px overflow-hidden rounded-full bg-white/80 ring-1 ring-toss-blue/20"
+                  aria-hidden
+                >
+                  {Array.from({ length: HISTORY_WINDOW_DAYS }).map((_, i) => {
+                    const v = history.slice(-HISTORY_WINDOW_DAYS)[i] ?? false;
+                    return (
+                      <div
+                        key={i}
+                        className={`min-w-0 flex-1 ${v ? 'bg-toss-blue' : 'bg-slate-200/70'}`}
+                      />
+                    );
+                  })}
+                </div>
               </button>
             </div>
 
-            <section className="mb-5 p-2.5 rounded-2xl border-2 border-toss-blue bg-white">
+            <section className="mb-5 rounded-2xl border-2 border-toss-blue bg-white p-2.5 shadow-sm">
               <p className="text-xs font-semibold text-toss-sub text-center">오늘 진행 상태</p>
               <div className="mt-2 grid grid-cols-3 gap-2 text-center">
                 {[
@@ -1444,45 +1560,90 @@ export default function Home() {
         )}
 
         {isReport && (
-          <section className="mb-4 p-4 rounded-2xl bg-toss-bg border border-toss-border">
-            <p className="text-sm font-semibold text-toss-text">최근 1개월 리포트</p>
-            <p className="text-xs text-toss-sub mt-1">
-              완료 저장한 날은 파란 칸으로 표시됩니다.
-            </p>
-            <div className="mt-3">
-              <p className="text-xs text-toss-sub mb-2">최근 30일</p>
-              <div className="grid grid-cols-10 gap-1.5">
-                {Array.from({ length: HISTORY_WINDOW_DAYS }).map((_, idx) => {
-                  const v = history.slice(-HISTORY_WINDOW_DAYS)[idx] ?? false;
-                  return (
-                    <div
-                      key={idx}
-                      className={`h-8 rounded-lg border ${v ? 'bg-toss-blue/90 border-toss-blue' : 'bg-white border-toss-border'}`}
-                      aria-label={v ? '완료' : '미완료'}
+          <section className="mb-4 space-y-3">
+            <div className="overflow-hidden rounded-2xl border-2 border-toss-blue/80 bg-gradient-to-br from-[#E8F3FF] via-white to-sky-50/80 p-5 shadow-[0_12px_40px_-16px_rgba(49,130,246,0.45)] ring-1 ring-toss-blue/20">
+              <p className="text-center text-[11px] font-bold uppercase tracking-wide text-toss-blue">최근 30일</p>
+              <p className="mt-2 text-center text-[20px] font-extrabold leading-snug text-toss-text break-keep">
+                <span>{activeProfile.name.replace(/\s+/g, '')}</span>
+                <span className="font-bold text-slate-600"> 닮아가기 달성률 </span>
+                <span className="tabular-nums text-toss-blue">{weeklyRate}%</span>
+              </p>
+              <p className="mt-2 text-center text-[15px] font-bold tabular-nums text-slate-800">
+                연속 <span className="text-toss-text">{streakDays}</span>일
+              </p>
+              <div className="mt-4 rounded-xl bg-white/90 p-3 ring-1 ring-toss-blue/15">
+                <p className="text-[10px] font-semibold text-toss-sub">누적 완료 추이 (30일)</p>
+                {reportCumulativePath ? (
+                  <svg
+                    viewBox="0 0 100 44"
+                    className="mt-1 h-14 w-full text-toss-blue"
+                    preserveAspectRatio="none"
+                    aria-hidden
+                  >
+                    <path
+                      d={reportCumulativePath}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.25"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
-                  );
-                })}
+                  </svg>
+                ) : (
+                  <p className="mt-1 py-4 text-center text-[11px] text-toss-sub">기록이 쌓이면 누적 그래프가 나타나요.</p>
+                )}
+                <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-200/80">
+                  <div
+                    className="h-full rounded-full bg-toss-blue transition-[width] duration-500"
+                    style={{ width: `${weeklyRate}%` }}
+                  />
+                </div>
+                <p className="mt-1.5 text-center text-[11px] text-toss-sub">
+                  30일 중 <span className="font-semibold text-toss-text">{last30DoneCount}</span>일 저장 완료
+                </p>
               </div>
-              <p className="text-xs text-toss-sub mt-2">파란 칸이 “저장 성공”한 날이에요.</p>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-center">
-              <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                <p className="text-xs text-toss-sub">연속일</p>
-                <p className="text-lg font-bold text-toss-text">{streakDays}일</p>
+
+            <div className="rounded-2xl border border-toss-border bg-white p-3 shadow-sm">
+              <div className="flex gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold text-toss-sub">매일 기록</p>
+                  <p className="text-[10px] text-toss-sub mt-0.5">파란 칸이 완료 저장한 날이에요.</p>
+                  <div className="mt-2 grid grid-cols-10 gap-1.5">
+                    {Array.from({ length: HISTORY_WINDOW_DAYS }).map((_, idx) => {
+                      const v = history.slice(-HISTORY_WINDOW_DAYS)[idx] ?? false;
+                      return (
+                        <div
+                          key={idx}
+                          className={`h-8 rounded-lg border ${v ? 'bg-toss-blue/90 border-toss-blue' : 'bg-slate-50 border-toss-border'}`}
+                          aria-label={v ? '완료' : '미완료'}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={copyShare}
+                  className="flex w-[4.75rem] shrink-0 flex-col items-center justify-center gap-1 self-stretch rounded-xl border-2 border-dashed border-toss-blue/40 bg-sky-50/80 px-2 py-2 text-center active:bg-sky-100/80"
+                >
+                  <span className="text-lg leading-none" aria-hidden>
+                    🔗
+                  </span>
+                  <span className="text-[10px] font-bold leading-tight text-toss-blue">링크·문구 복사</span>
+                </button>
               </div>
-              <div className="bg-white rounded-xl p-2.5 border border-toss-border">
-                <p className="text-xs text-toss-sub">{`${activeProfile.name.replace(/\s+/g, '')} 닮아가기 1개월 달성률`}</p>
-                <p className="text-lg font-bold text-toss-text">{weeklyRate}%</p>
-              </div>
             </div>
-            <div className="mt-3 p-3 rounded-xl border border-toss-blue/25 bg-white">
-              <p className="text-xs text-toss-sub">지금의 닮아감 단계</p>
-              <p className="text-sm font-bold text-toss-text mt-1">{resemblanceStage.label}</p>
-              <p className="text-xs text-toss-sub mt-1">{resemblanceStage.desc}</p>
+
+            <div className="rounded-2xl border border-toss-blue/25 bg-white p-3 shadow-sm">
+              <p className="text-[11px] font-semibold text-toss-sub">지금의 닮아감 단계</p>
+              <p className="text-[15px] font-extrabold text-toss-text mt-0.5">{resemblanceStage.label}</p>
+              <p className="text-xs text-toss-sub mt-1 leading-relaxed">{resemblanceStage.desc}</p>
             </div>
-            <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
-              <p className="text-xs text-toss-sub">추천 챌린지</p>
-              <p className="text-sm font-semibold text-toss-text mt-1">14일 연속 저장하기</p>
+
+            <div className="rounded-2xl border border-toss-border bg-white p-3 shadow-sm">
+              <p className="text-[11px] font-semibold text-toss-sub">추천 챌린지</p>
+              <p className="text-sm font-bold text-toss-text mt-0.5">14일 연속 저장하기</p>
               <div className="mt-2 h-2 rounded-full bg-toss-border/60 overflow-hidden">
                 <div
                   className="h-full bg-toss-blue"
@@ -1493,22 +1654,23 @@ export default function Home() {
                 현재 {Math.min(LEVEL_GOLD_STREAK, streakDays)}/{LEVEL_GOLD_STREAK}일
               </p>
             </div>
-            <div className="mt-3 p-3 rounded-xl bg-white border border-toss-border">
-              <p className="text-xs text-toss-sub">배지 진열장</p>
+
+            <div className="rounded-2xl border border-toss-border bg-white p-3 shadow-sm">
+              <p className="text-[11px] font-semibold text-toss-sub">배지 진열장</p>
               <div className="mt-2 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setBadgeShowcaseIndex((prev) => (prev - 1 + badgeShowcase.length) % badgeShowcase.length)}
-                  className="w-9 h-9 rounded-lg border border-toss-border bg-white text-toss-text font-bold"
+                  className="h-9 w-9 shrink-0 rounded-lg border border-toss-border bg-white text-sm font-bold text-toss-text"
                   aria-label="이전 배지"
                 >
                   &lt;
                 </button>
                 <div
-                  className={`flex-1 rounded-xl border px-3 py-3 text-center text-sm font-semibold ${
+                  className={`min-w-0 flex-1 rounded-xl border px-3 py-3 text-center text-sm font-semibold ${
                     currentBadgeUnlocked
-                      ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
-                      : 'bg-white border-toss-border text-toss-sub'
+                      ? 'border-yellow-200 bg-yellow-50 text-yellow-800'
+                      : 'border-toss-border bg-white text-toss-sub'
                   }`}
                 >
                   {currentBadgeUnlocked ? '🏅 ' : '🔒 '}
@@ -1517,7 +1679,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setBadgeShowcaseIndex((prev) => (prev + 1) % badgeShowcase.length)}
-                  className="w-9 h-9 rounded-lg border border-toss-border bg-white text-toss-text font-bold"
+                  className="h-9 w-9 shrink-0 rounded-lg border border-toss-border bg-white text-sm font-bold text-toss-text"
                   aria-label="다음 배지"
                 >
                   &gt;
@@ -1527,29 +1689,14 @@ export default function Home() {
                 {badgeShowcaseIndex + 1}/{badgeShowcase.length} · 내 최고 연속 기록: {bestStreak}일
               </p>
             </div>
+
             {streakDays >= LEVEL_GOLD_STREAK && (
-              <div className="mt-3 p-3 rounded-xl bg-yellow-50 border border-yellow-200">
-                <p className="text-xs text-yellow-700">보상 카드</p>
-                <p className="text-sm font-bold text-yellow-800 mt-1">14일 연속 달성! 유지 보상 +10</p>
-                <p className="text-xs text-yellow-700 mt-1">내일도 저장하면 연속일이 이어집니다.</p>
+              <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-3">
+                <p className="text-xs font-semibold text-yellow-800">보상 카드</p>
+                <p className="text-sm font-bold text-yellow-900 mt-0.5">14일 연속 달성! 유지 보상 +10</p>
+                <p className="text-xs text-yellow-800 mt-1">내일도 저장하면 연속일이 이어집니다.</p>
               </div>
             )}
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={copyShare}
-                className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
-              >
-                내 미션 성공률 자랑하기
-              </button>
-              <button
-                type="button"
-                onClick={goToTodayTab}
-                className="py-2.5 rounded-xl bg-toss-blue text-white text-sm font-semibold"
-              >
-                홈으로
-              </button>
-            </div>
           </section>
         )}
 
