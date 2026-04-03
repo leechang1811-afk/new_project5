@@ -1315,7 +1315,11 @@ export default function Home() {
       </header>
 
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain [scrollbar-gutter:stable] px-4 sm:px-6">
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full pt-3 sm:pt-4 pb-2 sm:pb-3">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full pt-3 sm:pt-4 pb-4 sm:pb-6"
+      >
         {isHub && (
           <>
             <div className="mb-4 rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/90 p-4 text-left shadow-[0_8px_30px_-12px_rgba(15,23,42,0.12)] ring-1 ring-slate-100">
@@ -1339,7 +1343,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="relative z-0 mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="rounded-2xl bg-[#F7F9FC] p-3 ring-1 ring-slate-200/80">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="text-[12px] font-semibold text-slate-700">따라한 정도</p>
@@ -1380,6 +1384,43 @@ export default function Home() {
                 </div>
               </div>
 
+              <button
+                type="button"
+                onClick={() => navigate('/report')}
+                className="relative z-0 mt-3 flex w-full flex-col gap-2 rounded-2xl border border-toss-blue/35 bg-gradient-to-r from-[#F0F7FF] to-white px-3 py-3 text-left shadow-sm ring-1 ring-toss-blue/10 active:bg-sky-50/90"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-extrabold text-toss-blue">내 기록 보기</p>
+                    <p className="text-[11px] font-medium text-slate-600 mt-0.5">
+                      <span className="text-toss-text font-semibold">{activeProfile.name.replace(/\s+/g, '')}</span>
+                      <span> 닮아가기 달성률 </span>
+                      <span className="tabular-nums font-bold text-toss-blue">{weeklyRate}%</span>
+                      <span className="text-toss-sub"> · </span>
+                      <span className="tabular-nums font-semibold text-slate-700">연속 {streakDays}일</span>
+                    </p>
+                    <p className="text-[10px] text-toss-sub mt-0.5">1개월 리포트 · 그래프 · 캘린더</p>
+                  </div>
+                  <span className="shrink-0 text-xl font-light text-toss-blue" aria-hidden>
+                    ›
+                  </span>
+                </div>
+                <div
+                  className="flex h-1.5 gap-px overflow-hidden rounded-full bg-white/90 ring-1 ring-toss-blue/15"
+                  aria-hidden
+                >
+                  {Array.from({ length: HISTORY_WINDOW_DAYS }).map((_, i) => {
+                    const v = history.slice(-HISTORY_WINDOW_DAYS)[i] ?? false;
+                    return (
+                      <div
+                        key={i}
+                        className={`min-w-0 flex-1 ${v ? 'bg-toss-blue' : 'bg-slate-200/80'}`}
+                      />
+                    );
+                  })}
+                </div>
+              </button>
+
               {onboardingCoachCopy && (
                 <p className="text-[11px] text-toss-sub mt-3 rounded-xl bg-toss-bg px-3 py-2 leading-relaxed">
                   {onboardingCoachCopy}
@@ -1387,11 +1428,11 @@ export default function Home() {
               )}
             </div>
 
-            <div className="mb-4 space-y-3">
+            <div className="mb-4">
               <button
                 type="button"
                 onClick={() => navigate('/mission')}
-                className="w-full flex items-center justify-between gap-3 rounded-2xl border border-toss-border bg-white p-4 text-left shadow-sm active:bg-toss-bg"
+                className="relative z-0 flex w-full items-center justify-between gap-3 rounded-2xl border border-toss-border bg-white p-4 text-left shadow-sm active:bg-toss-bg"
               >
                 <div className="min-w-0">
                   <p className="text-[15px] font-bold text-toss-text">오늘 미션</p>
@@ -1401,45 +1442,9 @@ export default function Home() {
                   ›
                 </span>
               </button>
-              <button
-                type="button"
-                onClick={() => navigate('/report')}
-                className="group w-full overflow-hidden rounded-2xl border-2 border-toss-blue/90 bg-gradient-to-br from-[#E8F3FF] via-white to-sky-50/90 p-4 text-left shadow-[0_10px_36px_-14px_rgba(49,130,246,0.35)] ring-1 ring-toss-blue/15 active:scale-[0.99] transition-transform"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-toss-blue">1개월 리포트</p>
-                    <p className="mt-1.5 text-[17px] font-extrabold leading-snug text-toss-text break-keep">
-                      <span className="text-toss-text">{activeProfile.name.replace(/\s+/g, '')}</span>
-                      <span className="text-toss-sub font-bold"> 닮아가기 달성률 </span>
-                      <span className="tabular-nums text-toss-blue">{weeklyRate}%</span>
-                    </p>
-                    <p className="mt-1 text-[13px] font-bold tabular-nums text-slate-700">
-                      연속 {streakDays}일
-                    </p>
-                  </div>
-                  <span className="text-2xl font-light text-toss-blue shrink-0 pt-0.5" aria-hidden>
-                    ›
-                  </span>
-                </div>
-                <div
-                  className="mt-3 flex h-2 gap-px overflow-hidden rounded-full bg-white/80 ring-1 ring-toss-blue/20"
-                  aria-hidden
-                >
-                  {Array.from({ length: HISTORY_WINDOW_DAYS }).map((_, i) => {
-                    const v = history.slice(-HISTORY_WINDOW_DAYS)[i] ?? false;
-                    return (
-                      <div
-                        key={i}
-                        className={`min-w-0 flex-1 ${v ? 'bg-toss-blue' : 'bg-slate-200/70'}`}
-                      />
-                    );
-                  })}
-                </div>
-              </button>
             </div>
 
-            <section className="mb-5 rounded-2xl border-2 border-toss-blue bg-white p-2.5 shadow-sm">
+            <section className="relative z-0 mb-6 rounded-2xl border-2 border-toss-blue bg-white p-2.5 shadow-sm">
               <p className="text-xs font-semibold text-toss-sub text-center">오늘 진행 상태</p>
               <div className="mt-2 grid grid-cols-3 gap-2 text-center">
                 {[
