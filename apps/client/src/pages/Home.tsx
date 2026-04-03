@@ -1360,6 +1360,16 @@ export default function Home() {
                   <p className="text-[11px] font-medium text-slate-600 mt-1.5">
                     30일 중 <span className="text-toss-text">{last30DoneCount}</span>일 완료
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/report')}
+                    className="mt-2.5 flex w-full items-center justify-between border-t border-slate-200/90 pt-2.5 text-left active:opacity-80"
+                  >
+                    <span className="text-[12px] font-bold text-toss-blue">내 기록 보기</span>
+                    <span className="text-base font-light text-toss-blue" aria-hidden>
+                      ›
+                    </span>
+                  </button>
                 </div>
 
                 <div className="rounded-2xl bg-amber-50/80 p-3 ring-1 ring-amber-200/90">
@@ -1381,43 +1391,6 @@ export default function Home() {
                   <p className="text-[10px] text-amber-900/70 leading-snug line-clamp-2">{resemblanceStage.desc}</p>
                 </div>
               </div>
-
-              <button
-                type="button"
-                onClick={() => navigate('/report')}
-                className="relative z-0 mt-3 flex w-full flex-col gap-2 rounded-2xl border border-toss-blue/35 bg-gradient-to-r from-[#F0F7FF] to-white px-3 py-3 text-left shadow-sm ring-1 ring-toss-blue/10 active:bg-sky-50/90"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-extrabold text-toss-blue">내 기록 보기</p>
-                    <p className="text-[11px] font-medium text-slate-600 mt-0.5">
-                      <span className="text-toss-text font-semibold">{activeProfile.name.replace(/\s+/g, '')}</span>
-                      <span> 닮아가기 달성률 </span>
-                      <span className="tabular-nums font-bold text-toss-blue">{weeklyRate}%</span>
-                      <span className="text-toss-sub"> · </span>
-                      <span className="tabular-nums font-semibold text-slate-700">연속 {streakDays}일</span>
-                    </p>
-                    <p className="text-[10px] text-toss-sub mt-0.5">1개월 리포트 · 그래프 · 캘린더</p>
-                  </div>
-                  <span className="shrink-0 text-xl font-light text-toss-blue" aria-hidden>
-                    ›
-                  </span>
-                </div>
-                <div
-                  className="flex h-1.5 gap-px overflow-hidden rounded-full bg-white/90 ring-1 ring-toss-blue/15"
-                  aria-hidden
-                >
-                  {Array.from({ length: HISTORY_WINDOW_DAYS }).map((_, i) => {
-                    const v = history.slice(-HISTORY_WINDOW_DAYS)[i] ?? false;
-                    return (
-                      <div
-                        key={i}
-                        className={`min-w-0 flex-1 ${v ? 'bg-toss-blue' : 'bg-slate-200/80'}`}
-                      />
-                    );
-                  })}
-                </div>
-              </button>
 
               {onboardingCoachCopy && (
                 <p className="text-[11px] text-toss-sub mt-3 rounded-xl bg-toss-bg px-3 py-2 leading-relaxed">
