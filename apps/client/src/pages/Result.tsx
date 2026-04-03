@@ -215,7 +215,7 @@ export default function Result() {
                     👑
                   </motion.p>
                   <p className="text-2xl font-black text-amber-800 mb-1">챔피언!</p>
-                  <p className="text-base font-bold text-amber-700 mb-3">정말 잘했어요! 🎉 축하해요!</p>
+                  <p className="text-base font-bold text-amber-700 mb-3">최고 단계 클리어</p>
                 </>
               )}
               <p className={`text-4xl sm:text-5xl md:text-6xl font-black ${lastCompletedRun.maxLevel === 20 ? 'text-amber-900' : 'text-white'}`}>

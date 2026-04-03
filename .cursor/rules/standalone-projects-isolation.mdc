@@ -1,42 +1,35 @@
 ---
-description: Never touch other apps' git/AIT or brain-rank.ait; source/config only for new_project5
+description: Never touch brain-rank.ait or any .ait; no git/ignore/scripts for AIT
 alwaysApply: true
 ---
 
-# 다른 제품 Git·AIT — 절대 수정 금지
+# `brain-rank.ait` 및 모든 `.ait` — 완전 비접촉
 
-아래는 **`leechang1811-afk/new_project5` / `apps/client` 와 무관한** 다른 앱·저장소입니다. **어떤 이유로도** 에이전트는 여기를 바꾸면 안 됩니다.
+에이전트는 아래를 **절대 하지 않습니다.** (사용자가 직접 할 일)
 
-- `korea-bible-work/` — 별도 Git
-- `korea-habits-fix/` — 별도 Git
-- `korea-quiz-toss/` — Korea quiz / Toss
-- `mafia-release/` — Mafia game
+- **`apps/client/brain-rank.ait`** 및 **어떤 경로의 `*.ait`** 에 대해: 파일 읽기/쓰기/삭제/이동
+- **`git add` / `git rm` / `git restore` / `git checkout` / 병합 시 `--ours`·`--theirs` 선택** 등 **Git으로 해당 경로를 건드리는 모든 행위**
+- **`.gitignore`에 AIT 관련 줄을 넣거나 빼기**
+- **터미널에서 `ait build` 등 AIT 생성 명령 실행**
+- **AIT 관련 이유로 `package.json` 스크립트를 바꾸기** (사용자가 요청한 경우만 예외)
 
-**금지 행위:**
+**코드·설정만** 다룹니다: `apps/client` 소스, `granite.config.ts`, `packages/shared` 등. AIT는 **사용자가 푸시 후 로컬에서** 필요할 때 직접 만듭니다.
 
-- 위 경로 안의 **어떤 파일**도 생성·수정·삭제·이동하지 않기
-- 위 경로에서 **`granite` / `ait build`** 실행하지 않기
-- **`korea-quiz-toss`**, **`mafia-release`**, **`korea-habits-fix`** 등에 있는 **다른 앱의 `.ait`** 생성·덮어쓰기·삭제하지 않기
-- 위 중첩/별도 저장소에 대해 **`git add` / `commit` / `push`** 하지 않기
+# 다른 앱 경로
 
-# `brain-rank.ait` — 절대 건드리지 않기
+`korea-bible-work/`, `korea-habits-fix/`, `korea-quiz-toss/`, `mafia-release/` — 수정·AIT·git 금지.
 
-**`apps/client/brain-rank.ait`** (및 경로에 있는 동일 이름 산출물)은 **에이전트가 수정·삭제·덮어쓰기·재생성하지 않습니다.**
+# 원격
 
-- **`ait build`**, **`npm run ait:pack`**, **`npm run ait:build`** 등 AIT를 다시 만드는 명령을 **실행하지 않기**
-- `.ait` 파일을 **커밋에 포함하거나 스테이징하지 않기**(사용자가 로컬에서 빌드·업로드하는 것은 사용자 책임)
+`origin` → `leechang1811-afk/new_project5`, 브랜치 **`main`**
 
-**허용 (소스·설정만):**
+# 왜 자꾸 건드려 보이나 (원인) — 별도로 두고 건드리지 않기
 
-- `apps/client/granite.config.ts`
-- `apps/client/` 소스·에셋·`package.json` 등 **`.ait`가 아닌** 파일
+- **`git merge` / `git pull` 충돌**에 `brain-rank.ait`가 끼면, “한쪽 선택”, `git rm --cached`, 삭제 쪽으로 해결하려다 바이너리가 바뀜 → **충돌 목록에 `.ait`가 있으면 이 파일은 해결하지 않고 사용자에게 맡김.**
+- **`.gitignore`에 `*.ait`** 를 넣는 것도 “관리”로 간주해 **에이전트가 임의로 하지 않음.**
+- **완화:** 머지·리베이스·스테이징·복구 명령을 쓸 때 **`apps/client/brain-rank.ait` 문자열이 들어가는 명령을 에이전트가 실행하지 않음.** (사용자가 채팅으로 **복구해 달라고 명시한 경우만** 예외)
 
-## new_project5 기본 작업
+# 작업 범위 정리
 
-- **원격**: `origin` → `leechang1811-afk/new_project5`, 브랜치 **`main`**
-- 코드·설정 변경은 **`apps/client`**, **`packages/shared`**(클라이언트가 쓰는 경우), 루트에서 new_project5에 필요한 최소 설정만
-
-## Git (루트)
-
-- 일상적인 `git push` / `git pull` 은 **`origin`** 만
-- 다른 GitHub 저장소용 원격을 새로 추가하지 않기
+- **요청하신 앱 업데이트** → 소스/설정 수정 후 **`git push`는 `origin` (`new_project5`) `main`**.
+- **AIT** → 저장소에 넣거나 에이전트가 빌드하지 않음; 필요 시 사용자 로컬에서만.

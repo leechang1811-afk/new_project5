@@ -10,6 +10,7 @@
 }
 
 html {
+  height: 100%;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -22,6 +23,16 @@ body {
   padding-right: var(--sar);
   padding-bottom: var(--sab);
   padding-left: var(--sal);
+}
+
+/* 루트가 뷰포트를 채우고, 내부 페이지에서 flex 스크롤 영역을 쓸 수 있게 */
+#root {
+  min-height: 100%;
+  height: 100%;
+  min-height: 100svh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 
