@@ -254,10 +254,10 @@ export default function Home() {
   const [pickerRoutine, setPickerRoutine] = useState('');
   const [pickerCustomRoutine, setPickerCustomRoutine] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
-  /** 설정에서 연 롤모델 피커 — 오늘 완료 저장 후에는 내일 적용 분기에 사용 */
-  const [pickerLaunchedFromSettings, setPickerLaunchedFromSettings] = useState(false);
   /** 내일 예약: 오늘 완료한 미션 문장 스냅샷(이전과 똑같이 진행) */
   const missionForReserveRef = useRef('');
+  /** 롤모델 피커를 연 화면(닫을 때·내일 적용 시 같은 경로로 복귀) */
+  const pickerSourcePathRef = useRef<string>('/');
   /** 롤모델 선택 모달: 루틴 선택 영역 스크롤링용 */
   const pickerRoutineRef = useRef<HTMLDivElement | null>(null);
   /** 2단계에서 롤모델 변경 시 완료체크 상태 복구용 */
@@ -825,21 +825,22 @@ export default function Home() {
     }
   };
 
-  const closeIntro = () => {
+  const closeIntro = (navigateTo?: string) => {
     localStorage.setItem('rolemodel-picker-seen', 'true');
     setShowIntro(false);
     setPickerMode('start_today');
     setReserveKeepSameTomorrow(false);
-    setPickerLaunchedFromSettings(false);
-    goToTodayTab();
+    const allowed = ['/', '/mission', '/report', '/settings'] as const;
+    const raw = navigateTo ?? pickerSourcePathRef.current ?? '/';
+    const dest = (allowed as readonly string[]).includes(raw) ? raw : '/';
+    navigate(dest);
     trackEvent('intro_close');
   };
 
-  const openRoleModelPicker = (
-    mode: 'start_today' | 'reserve_tomorrow' = 'start_today',
-    opts?: { fromSettings?: boolean },
-  ) => {
-    setPickerLaunchedFromSettings(opts?.fromSettings ?? false);
+  const openRoleModelPicker = (mode: 'start_today' | 'reserve_tomorrow' = 'start_today') => {
+    const loc =
+      typeof window !== 'undefined' ? window.location.pathname : path;
+    pickerSourcePathRef.current = ['/', '/mission', '/report', '/settings'].includes(loc) ? loc : path;
     if (mode === 'start_today' && morningConfirmed) {
       checkoutSelectionSnapshotRef.current = {
         result: checkoutResult,
@@ -930,10 +931,9 @@ export default function Home() {
         : routineDefault;
 
     const todayKeyForDefer = kstDayKey();
+    /** 오늘 이미 완료 저장했으면 롤모델·미션 변경은 내일부터(어느 화면에서 열든 동일) */
     const deferRoleToTomorrow =
-      pickerMode === 'start_today' &&
-      pickerLaunchedFromSettings &&
-      lastCheckoutSavedDay === todayKeyForDefer;
+      pickerMode === 'start_today' && lastCheckoutSavedDay === todayKeyForDefer;
 
     if (deferRoleToTomorrow) {
       try {
@@ -949,13 +949,11 @@ export default function Home() {
       } catch {
         // ignore
       }
-      setPickerLaunchedFromSettings(false);
       setReserveKeepSameTomorrow(false);
-      closeIntro();
-      navigate('/settings');
+      closeIntro(pickerSourcePathRef.current || '/');
       setToast('선택한 롤모델·미션은 내일부터 적용됩니다.');
       window.setTimeout(() => setToast(null), 2200);
-      trackEvent('reserve_tomorrow', { deferredFromSettings: true });
+      trackEvent('reserve_tomorrow', { deferredAfterTodaySave: true, fromPath: pickerSourcePathRef.current });
       return;
     }
 
@@ -981,7 +979,7 @@ export default function Home() {
       }
       setMorningTask('');
       setReserveKeepSameTomorrow(false);
-      closeIntro();
+      closeIntro(pickerSourcePathRef.current || '/');
       setToast(`${profile.name} 루틴으로 내일(${nextDay}) 미션을 예약했어요.`);
       window.setTimeout(() => setToast(null), 2200);
       trackEvent('reserve_tomorrow', { nextCelebrity: pickerCelebrity });
@@ -1009,9 +1007,8 @@ export default function Home() {
       setCheckoutResult(null);
       setFailureReason('');
     }
-    setPickerLaunchedFromSettings(false);
     checkoutSelectionSnapshotRef.current = null;
-    closeIntro();
+    closeIntro(pickerSourcePathRef.current || '/');
     setToast(`${profile.name} 루틴으로 시작했어요.`);
     window.setTimeout(() => setToast(null), 2200);
   };
@@ -1114,10 +1111,11 @@ export default function Home() {
     morningTaskEditSnapshotRef.current = '';
     morningTaskBeforeRewriteRef.current = '';
     setShowRewriteBack(false);
-    setShowIntro(true);
-    setPickerMode('start_today');
     setShowFullResetConfirm(false);
     goToTodayTab();
+    pickerSourcePathRef.current = '/';
+    setShowIntro(true);
+    setPickerMode('start_today');
     setToast('모든 데이터를 초기화했어요. 롤모델을 다시 선택해 주세요.');
     window.setTimeout(() => setToast(null), 2600);
   };
@@ -1491,7 +1489,7 @@ export default function Home() {
               </p>
               <button
                 type="button"
-                onClick={() => openRoleModelPicker('start_today', { fromSettings: true })}
+                onClick={() => openRoleModelPicker('start_today')}
                 className="mt-2 py-2 px-3 rounded-lg border border-toss-border bg-white text-xs font-semibold text-toss-text"
               >
                 롤모델/미션 다시 고르기
@@ -1797,39 +1795,46 @@ export default function Home() {
                     <p className="text-xs text-toss-sub">오늘의 미션</p>
                     <p className="text-sm font-semibold text-toss-text mt-1">{morningTaskSummary}</p>
                     {!simpleTodayView && (
-                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            morningTaskEditSnapshotRef.current = morningTask;
-                            const rList = activeProfile.routines;
-                            const m = morningTask.trim();
-                            if (m && rList.includes(m)) {
-                              setTaskReplaceRoutine(m);
-                              setTaskReplaceCustom('');
-                            } else if (m) {
-                              setTaskReplaceCustom(m);
-                              setTaskReplaceRoutine(rList[0] ?? '');
-                            } else {
-                              setTaskReplaceRoutine(rList[0] ?? '');
-                              setTaskReplaceCustom('');
-                            }
-                            setEditingMorningTask(true);
-                          }}
-                          className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
-                        >
-                          할 일 바꾸기
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            openRoleModelPicker('start_today', { fromSettings: true });
-                          }}
-                          className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
-                        >
-                          롤모델 다시 선택하기
-                        </button>
-                      </div>
+                      <>
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              morningTaskEditSnapshotRef.current = morningTask;
+                              const rList = activeProfile.routines;
+                              const m = morningTask.trim();
+                              if (m && rList.includes(m)) {
+                                setTaskReplaceRoutine(m);
+                                setTaskReplaceCustom('');
+                              } else if (m) {
+                                setTaskReplaceCustom(m);
+                                setTaskReplaceRoutine(rList[0] ?? '');
+                              } else {
+                                setTaskReplaceRoutine(rList[0] ?? '');
+                                setTaskReplaceCustom('');
+                              }
+                              setEditingMorningTask(true);
+                            }}
+                            className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                          >
+                            할 일 바꾸기
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              openRoleModelPicker('start_today');
+                            }}
+                            className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
+                          >
+                            롤모델 다시 선택하기
+                          </button>
+                        </div>
+                        {savedToday && (
+                          <p className="mt-2 text-[10px] font-medium leading-snug text-amber-900/90">
+                            오늘은 이미 저장했어요. 롤모델·미션을 바꾸면 내일부터 적용돼요.
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -2047,9 +2052,7 @@ export default function Home() {
               </button>
             )}
 
-            {pickerLaunchedFromSettings &&
-              pickerMode === 'start_today' &&
-              lastCheckoutSavedDay === kstDayKey() && (
+            {pickerMode === 'start_today' && lastCheckoutSavedDay === kstDayKey() && (
                 <p className="mt-3 text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 leading-relaxed text-center">
                   오늘은 이미 완료를 저장했어요. 여기서 고르면{' '}
                   <span className="font-semibold">내일부터 적용</span>됩니다.
@@ -2321,7 +2324,7 @@ export default function Home() {
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={closeIntro}
+                onClick={() => closeIntro()}
                 className="py-2.5 rounded-xl border border-toss-border bg-white text-sm font-semibold text-toss-text"
               >
                 나중에
