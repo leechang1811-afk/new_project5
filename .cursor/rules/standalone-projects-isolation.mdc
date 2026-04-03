@@ -17,6 +17,23 @@ This monorepo folder contains several **separate products**. Unless the user exp
 - **Primary remote**: `origin` → `leechang1811-afk/new_project5` on branch **`main`**.
 - Prefer changes under `apps/` (e.g. `apps/client`) and shared root config only when it serves **new_project5**.
 
+## App in Toss (AIT) — new_project5 only
+
+For **this** product (롤모델 / brain-rank), AIT packaging must **only** use **`apps/client`** in this repo:
+
+- **Granite config**: `apps/client/granite.config.ts`
+- **Output artifact**: `apps/client/brain-rank.ait` (do not replace or duplicate paths under `korea-quiz-toss/`, `mafia-release/`, etc.)
+
+**Do:**
+
+- Run `ait build` / Granite flows **only** from `apps/client` (or use the repo-root script `npm run ait:pack`, which wraps that folder).
+- Edit `apps/client` for Toss web-framework config, icons, and manifest behavior for this app.
+
+**Do not** (unless the user explicitly asks to work on that other app):
+
+- Run `granite` / `ait build` inside `korea-quiz-toss/`, `mafia-release/`, or `korea-habits-fix` for routine new_project5 work.
+- Change or regenerate `.ait` files belonging to other apps.
+
 ## Git
 
 - Do not add remotes pointing at korea-quiz, mafia-game, or other repos for routine work.

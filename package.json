@@ -16,7 +16,8 @@
     "db:generate": "cd apps/server && npm run db:generate",
     "db:migrate": "cd apps/server && npm run db:migrate",
     "render:sync-db": "node apps/server/scripts/set-render-env.mjs",
-    "screenshot": "node scripts/screenshot-combo.mjs"
+    "screenshot": "node scripts/screenshot-combo.mjs",
+    "ait:pack": "cd apps/client && npm run build:ait && npm run ait:build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
