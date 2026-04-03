@@ -43,7 +43,8 @@ type EventName =
   | 'reserve_tomorrow'
   | 'reset_today_routine'
   | 'milestone_badge_unlock'
-  | 'new_record';
+  | 'new_record'
+  | 'report_brag_share';
 
 const FAILURE_REASONS = ['시간 부족', '피곤함', '우선순위 밀림', '생각보다 어려움'];
 const HISTORY_WINDOW_DAYS = 30;
@@ -1303,20 +1304,37 @@ export default function Home() {
 
           {!isHub && subPageLabel && (
             <div className="mt-2.5 flex items-center gap-2 border-t border-toss-border/50 pt-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  if (isSettings) trackEvent('close_settings');
-                  navigate('/');
-                }}
-                className="shrink-0 text-[13px] font-semibold text-toss-blue"
-              >
-                ← 홈
-              </button>
-              <span className="text-toss-sub text-[13px]" aria-hidden>
-                |
-              </span>
-              <span className="min-w-0 truncate text-[13px] font-medium text-toss-text">{subPageLabel}</span>
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isSettings) trackEvent('close_settings');
+                    navigate('/');
+                  }}
+                  className="shrink-0 text-[13px] font-semibold text-toss-blue"
+                >
+                  ← 홈
+                </button>
+                <span className="text-toss-sub text-[13px]" aria-hidden>
+                  |
+                </span>
+                <span className="min-w-0 truncate text-[13px] font-medium text-toss-text">{subPageLabel}</span>
+              </div>
+              {isReport && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackEvent('report_brag_share');
+                    void copyShare();
+                  }}
+                  className="flex shrink-0 items-center gap-1 rounded-xl border border-dashed border-toss-blue/45 bg-sky-50/90 px-2 py-1.5 text-[11px] font-bold leading-tight text-toss-blue active:bg-sky-100/80 sm:gap-1.5 sm:px-2.5 sm:text-[12px]"
+                >
+                  <span className="text-lg leading-none" aria-hidden>
+                    🔗
+                  </span>
+                  닮아가기 자랑하기
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -1606,33 +1624,19 @@ export default function Home() {
             </div>
 
             <div className="rounded-2xl border border-toss-border bg-white p-3 shadow-sm">
-              <div className="flex gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-semibold text-toss-sub">매일 기록</p>
-                  <p className="text-[10px] text-toss-sub mt-0.5">파란 칸이 완료 저장한 날이에요.</p>
-                  <div className="mt-2 grid grid-cols-10 gap-1.5">
-                    {Array.from({ length: HISTORY_WINDOW_DAYS }).map((_, idx) => {
-                      const v = history.slice(-HISTORY_WINDOW_DAYS)[idx] ?? false;
-                      return (
-                        <div
-                          key={idx}
-                          className={`h-8 rounded-lg border ${v ? 'bg-toss-blue/90 border-toss-blue' : 'bg-slate-50 border-toss-border'}`}
-                          aria-label={v ? '완료' : '미완료'}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={copyShare}
-                  className="flex w-[4.75rem] shrink-0 flex-col items-center justify-center gap-1 self-stretch rounded-xl border-2 border-dashed border-toss-blue/40 bg-sky-50/80 px-2 py-2 text-center active:bg-sky-100/80"
-                >
-                  <span className="text-lg leading-none" aria-hidden>
-                    🔗
-                  </span>
-                  <span className="text-[10px] font-bold leading-tight text-toss-blue">링크·문구 복사</span>
-                </button>
+              <p className="text-[11px] font-semibold text-toss-sub">매일 기록</p>
+              <p className="text-[10px] text-toss-sub mt-0.5">파란 칸이 완료 저장한 날이에요.</p>
+              <div className="mt-2 grid grid-cols-10 gap-1.5">
+                {Array.from({ length: HISTORY_WINDOW_DAYS }).map((_, idx) => {
+                  const v = history.slice(-HISTORY_WINDOW_DAYS)[idx] ?? false;
+                  return (
+                    <div
+                      key={idx}
+                      className={`h-8 rounded-lg border ${v ? 'bg-toss-blue/90 border-toss-blue' : 'bg-slate-50 border-toss-border'}`}
+                      aria-label={v ? '완료' : '미완료'}
+                    />
+                  );
+                })}
               </div>
             </div>
 
