@@ -78,15 +78,14 @@ export default function BannerAd() {
 
   if (!AD_GROUP_BANNER) return null;
 
+  /** 문서 흐름에 두어 상단 스크롤 영역이 배너 높이만큼 비워지게 함 (fixed 시 본문이 가려지는 문제 방지) */
   return (
-    <div className="fixed left-0 right-0 bottom-0 z-40 pointer-events-none">
-      <div className="mx-auto max-w-md px-4 sm:px-6 pb-[env(safe-area-inset-bottom)] pointer-events-auto">
-        <div
-          ref={containerRef}
-          className="w-full min-h-[96px] rounded-t-xl border border-slate-200 bg-slate-50/90"
-          aria-label="광고"
-        />
-      </div>
+    <div className="w-full">
+      <div
+        ref={containerRef}
+        className="w-full min-h-[96px] rounded-t-xl border border-slate-200 bg-slate-50/90"
+        aria-label="광고"
+      />
     </div>
   );
 }

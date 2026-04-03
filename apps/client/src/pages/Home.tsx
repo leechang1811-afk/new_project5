@@ -1234,7 +1234,7 @@ export default function Home() {
     <div className="flex h-[100svh] max-h-[100dvh] min-h-0 w-full max-w-lg mx-auto flex-col overflow-hidden bg-white">
       {/* 공통 상단 브랜딩 — 모든 페이지 동일 */}
       <header className="sticky top-0 z-50 shrink-0 w-full bg-white border-b border-toss-border/80">
-        <div className="px-4 sm:px-6 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2.5 sm:pb-3">
+        <div className="pt-[max(0.5rem,env(safe-area-inset-top))] pb-2.5 sm:pb-3 [padding-left:max(1rem,env(safe-area-inset-left))] [padding-right:max(1rem,env(safe-area-inset-right))] sm:[padding-left:max(1.5rem,env(safe-area-inset-left))] sm:[padding-right:max(1.5rem,env(safe-area-inset-right))]">
           <div className="flex items-center justify-between gap-3 min-w-0">
             <div className="flex items-center gap-3 min-w-0">
               <div className="shrink-0 rounded-2xl bg-[#F2F4F6] p-1">
@@ -1312,7 +1312,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain [scrollbar-gutter:stable] px-4 sm:px-6">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain [scrollbar-gutter:stable] [padding-left:max(1rem,env(safe-area-inset-left))] [padding-right:max(1rem,env(safe-area-inset-right))] sm:[padding-left:max(1.5rem,env(safe-area-inset-left))] sm:[padding-right:max(1.5rem,env(safe-area-inset-right))]">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1359,16 +1359,6 @@ export default function Home() {
                   <p className="text-[11px] font-medium text-toss-sub mt-1.5">
                     30일 중 <span className="text-toss-text font-semibold">{last30DoneCount}</span>일 완료
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/report')}
-                    className="mt-3 flex min-h-[44px] w-full items-center justify-between border-t border-toss-border pt-3 text-left active:bg-toss-bg/40 -mx-0.5 px-0.5 rounded-lg"
-                  >
-                    <span className="text-[12px] font-bold text-toss-blue">내 기록 보기</span>
-                    <span className="text-lg font-light text-toss-blue/85" aria-hidden>
-                      ›
-                    </span>
-                  </button>
                 </div>
 
                 <div className="rounded-2xl border border-[#EDE6DC] bg-[#FFFBF8] p-3.5">
@@ -1388,6 +1378,16 @@ export default function Home() {
                   </div>
                   <p className="text-[10px] font-semibold text-toss-text mt-1.5">연속 기록 {streakDays}일</p>
                   <p className="text-[10px] text-toss-sub leading-snug line-clamp-2">{resemblanceStage.desc}</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/report')}
+                    className="mt-3 flex min-h-[44px] w-full items-center justify-between border-t border-[#F0E4D8] pt-3 text-left active:bg-black/[0.02]"
+                  >
+                    <span className="text-[12px] font-bold text-toss-blue">내 기록 보기</span>
+                    <span className="text-lg font-light text-toss-blue/85" aria-hidden>
+                      ›
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -1956,7 +1956,7 @@ export default function Home() {
       </motion.div>
       </div>
 
-      <div className="shrink-0 w-full px-4 sm:px-6 pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-toss-border/40 bg-white">
+      <div className="shrink-0 w-full pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-toss-border/40 bg-white [padding-left:max(1rem,env(safe-area-inset-left))] [padding-right:max(1rem,env(safe-area-inset-right))] sm:[padding-left:max(1.5rem,env(safe-area-inset-left))] sm:[padding-right:max(1.5rem,env(safe-area-inset-right))]">
         <BannerAd />
       </div>
 
