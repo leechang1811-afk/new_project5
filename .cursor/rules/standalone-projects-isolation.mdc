@@ -1,40 +1,35 @@
 ---
-description: Do not change other standalone apps; primary work is new_project5
+description: Never modify other apps' git/AIT; only new_project5 (apps/client)
 alwaysApply: true
 ---
 
-# Other apps in this workspace (do not touch)
+# 다른 제품 Git·AIT — 절대 수정 금지
 
-This monorepo folder contains several **separate products**. Unless the user explicitly asks to work on one of them, **do not read, edit, refactor, move, delete, or commit changes** under:
+아래는 **`leechang1811-afk/new_project5` / `apps/client` 와 무관한** 다른 앱·저장소입니다. **어떤 이유로도**(정리, 버그 수정, 리팩터, 빌드 스크립트, 실수 방지 등) **에이전트는 여기를 바꾸면 안 됩니다.**
 
-- `korea-bible-work/` — Korea Bible app (nested git repo)
-- `korea-habits-fix/` — Korea habits app (nested git repo)
-- `korea-quiz-toss/` — Korea quiz / Toss app
-- `mafia-release/` — Mafia game app
+- `korea-bible-work/` — 별도 Git
+- `korea-habits-fix/` — 별도 Git
+- `korea-quiz-toss/` — Korea quiz / Toss
+- `mafia-release/` — Mafia game
 
-## Default focus
+**금지 행위:**
 
-- **Primary remote**: `origin` → `leechang1811-afk/new_project5` on branch **`main`**.
-- Prefer changes under `apps/` (e.g. `apps/client`) and shared root config only when it serves **new_project5**.
+- 위 경로 안의 **어떤 파일**도 생성·수정·삭제·이동하지 않기
+- 위 경로에서 **`granite` / `ait build`** 실행하지 않기
+- **`korea-quiz-toss`**, **`mafia-release`**, **`korea-habits-fix`** 등에 있는 **다른 앱의 `.ait`** 생성·덮어쓰기·삭제하지 않기
+- 위 중첩/별도 저장소에 대해 **`git add` / `commit` / `push`** 하지 않기
 
-## App in Toss (AIT) — new_project5 only
+**허용되는 AIT·Granite 범위 (이것만):**
 
-For **this** product (롤모델 / brain-rank), AIT packaging must **only** use **`apps/client`** in this repo:
+- `apps/client/granite.config.ts`
+- `apps/client/` 안에서의 빌드 및 **`apps/client/brain-rank.ait`** (루트에서 `npm run ait:pack` → `apps/client`만 사용)
 
-- **Granite config**: `apps/client/granite.config.ts`
-- **Output artifact**: `apps/client/brain-rank.ait` (do not replace or duplicate paths under `korea-quiz-toss/`, `mafia-release/`, etc.)
+## new_project5 기본 작업
 
-**Do:**
+- **원격**: `origin` → `leechang1811-afk/new_project5`, 브랜치 **`main`**
+- 코드·설정 변경은 **`apps/client`**, **`packages/shared`**(클라이언트가 쓰는 경우), 루트에서 new_project5에 필요한 최소 설정만
 
-- Run `ait build` / Granite flows **only** from `apps/client` (or use the repo-root script `npm run ait:pack`, which wraps that folder).
-- Edit `apps/client` for Toss web-framework config, icons, and manifest behavior for this app.
+## Git (루트)
 
-**Do not** (unless the user explicitly asks to work on that other app):
-
-- Run `granite` / `ait build` inside `korea-quiz-toss/`, `mafia-release/`, or `korea-habits-fix` for routine new_project5 work.
-- Change or regenerate `.ait` files belonging to other apps.
-
-## Git
-
-- Do not add remotes pointing at korea-quiz, mafia-game, or other repos for routine work.
-- Do not `git push` to remotes other than `origin` unless the user names a specific remote and purpose.
+- 일상적인 `git push` / `git pull` 은 **`origin`** 만
+- 다른 GitHub 저장소용 원격을 새로 추가하지 않기
