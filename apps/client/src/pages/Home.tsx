@@ -1181,35 +1181,53 @@ export default function Home() {
     window.setTimeout(() => setToast(null), 2000);
   };
 
+  const subPageLabel = isMission ? '오늘 미션' : isReport ? '1개월 리포트' : isSettings ? '설정' : '';
+
   return (
     <div className="flex h-[100svh] max-h-[100dvh] min-h-0 w-full max-w-lg mx-auto flex-col overflow-hidden bg-white">
-      {/* 헤더: 홈 = 혜택탭형 요약 / 서브 = 뒤로 + 제목 */}
-      <div className="sticky top-0 z-50 shrink-0 w-full bg-white border-b border-toss-border px-4 sm:px-6">
-        <div className="py-2.5 sm:py-3">
-          {isHub ? (
-            <div className="flex items-center justify-between gap-3 min-w-0">
-              <div className="flex items-center gap-2.5 min-w-0">
-                {logoError ? (
-                  <div className="w-7 h-7 rounded-lg border border-toss-border bg-toss-blue/10 flex items-center justify-center text-[12px] shrink-0">
-                    ✅
-                  </div>
-                ) : (
-                  <img
-                    src="/app-icon-600x600.png"
-                    alt="롤모델따라하기 로고"
-                    width={28}
-                    height={28}
-                    onError={() => setLogoError(true)}
-                    className="w-7 h-7 rounded-lg border border-toss-border bg-white object-cover shrink-0"
-                    loading="eager"
-                    decoding="async"
-                  />
-                )}
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-toss-text truncate">롤모델따라하기</p>
-                  <p className="text-[11px] text-toss-sub">내 기록 · {todayKey}</p>
+      {/* 공통 상단 브랜딩 — 모든 페이지 동일 */}
+      <header className="sticky top-0 z-50 shrink-0 w-full bg-white border-b border-toss-border/80">
+        <div className="px-4 sm:px-6 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2.5 sm:pb-3">
+          <div className="flex items-center justify-between gap-3 min-w-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="shrink-0 rounded-2xl bg-slate-100 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+                <div className="relative">
+                  {logoError ? (
+                    <div className="w-9 h-9 rounded-xl bg-[#3182F6] flex items-center justify-center text-white text-base font-bold leading-none">
+                      ✓
+                    </div>
+                  ) : (
+                    <img
+                      src="/app-icon-600x600.png"
+                      alt=""
+                      width={36}
+                      height={36}
+                      onError={() => setLogoError(true)}
+                      className="w-9 h-9 rounded-xl object-cover bg-white"
+                      loading="eager"
+                      decoding="async"
+                    />
+                  )}
+                  {streakDays > 0 && (
+                    <span
+                      className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-amber-400 px-[5px] text-[10px] font-bold leading-none text-toss-text shadow-sm ring-2 ring-white"
+                      aria-hidden
+                    >
+                      {streakDays > 99 ? '99+' : streakDays}
+                    </span>
+                  )}
                 </div>
               </div>
+              <div className="min-w-0 py-0.5">
+                <p className="text-[15px] font-bold text-toss-text leading-snug tracking-tight truncate">
+                  롤모델따라하기
+                </p>
+                <p className="text-[12px] text-toss-sub mt-0.5 truncate">
+                  내 기록 · {todayKey}
+                </p>
+              </div>
+            </div>
+            {!isSettings ? (
               <button
                 type="button"
                 onClick={() => {
@@ -1217,30 +1235,35 @@ export default function Home() {
                   navigate('/settings');
                 }}
                 aria-label="설정"
-                className="shrink-0 px-3 py-1.5 rounded-full border border-toss-border bg-white text-xs font-semibold text-toss-text"
+                className="shrink-0 rounded-full border border-toss-border/90 bg-white px-3 py-1.5 text-[12px] font-semibold text-toss-text active:bg-toss-bg"
               >
                 ⚙️ 설정
               </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 min-w-0">
+            ) : (
+              <div className="w-[4.5rem] shrink-0" aria-hidden />
+            )}
+          </div>
+
+          {!isHub && subPageLabel && (
+            <div className="mt-2.5 flex items-center gap-2 border-t border-toss-border/50 pt-2.5">
               <button
                 type="button"
                 onClick={() => {
                   if (isSettings) trackEvent('close_settings');
                   navigate('/');
                 }}
-                className="shrink-0 px-2 py-1.5 text-sm font-semibold text-toss-blue"
+                className="shrink-0 text-[13px] font-semibold text-toss-blue"
               >
                 ← 홈
               </button>
-              <span className="text-sm font-semibold text-toss-text truncate">
-                {isMission ? '오늘 미션' : isReport ? '1개월 리포트' : '설정'}
+              <span className="text-toss-sub text-[13px]" aria-hidden>
+                |
               </span>
+              <span className="min-w-0 truncate text-[13px] font-medium text-toss-text">{subPageLabel}</span>
             </div>
           )}
         </div>
-      </div>
+      </header>
 
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain [scrollbar-gutter:stable] px-4 sm:px-6">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full pt-3 sm:pt-4 pb-2 sm:pb-3">
