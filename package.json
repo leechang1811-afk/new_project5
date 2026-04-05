@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "workspaces": ["apps/*", "packages/*", "rolmodel-follow-ait"],
+  "workspaces": ["apps/*", "packages/*", "role-model-follow-ait"],
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:client": "cd apps/client && npm run dev",
@@ -18,7 +18,7 @@
     "render:sync-db": "node apps/server/scripts/set-render-env.mjs",
     "screenshot": "node scripts/screenshot-combo.mjs",
     "screenshot:rolmodel-store": "node scripts/screenshot-rolmodel-store.mjs",
-    "ait:rolmodel-follow": "npm run ait:build -w rolmodel-follow-ait"
+    "ait:role-model-follow": "npm run ait:build -w role-model-follow-ait"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
